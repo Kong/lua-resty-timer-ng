@@ -889,6 +889,7 @@ end
 
 function _M:unconfigure()
     self.destory = true
+    self.configured = false
 end
 
 

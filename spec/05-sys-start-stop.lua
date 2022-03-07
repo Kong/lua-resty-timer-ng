@@ -3,10 +3,12 @@ local log = ngx.log
 local ERR = ngx.ERR
 local update_time = ngx.update_time
 local now = ngx.now
+local timer_running_count = ngx.timer.running_count
 
 local TIMER_NAME_ONCE = "TEST-TIMER-ONCE"
 local TIMER_NAME_EVERY = "TEST-TIMER-EVERY"
 local TOLERANCE = 0.2
+local THREADS = 10
 
 
 insulate("system start -> stop -> start #fast | ", function ()
@@ -18,7 +20,7 @@ insulate("system start -> stop -> start #fast | ", function ()
 
     setup(function ()
         timer = require("resty.timer")
-        timer:configure()
+        timer:configure({ threads = THREADS })
         timer:start()
 
         tbl = {
@@ -32,8 +34,12 @@ insulate("system start -> stop -> start #fast | ", function ()
     end)
 
     teardown(function ()
+        local old_pending = timer_running_count()
         timer:stop()
         timer:unconfigure()
+        sleep(5)
+        local expected_pending = old_pending - THREADS - 1
+        assert.same(expected_pending, timer_running_count())
     end)
 
     before_each(function ()

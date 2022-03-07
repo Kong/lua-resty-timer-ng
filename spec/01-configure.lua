@@ -1,4 +1,6 @@
+local log = ngx.log
 
+local ERR = ngx.ERR
 
 insulate("configure without options #fast", function()
     local timer = require("resty.timer")

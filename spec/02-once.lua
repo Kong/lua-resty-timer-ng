@@ -3,9 +3,11 @@ local log = ngx.log
 local ERR = ngx.ERR
 local update_time = ngx.update_time
 local now = ngx.now
+local timer_running_count = ngx.timer.running_count
 
 local TIMER_NAME = "TEST-TIMER-ONCE"
 local TOLERANCE = 0.2
+local THREADS = 10
 
 local function helper(t, tbl, name, callback, delay)
     assert.has_no.errors(function ()
@@ -27,15 +29,19 @@ insulate("create a once timer with invalid arguments #fast | ", function ()
 
     setup(function ()
         timer = require("resty.timer")
-        timer:configure()
+        timer:configure({ threads = THREADS })
         timer:start()
 
         empty_callback = function (_, ...) end
     end)
 
     teardown(function ()
+        local old_pending = timer_running_count()
         timer:stop()
         timer:unconfigure()
+        sleep(2)
+        local expected_pending = old_pending - THREADS - 1
+        assert.same(expected_pending, timer_running_count())
     end)
 
     it("delay < 0", function ()
@@ -77,8 +83,12 @@ insulate("create a once timer | ", function ()
     end)
 
     teardown(function ()
+        local old_pending = timer_running_count()
         timer:stop()
         timer:unconfigure()
+        sleep(2)
+        local expected_pending = old_pending - THREADS - 1
+        assert.same(expected_pending, timer_running_count())
     end)
 
     before_each(function ()
@@ -117,7 +127,7 @@ insulate("create a once timer | ", function ()
         helper(timer, tbl, TIMER_NAME, callback, 1.1)
     end)
 
-    it("delay = 1.5 #fast", function ()
+    it("delay = 1.5 #fast #only", function ()
         helper(timer, tbl, TIMER_NAME, callback, 1.5)
     end)
 
