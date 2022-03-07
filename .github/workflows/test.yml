@@ -1,0 +1,59 @@
+name: Build & Test
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-20.04
+
+  env:
+      DOWNLOAD_ROOT: $HOME/download-root
+
+  strategy:
+      matrix:
+        split: ["01", "02", "03", "04", "05"]
+
+  
+  step:
+    - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+          architecture: 'x64'
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get --yes update
+        sudo apt-get install --yes build-essential zlib1g-dev libpcre3 libpcre3-dev libssl-dev libxslt1-dev libxml2-dev libgeoip-dev libgd-dev libperl-dev
+        sudo pip install lastversion
+
+    - name: Install OpenResty
+      run: |
+        mkdir -p $DOWNLOAD_ROOT
+        cd $DOWNLOAD_ROOT
+        lastversion --download openresty.tar.gz openresty
+        mkdir openresty
+        tar zxf openresty.tar.gz --directory openresty --strip-components=1
+        ./configure
+        make -j$(nproc)
+        sudo make install
+
+    - name: Install LuaRocks
+      run: |
+        cd $DOWNLOAD_ROOT
+        lastversion --download luarocks.tar.gz luarocks
+        mkdir luarocks
+        tar zxf luarocks.tar.gz --directory luarocks --strip-components=1
+        ./configure
+        make -j$(nproc)
+        sudo make install
+
+    - name: Install Busted
+      run: |
+        luarocks install busted
+
+    - name: Tests
+      run: |
+        resty -I lib spec/runner.lua --verbose -o htest --shuffle-files --shuffle-tests spec/${{ matrix.install-type }}*.lua
+
+
+    

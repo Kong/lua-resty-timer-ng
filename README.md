@@ -1,3 +1,235 @@
 # lua-resty-timer-ng
 
-WIP
+## Status
+
+This library is under development.
+
+https://github.com/Kong/kong-madr/pull/28
+
+## Synopsis
+
+```nginx
+http {
+    init_worker_by_lua_block {
+        local timer = require("resty.timer")
+
+        local options = {
+            real_timer = 10,                -- restart a timer after a certain number of this timer triggers
+            recreate_interval = 50,         -- number of timer will be created by OpenResty API
+        }
+        timer:configure(options)
+
+        -- ‘premature’ is used to be compatible with existing callback functions and will be removed in the future
+        fuction callback_once(premature, ...)
+            -- do something
+            ngx.log(ngx.ERR, "in timer example-once")
+        end
+
+        function callback_every(premature, ...)
+            -- do something
+            ngx.log(ngx.ERR, "in timer example-every")
+        end
+
+        -- run after 100 ms
+        timer:once("example-once", callback_once, 0.1)
+
+        -- run every 1s
+        timer:every("example-every", callback_every, 1)
+    }
+}
+```
+
+## Description
+
+This library is implemented using the timer wheel algorithm, 
+which uses the small number of timers created by Openresty API `ngx.timer.at` to manage a large number of tasks.
+
+* Efficiently, create, pause, start and cancel a timer takes O(1) time.
+* Concurrency control, you can limit the number of threads.
+* Easy to debug
+    * Get statistics such as maximum, minimum, average, and variance of the runtime for each timer.
+    * Some information that is useful for debugging, such as where the timer was created and the call stack at that time.
+
+## Statistics
+
+The system records the following information:
+
+* The maximum, minimum, average, and variance of the running time of each timer.
+* The location of each timer created, such as call stack.
+
+
+## History
+
+Versioning is strictly based on [Semantic Versioning](https://semver.org/)
+
+## Methods
+
+### configure
+
+**syntax**: *ok, err = timer:configure(options?)*
+
+**context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
+
+Configure the timer system.
+
+For example
+
+```lua
+local timer = require("resty.timer")
+timer:configure({
+    -- number of threads
+    threads = 10,
+
+    -- restart the LWP after it has run ‘recreate_interval’ tasks.
+    recreate_interval = 50
+})
+```
+
+
+### start
+
+**syntax**: *ok, err = timer:start()*
+
+**context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
+
+Start the timer system.
+
+
+### stop
+
+**syntax**: *timer:stop()*
+
+**context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
+
+Suspend the timer system and the expiration of each timer will be frozen.
+
+
+### once
+
+**syntax**: *ok, err = timer:once(name, callback, delay, ...)*
+
+**context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
+
+Create a once timer.
+
+<!-- **DO NOT CALL `ngx.sleep` IN `callback`.** -->
+
+* name: The name of this timer, or if it is set to `nil`, a random name will be generated.
+* callback: A callback function will be called when this timer expired, `function callback(premature, ...)`.
+* delay: The expiration of this timer.
+
+
+### every
+
+**syntax**: *ok, err = timer:every(name, callback, interval, ...)*
+
+**context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
+
+Create a recurrent timer.
+
+<!-- **DO NOT CALL `ngx.sleep` IN `callback`.** -->
+
+* name: The name of this timer, or if it is set to `nil`, a random name will be generated.
+* callback: A callback function will be called when this timer expired, `function callback(premature, ...)`.
+* interval: The expiration of this timer.
+
+
+### run
+
+**syntax**: *ok, err = timer:run(name)*
+
+**context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
+
+Start a timer that has been paused and resets its expiration.
+
+* name: The name of this timer.
+
+
+### pause
+
+**syntax**: *ok, err = timer:pause(name)*
+
+**context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
+
+Pause a timer that has been started.
+
+* name: The name of this timer.
+
+
+### cancel
+
+**syntax**: *ok, err = timer:cancel(name)*
+
+**context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
+
+Cancel a timer.
+
+* name: The name of this timer.
+
+
+### stats
+
+**syntax**: info, err = timer:stats()
+
+**context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
+
+
+Get the statistics of the system.
+
+For example:
+
+```lua
+local info, err = timer:stats()
+
+if not info then
+    -- error
+end
+
+-- info.sys = {
+--     running = [number],      number of running timers
+--     pending = [number],      number of pending timers
+--     waiting = [number]       number of unexpired timers
+-- }
+local sys_info = info.sys
+
+
+for timer_name, timer in pairs(info.jobs) do
+    local meta = timer.meta
+    local runtime = timer.runtime
+
+    -- meta.name is an automatically generated string 
+    -- that stores the location where the creation timer was created.
+    -- Such as 'task.lua:56:start_background_task()'
+
+    -- meta.callstack is an array of length three, 
+    -- each of item stores a layer of callstack information.
+    -- Such as:
+    -- callstack[1] = {
+    --     line = 56,                           timer is created on this line
+    --     func = "start_background_task",      timer is created in this function
+    --     source = "task.lua"                  timer is created in this file
+    -- }
+
+    -- callstack[2] = {
+    --     line = 372,                          function `start_background_task` is called on this line
+    --     func = "init_worker",                function `start_background_task` is called in this function
+    --     source = "init.lua                   function `start_background_task` is called in this file
+    -- }
+
+    -- callstack[3] = nil                       nil mean code at C language
+
+
+    -- runtime is a table that stores the 
+    -- maximum, minimum, average and variance 
+    -- of the time spent on each run of the timer.
+    -- Such as:
+    -- runtime = {
+    --     max = 100
+    --     min = 50
+    --     avg = 70
+    --     variance = 12
+    -- }
+end
+
+
+```
