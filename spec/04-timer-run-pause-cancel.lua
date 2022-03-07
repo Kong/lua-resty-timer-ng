@@ -9,7 +9,7 @@ local TIMER_NAME_EVERY = "TEST-TIMER-EVERY"
 local TOLERANCE = 0.2
 
 
-insulate("timer | ", function ()
+insulate("timer #fast | ", function ()
     local timer
     local callback
     local tbl

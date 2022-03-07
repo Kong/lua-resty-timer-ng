@@ -25,7 +25,7 @@ local function helper(t, tbl, name, callback, interval)
 end
 
 
-insulate("create a every timer with invalid arguments | ", function ()
+insulate("create a every timer with invalid arguments #fast | ", function ()
     local timer
     local empty_callback
 
@@ -108,73 +108,73 @@ insulate("create a every timer | ", function ()
         assert.is_true(ok)
     end)
 
-    it("interval = 0.1", function ()
+    it("interval = 0.1 #fast", function ()
         assert.has_no.errors(function ()
             local ok, _ = timer:every(TIMER_NAME, callback, 0.1, tbl)
             assert.is_true(ok)
         end)
-    
+
         local expected = now() + 2 * 0.1
         sleep(2 * 0.1 + TOLERANCE)
         assert.is_true(tbl.time > expected)
-        
+
     end)
 
-    it("interval = 0.5", function ()
+    it("interval = 0.5 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 0.5)
     end)
 
-    it("interval = 0.9", function ()
+    it("interval = 0.9 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 0.9)
     end)
 
-    it("interval = 1", function ()
+    it("interval = 1 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 1)
     end)
 
-    it("interval = 1.1", function ()
+    it("interval = 1.1 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 1)
     end)
 
-    it("interval = 1.5", function ()
+    it("interval = 1.5 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 1.5)
     end)
 
-    it("interval = 1.9", function ()
+    it("interval = 1.9 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 1.9)
     end)
 
-    it("interval = 2", function ()
+    it("interval = 2 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 2)
     end)
 
-    it("interval = 10", function ()
+    it("interval = 10 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 10)
     end)
 
-    it("interval = 59", function ()
+    it("interval = 59 #slow_1", function ()
         helper(timer, tbl, TIMER_NAME, callback, 59)
     end)
 
-    it("interval = 59.9", function ()
+    it("interval = 59.9 #slow_2", function ()
         helper(timer, tbl, TIMER_NAME, callback, 59.9)
     end)
 
-    it("interval = 60", function ()
+    it("interval = 60 #slow_3", function ()
         helper(timer, tbl, TIMER_NAME, callback, 60)
     end)
 
-    it("interval = 60.1", function ()
+    it("interval = 60.1 #slow_4", function ()
         helper(timer, tbl, TIMER_NAME, callback, 60.1)
     end)
 
-    it("interval = 61", function ()
+    it("interval = 61 #slow_5", function ()
         helper(timer, tbl, TIMER_NAME, callback, 61)
     end)
 end)
 
 
-insulate("create a every timer | ", function ()
+insulate("create a every timer #fast | ", function ()
     local timer
     local callback
     local tbl

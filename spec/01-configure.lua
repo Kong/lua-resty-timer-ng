@@ -1,6 +1,6 @@
 
 
-insulate("configure without options", function()
+insulate("configure without options #fast", function()
     local timer = require("resty.timer")
     it("", function() 
         local ok, _ = timer:configure()
@@ -9,7 +9,7 @@ insulate("configure without options", function()
 end)
 
 
-insulate("configure with empty options", function()
+insulate("configure with empty options #fast", function()
     local timer = require("resty.timer")
     it("", function ()
         local ok, _ = timer:configure({})
@@ -18,7 +18,7 @@ insulate("configure with empty options", function()
 end)
 
 
-insulate("configure with invalid options | ", function ()
+insulate("configure with invalid options #fast | ", function ()
     insulate("not a table", function ()
         local timer = require("resty.timer")
         it("", function ()

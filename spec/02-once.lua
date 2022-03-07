@@ -19,7 +19,7 @@ local function helper(t, tbl, name, callback, delay)
 end
 
 
-insulate("create a once timer with invalid arguments | ", function ()
+insulate("create a once timer with invalid arguments #fast | ", function ()
     local timer
     local empty_callback
 
@@ -93,63 +93,63 @@ insulate("create a once timer | ", function ()
         end)
     end)
 
-    it("delay = 0", function ()
+    it("delay = 0 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 0)
     end)
 
-    it("delay = 0.1", function ()
+    it("delay = 0.1 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 0.1)
     end)
 
-    it("delay = 0.5", function ()
+    it("delay = 0.5 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 0.5)
     end)
 
-    it("delay = 0.9", function ()
+    it("delay = 0.9 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 0.9)
     end)
 
-    it("delay = 1", function ()
+    it("delay = 1 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 1)
     end)
 
-    it("delay = 1.1", function ()
+    it("delay = 1.1 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 1.1)
     end)
 
-    it("delay = 1.5", function ()
+    it("delay = 1.5 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 1.5)
     end)
 
-    it("delay = 1.9", function ()
+    it("delay = 1.9 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 1.9)
     end)
 
-    it("delay = 2", function ()
+    it("delay = 2 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 2)
     end)
 
-    it("delay = 10", function ()
+    it("delay = 10 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 10)
     end)
 
-    it("delay = 59", function ()
+    it("delay = 59 #slow_1", function ()
         helper(timer, tbl, TIMER_NAME, callback, 59)
     end)
 
-    it("delay = 59.9", function ()
+    it("delay = 59.9 #slow_1", function ()
         helper(timer, tbl, TIMER_NAME, callback, 59.9)
     end)
 
-    it("delay = 60", function ()
+    it("delay = 60 #slow_2", function ()
         helper(timer, tbl, TIMER_NAME, callback, 60)
     end)
 
-    it("delay = 60.1", function ()
+    it("delay = 60.1 #slow_2", function ()
         helper(timer, tbl, TIMER_NAME, callback, 60.1)
     end)
 
-    it("delay = 61", function ()
+    it("delay = 61 #slow_3", function ()
         helper(timer, tbl, TIMER_NAME, callback, 61)
     end)
 end)

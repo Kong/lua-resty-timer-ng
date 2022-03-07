@@ -1,59 +1,102 @@
-name: Build & Test
+name: Test
 on: [push, pull_request]
 
+env:
+  OPENRESTY_VERSION: "1.19.9.1"
+
 jobs:
+  build:
+    name: Build OpenResty
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Set environment variables
+        run: |
+          echo "INSTALL_ROOT=$HOME/install-root" >> $GITHUB_ENV
+          echo "DOWNLOAD_ROOT=$HOME/download-root" >> $GITHUB_ENV
+          mkdir -p $HOME/install-root
+          mkdir -p $HOME/download-root
+
+      - name: Lookup build cache
+        uses: actions/cache@v2
+        id: cache-openresty
+        with:
+          path: ${{ env.INSTALL_ROOT }}
+          key: ${{ env.OPENRESTY_VERSION }}
+
+      - name: Download OpenResty
+        run: |
+          wget https://openresty.org/download/openresty-${OPENRESTY_VERSION}.tar.gz -O openresty.tar.gz
+          mkdir openresty
+          tar zxf openresty.tar.gz --directory openresty --strip-components=1
+
+      - name: Install
+        if: steps.cache-openresty.outputs.cache-hit != 'true'
+        run: |
+          cd openresty
+          sudo ./configure --prefix=${{ env.INSTALL_ROOT }}/openresty
+          sudo make -j$(nproc)
+          sudo make install
+
+
   test:
     name: Test
     runs-on: ubuntu-20.04
+    needs: build
 
-  env:
-      DOWNLOAD_ROOT: $HOME/download-root
-
-  strategy:
+    strategy:
       matrix:
         split: ["01", "02", "03", "04", "05"]
+        tag: ["fast", "slow_1", "slow_2", "slow_3", "slow_4", "slow_5"]
 
   
-  step:
-    - uses: actions/setup-python@v2
+    steps:
+      - name: Set environment variables
+        run: |
+          echo "INSTALL_ROOT=$HOME/install-root" >> $GITHUB_ENV
+          echo "DOWNLOAD_ROOT=$HOME/download-root" >> $GITHUB_ENV
+          mkdir -p $HOME/install-root
+          mkdir -p $HOME/download-root
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get --yes update
+          sudo apt-get install --yes build-essential zlib1g-dev libpcre3 libpcre3-dev libssl-dev libxslt1-dev libxml2-dev libgeoip-dev libgd-dev libperl-dev
+
+      - name: Lookup build cache
+        uses: actions/cache@v2
+        id: cache-openresty
         with:
-          python-version: '3.x'
-          architecture: 'x64'
+          path: ${{ env.INSTALL_ROOT }}
+          key: ${{ env.OPENRESTY_VERSION }}
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get --yes update
-        sudo apt-get install --yes build-essential zlib1g-dev libpcre3 libpcre3-dev libssl-dev libxslt1-dev libxml2-dev libgeoip-dev libgd-dev libperl-dev
-        sudo pip install lastversion
+      - name: Install LuaRocks
+        run: |
+          sudo ln -s ${{ env.INSTALL_ROOT }}/openresty/bin/resty /bin/resty
+          sudo ln -s ${{ env.INSTALL_ROOT }}/openresty/luajit/bin/luajit /bin/luajit
+          pushd ${{ env.DOWNLOAD_ROOT }}
+          wget https://luarocks.org/releases/luarocks-3.8.0.tar.gz -O luarocks.tar.gz
+          mkdir luarocks
+          tar zxf luarocks.tar.gz --directory luarocks --strip-components=1
+          pushd luarocks
+          sudo ./configure --with-lua-include=${{ env.INSTALL_ROOT }}/openresty/luajit/include/luajit-2.1 --with-lua-lib=${{ env.INSTALL_ROOT }}/openresty/luajit/lib --with-lua-interpreter=luajit
+          sudo make -j$(nproc)
+          sudo make install
+          popd
+          popd
 
-    - name: Install OpenResty
-      run: |
-        mkdir -p $DOWNLOAD_ROOT
-        cd $DOWNLOAD_ROOT
-        lastversion --download openresty.tar.gz openresty
-        mkdir openresty
-        tar zxf openresty.tar.gz --directory openresty --strip-components=1
-        ./configure
-        make -j$(nproc)
-        sudo make install
+      - name: Install busted
+        run: |
+          sudo luarocks install busted
+          sudo luarocks install busted-htest
 
-    - name: Install LuaRocks
-      run: |
-        cd $DOWNLOAD_ROOT
-        lastversion --download luarocks.tar.gz luarocks
-        mkdir luarocks
-        tar zxf luarocks.tar.gz --directory luarocks --strip-components=1
-        ./configure
-        make -j$(nproc)
-        sudo make install
+      - name: Checkout source code
+        uses: actions/checkout@v2
 
-    - name: Install Busted
-      run: |
-        luarocks install busted
-
-    - name: Tests
-      run: |
-        resty -I lib spec/runner.lua --verbose -o htest --shuffle-files --shuffle-tests spec/${{ matrix.install-type }}*.lua
+      - name: Tests
+        run: |
+          eval $(luarocks path)
+          resty -I lib spec/runner.lua --verbose -o htest --shuffle-files --shuffle-tests -t ${{ matrix.tag }} spec/${{ matrix.split }}*.lua
 
 
     

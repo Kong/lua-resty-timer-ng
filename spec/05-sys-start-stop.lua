@@ -9,7 +9,7 @@ local TIMER_NAME_EVERY = "TEST-TIMER-EVERY"
 local TOLERANCE = 0.2
 
 
-insulate("system start -> stop -> start | ", function ()
+insulate("system start -> stop -> start #fast | ", function ()
     local timer
     local callback
     local tbl
