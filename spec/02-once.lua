@@ -36,12 +36,10 @@ insulate("create a once timer with invalid arguments #fast | ", function ()
     end)
 
     teardown(function ()
-        local old_pending = timer_running_count()
         timer:stop()
         timer:unconfigure()
         sleep(2)
-        local expected_pending = old_pending - THREADS - 1
-        assert.same(expected_pending, timer_running_count())
+        assert.same(1, timer_running_count())
     end)
 
     it("delay < 0", function ()
@@ -83,12 +81,10 @@ insulate("create a once timer | ", function ()
     end)
 
     teardown(function ()
-        local old_pending = timer_running_count()
         timer:stop()
         timer:unconfigure()
         sleep(2)
-        local expected_pending = old_pending - THREADS - 1
-        assert.same(expected_pending, timer_running_count())
+        assert.same(1, timer_running_count())
     end)
 
     before_each(function ()

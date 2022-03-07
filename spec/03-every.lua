@@ -42,12 +42,10 @@ insulate("create a every timer with invalid arguments #fast | ", function ()
     end)
 
     teardown(function ()
-        local old_pending = timer_running_count()
         timer:stop()
         timer:unconfigure()
-        sleep(5)
-        local expected_pending = old_pending - THREADS - 1
-        assert.same(expected_pending, timer_running_count())
+        sleep(2)
+        assert.same(1, timer_running_count())
     end)
 
     it("callback is nil", function ()
@@ -208,12 +206,10 @@ insulate("create a every timer #fast | ", function ()
     end)
 
     teardown(function ()
-        local old_pending = timer_running_count()
         timer:stop()
         timer:unconfigure()
-        sleep(5)
-        local expected_pending = old_pending - THREADS - 1
-        assert.same(expected_pending, timer_running_count())
+        sleep(2)
+        assert.same(1, timer_running_count())
     end)
 
     before_each(function ()
