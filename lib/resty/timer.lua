@@ -902,7 +902,8 @@ function _M:once(name, callback, delay, ...)
     assert(delay >= 0, "expected `delay` to be greater than or equal to 0")
 
     if delay >= MAX_EXPIRE or delay == 0 then
-        return timer_at(delay, callback, ...)
+        local ok, err = timer_at(delay, callback, ...)
+        return ok ~= nil, err
     end
 
     delay = max(delay, 0.11)
@@ -920,7 +921,8 @@ function _M:every(name, callback, interval, ...)
     assert(interval > 0, "expected `interval` to be greater than or equal to 0")
 
     if interval >= MAX_EXPIRE then
-        return timer_every(interval, callback, ...)
+        local ok, err = timer_every(interval, callback, ...)
+        return ok ~= nil, err
     end
 
     interval = max(interval, 0.11)
