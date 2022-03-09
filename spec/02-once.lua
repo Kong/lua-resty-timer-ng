@@ -123,7 +123,7 @@ insulate("create a once timer | ", function ()
         helper(timer, tbl, TIMER_NAME, callback, 1.1)
     end)
 
-    it("delay = 1.5 #fast #only", function ()
+    it("delay = 1.5 #fast", function ()
         helper(timer, tbl, TIMER_NAME, callback, 1.5)
     end)
 
