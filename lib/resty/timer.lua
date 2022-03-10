@@ -450,7 +450,7 @@ local function job_wrapper(job)
 
     job.running = true
 
-    local ok, err = pcall(job.callback, unpack(job.args))
+    local ok, err = pcall(job.callback, false, unpack(job.args))
 
     local finish = stats.finish
 
