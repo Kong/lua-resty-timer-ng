@@ -443,7 +443,7 @@ local function job_wrapper(job)
     stats.runs = stats.runs + 1
     local start = now()
 
-    if job_is_runable(job) then
+    if not job_is_runable(job) then
         return
     end
 
