@@ -280,6 +280,11 @@ local function wheel_get_jobs(wheel)
 end
 
 
+local function job_is_runable(job)
+    return job.enable and not job.cancel and not job.running
+end
+
+
 local function job_re_cal_next_pointer(job, wheels)
     local delay_hour = job.delay.hour
     local delay_minute = job.delay.minute
@@ -556,7 +561,7 @@ local function update_all_wheels(self)
     if callbacks then
         for name, job in pairs(callbacks) do
 
-            if not job.cancel and job.enable then
+            if job_is_runable(job) then
                 local delay = job.delay
 
                 if delay.minute then
@@ -582,7 +587,7 @@ local function update_all_wheels(self)
     if callbacks then
         for name, job in pairs(callbacks) do
 
-            if not job.cancel and job.enable then
+            if job_is_runable(job) then
                 local delay = job.delay
 
                 if delay.second then
@@ -605,7 +610,7 @@ local function update_all_wheels(self)
     if callbacks then
         for name, job in pairs(callbacks) do
 
-            if not job.cancel and job.enable then
+            if job_is_runable(job) then
                 local delay = job.delay
 
                 if delay.msec then
@@ -625,7 +630,7 @@ local function update_all_wheels(self)
 
     if callbacks then
         for name, job in pairs(callbacks) do
-            if not job.cancel and job.enable then
+            if job_is_runable(job) then
                 wheels.pending_jobs[name] = job
             end
 
@@ -660,13 +665,13 @@ local function worker_timer_callback(premature, self, thread_index)
             for name, job in pairs(wheels.pending_jobs) do
                 wheels.pending_jobs[name] = nil
 
-                if not job.cancel and job.enable then
+                if job_is_runable(job) then
                     job_wrapper(job)
 
                     if job.once then
                         jobs[name] = nil
 
-                    elseif job.enable and not job.cancel then
+                    elseif job_is_runable(job) then
                         job_re_cal_next_pointer(job, wheels)
                         insert_job_to_wheel(self, job)
                     end
