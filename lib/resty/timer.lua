@@ -157,57 +157,8 @@ local function get_variance(cur_value, cur_count, old_variance, old_avg)
 end
 
 
-local function job_wrapper(job)
-    local stats = job.stats
-    local runtime = stats.runtime
-    stats.runs = stats.runs + 1
-    local start = now()
-
-    if job.running or not job.enable then
-        return
-    end
-
-    job.running = true
-
-    job.callback(false, unpack(job.args))
-
-    job.running = false
-
-    local finish = stats.finish + 1
-    stats.finish = finish
-
-    if FOCUS_UPDATE_TIME then
-        update_time()
-    end
-
-    local spend = now() - start
-
-    runtime.max = max(runtime.max, spend)
-    runtime.min = min(runtime.min, spend)
-
-    local old_avg = runtime.avg
-    runtime.avg = get_avg(spend, finish, old_avg)
-
-    local old_variance = runtime.variance
-    runtime.variance = get_variance(spend, finish, old_variance, old_avg)
-
-    -- log(ERR, job)
-
-end
-
-
-local function wheel_init(nelt)
-    local ret = {
-        pointer = 1,
-        nelt = nelt,
-        array = {}
-    }
-
-    for i = 1, ret.nelt do
-        ret.array[i] = setmetatable({ }, { __mode = "v" })
-    end
-
-    return ret
+local function wheel_get_cur_pointer(wheel)
+    return wheel.pointer
 end
 
 
@@ -226,57 +177,29 @@ local function wheel_cal_pointer(wheel, pointer, offset)
 end
 
 
-local function wheel_get_cur_pointer(wheel)
-    return wheel.pointer
+local function job_pause(job)
+    job.enable = false
 end
 
 
-local function wheel_insert(wheel, pointer, job)
-    assert(wheel)
-    assert(wheel.array)
-    assert(pointer > 0)
-
-    local _job = wheel.array[pointer][job.name]
-
-    if not _job or _job.cancel or not _job.enable then
-        wheel.array[pointer][job.name] = job
-
-    else
-        return false, "already exists job"
-    end
-
-    return true, nil
+local function job_cancel(job)
+    job.enable = false
+    job.cancel = true
 end
 
 
-local function wheel_insert_by_delay(wheel, delay, job)
-    assert(wheel)
-    assert(delay >= 0)
-
-    local pointer, is_pointer_back_to_start = wheel_cal_pointer(wheel, wheel.pointer, delay)
-
-    if not wheel.array[pointer][job.name] then
-        wheel.array[pointer][job.name] = job
-    else
-        return nil, "already exists job"
-    end
-
-    return true, nil
+local function job_enable(job)
+    job.enable = true
 end
 
 
-local function wheel_move_to_next(wheel)
-    assert(wheel)
-
-    local pointer, is_move_to_end = wheel_cal_pointer(wheel, wheel.pointer, 1)
-    wheel.pointer = pointer
-
-    return wheel.array[wheel.pointer], is_move_to_end
+local function job_is_enable(job)
+    return job.enable
 end
 
 
-local function wheel_get_jobs(wheel)
-    return wheel.array[wheel.pointer]
+local function job_is_once(job)
+    return job.once
 end
 
 
@@ -514,6 +437,109 @@ local function job_create(self, name, callback, delay, once, args)
 end
 
 
+local function job_wrapper(job)
+    local stats = job.stats
+    local runtime = stats.runtime
+    stats.runs = stats.runs + 1
+    local start = now()
+
+    if job_is_runable(job) then
+        return
+    end
+
+    job.running = true
+
+    job.callback(false, unpack(job.args))
+
+    job.running = false
+
+    local finish = stats.finish + 1
+    stats.finish = finish
+
+    if FOCUS_UPDATE_TIME then
+        update_time()
+    end
+
+    local spend = now() - start
+
+    runtime.max = max(runtime.max, spend)
+    runtime.min = min(runtime.min, spend)
+
+    local old_avg = runtime.avg
+    runtime.avg = get_avg(spend, finish, old_avg)
+
+    local old_variance = runtime.variance
+    runtime.variance = get_variance(spend, finish, old_variance, old_avg)
+
+    -- log(ERR, job)
+
+end
+
+
+local function wheel_init(nelt)
+    local ret = {
+        pointer = 1,
+        nelt = nelt,
+        array = {}
+    }
+
+    for i = 1, ret.nelt do
+        ret.array[i] = setmetatable({ }, { __mode = "v" })
+    end
+
+    return ret
+end
+
+
+local function wheel_insert(wheel, pointer, job)
+    assert(wheel)
+    assert(wheel.array)
+    assert(pointer > 0)
+
+    local _job = wheel.array[pointer][job.name]
+
+    if not _job or not job_is_runable(_job) then
+        wheel.array[pointer][job.name] = job
+
+    else
+        return false, "already exists job"
+    end
+
+    return true, nil
+end
+
+
+-- local function wheel_insert_by_delay(wheel, delay, job)
+--     assert(wheel)
+--     assert(delay >= 0)
+
+--     local pointer, is_pointer_back_to_start = wheel_cal_pointer(wheel, wheel.pointer, delay)
+
+--     if not wheel.array[pointer][job.name] then
+--         wheel.array[pointer][job.name] = job
+--     else
+--         return nil, "already exists job"
+--     end
+
+--     return true, nil
+-- end
+
+
+local function wheel_move_to_next(wheel)
+    assert(wheel)
+
+    local pointer, is_move_to_end = wheel_cal_pointer(wheel, wheel.pointer, 1)
+    wheel.pointer = pointer
+
+    return wheel.array[wheel.pointer], is_move_to_end
+end
+
+
+local function wheel_get_jobs(wheel)
+    return wheel.array[wheel.pointer]
+end
+
+
 local function insert_job_to_wheel(self, job)
     local ok, err
 
@@ -668,7 +694,7 @@ local function worker_timer_callback(premature, self, thread_index)
                 if job_is_runable(job) then
                     job_wrapper(job)
 
-                    if job.once then
+                    if job_is_once(job) then
                         jobs[name] = nil
 
                     elseif job_is_runable(job) then
@@ -773,6 +799,7 @@ local function create(self ,name, callback, delay, once, args)
     end
 
     local job = job_create(self, name, callback, delay, once, args)
+    job_enable(job)
     jobs[name] = job
 
     -- if delay == 0 then
@@ -946,9 +973,9 @@ function _M:run(name)
 
     if old_job then
 
-        if not old_job.enable then
+        if not job_is_enable(old_job) then
             local job = job_copy(self, old_job)
-            job.enable = true
+            job_enable(job)
             jobs[name] = job
 
             local ok, err = insert_job_to_wheel(self, job)
@@ -973,8 +1000,8 @@ function _M:pause(name)
 
     if job then
 
-        if job.enable then
-            job.enable = false
+        if job_is_enable(job) then
+            job_pause(job)
 
         else
             return false, "already paused"
@@ -999,8 +1026,7 @@ function _M:cancel(name)
         return false, "timer not found"
     end
 
-    job.enable = false
-    job.cancel = true
+    job_cancel(job)
     jobs[name] = nil
 
     return true, nil
