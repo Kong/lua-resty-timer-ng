@@ -748,12 +748,15 @@ local function super_timer_callback(premature, self)
             return
         end
 
+        -- TODO: Check the status of worker timers.
+
         if self.enable then
             update_time()
             update_all_wheels(self)
 
             self.real_time = now()
             local delta = max((self.real_time - self.expected_time) / 0.1, 1)
+            local expected_time = self.expected_time
 
             for i = 1, delta do
                 local _, continue = wheel_move_to_next(msec_wheel)
@@ -772,8 +775,10 @@ local function super_timer_callback(premature, self)
                 end
 
                 update_all_wheels(self)
-                self.expected_time = self.expected_time + 0.1
+                expected_time = expected_time + 0.1
             end
+
+            self.expected_time = expected_time
 
             if not is_empty_table(wheels.pending_jobs) then
                 semaphore:post(opt_threads)
@@ -785,9 +790,7 @@ local function super_timer_callback(premature, self)
     end
 end
 
--- create a virtual timer
--- name: name of timer
--- once: is it run once
+
 local function create(self ,name, callback, delay, once, args)
     local jobs = self.jobs
     if not name then
@@ -801,12 +804,6 @@ local function create(self ,name, callback, delay, once, args)
     local job = job_create(self, name, callback, delay, once, args)
     job_enable(job)
     jobs[name] = job
-
-    -- if delay == 0 then
-    --     self.wheels.pending_jobs[name] = job
-    --     self.semaphore:post(1)
-    --     return true, nil
-    -- end
 
     return insert_job_to_wheel(self, job)
 end
@@ -855,16 +852,9 @@ function _M:configure(options)
     self.enable = false
 
     self.threads = {}
-
     self.jobs = {}
-
-    -- the timer of the last job that was added
-    -- see function create
-    self.cur_real_timer_index = 1
-
     self.real_time = 0
     self.expected_time = 0
-
     self.super_timer = false
     self.destory = false
 
