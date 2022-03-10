@@ -415,7 +415,8 @@ local function job_create(self, name, callback, delay, once, args)
             },
 
             runs = 0,
-            finish = 0
+            finish = 0,
+            last_err_msg = ""
         },
         meta = {
             name = "[C]",
@@ -449,11 +450,18 @@ local function job_wrapper(job)
 
     job.running = true
 
-    job.callback(false, unpack(job.args))
+    local ok, err = pcall(job.callback, unpack(job.args))
+
+    local finish = stats.finish
+
+    if ok then
+        finish = finish + 1
+
+    else
+        stats.last_err_msg = err
+    end
 
     job.running = false
-
-    local finish = stats.finish + 1
     stats.finish = finish
 
     if FOCUS_UPDATE_TIME then
@@ -470,8 +478,6 @@ local function job_wrapper(job)
 
     local old_variance = runtime.variance
     runtime.variance = get_variance(spend, finish, old_variance, old_avg)
-
-    -- log(ERR, job)
 
 end
 
@@ -678,14 +684,11 @@ local function worker_timer_callback(premature, self, thread_index)
             return
         end
 
-        thread.alive = true
-
         -- TODO: check the return value
 
         local ok, err = semaphore:wait(1)
 
         while not is_empty_table(wheels.pending_jobs) do
-            thread.alive = true
             thread.counter.trigger = thread.counter.trigger + 1
 
             for name, job in pairs(wheels.pending_jobs) do
@@ -747,8 +750,6 @@ local function super_timer_callback(premature, self)
         if premature then
             return
         end
-
-        -- TODO: Check the status of worker timers.
 
         if self.enable then
             update_time()
@@ -1045,10 +1046,14 @@ function _M:stats()
             sys.waiting = sys.waiting + 1
         end
 
+        local stats = job.stats
         jobs[name] = {
             name = name,
             meta = job.meta,
-            runtime = job.runtime
+            runtime = job.runtime,
+            runs = stats.runs,
+            faults = stats.faults,
+            last_err_msg = stats.last_err_msg
         }
     end
 

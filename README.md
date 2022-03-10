@@ -205,6 +205,9 @@ local sys_info = info.sys
 for timer_name, timer in pairs(info.jobs) do
     local meta = timer.meta
     local runtime = timer.runtime
+    local runs = timer.runs                     -- total number of runs
+    local faults = timer.faults                 -- total number of faults (exceptions)
+    local last_err_msg = timer.last_err_msg     -- the error message for last execption
 
     -- meta.name is an automatically generated string 
     -- that stores the location where the creation timer was created.
