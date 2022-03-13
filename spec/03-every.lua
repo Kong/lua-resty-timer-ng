@@ -102,7 +102,7 @@ insulate("create a every timer | ", function ()
         timer:stop()
         timer:unconfigure()
         sleep(5)
-        local expected_pending = old_pending - THREADS - 1
+        local expected_pending = old_pending - THREADS - 2
         assert.same(expected_pending, timer_running_count())
     end)
 

@@ -23,7 +23,7 @@ local update_time = ngx.update_time
 
 local FOCUS_UPDATE_TIME = true
 
-local DEFAULT_THREADS = 10
+local DEFAULT_THREADS = 32
 local DEFAULT_MAX_EXPIRE = 24 * 60 * 60
 local DEFAULT_RECREATE_INTERVAL = 50
 
@@ -358,38 +358,48 @@ end
 
 
 local function job_create(self, name, callback, delay, once, args)
-    local _, delay_msec = modf(delay)
-    delay_msec = delay_msec * 1000 + 10
-    delay_msec = floor(delay_msec)
-    delay_msec = floor(delay_msec / 100)
+    local delay_hour, delay_minute, delay_second, delay_msec
+    local immediately = false
+    local _
 
-    delay, _ = modf(delay)
+    if delay ~= 0 then
+        delay, delay_msec = modf(delay)
+        delay_msec = delay_msec * 1000 + 10
+        delay_msec = floor(delay_msec)
+        delay_msec = floor(delay_msec / 100)
 
-    local delay_hour = modf(delay / 60 / 60)
-    delay = delay % (60 * 60)
-    local delay_minute = modf(delay / 60)
-    local delay_second = delay % 60
+        delay_hour = modf(delay / 60 / 60)
+        delay = delay % (60 * 60)
+        delay_minute = modf(delay / 60)
+        delay_second = delay % 60
 
-    if delay_second == 0 then
-        if delay_hour == 0 and delay_minute == 0 then
-            delay_second = nil
+        if delay_second == 0 then
+            if delay_hour == 0 and delay_minute == 0 then
+                delay_second = nil
+            end
         end
-    end
 
-    if delay_minute == 0 then
+        if delay_minute == 0 then
+            if delay_hour == 0 then
+                delay_minute = nil
+            end
+        end
+
         if delay_hour == 0 then
-            delay_minute = nil
+            delay_hour = nil
         end
+
+    else
+        immediately = true
     end
 
-    if delay_hour == 0 then
-        delay_hour = nil
-    end
+
 
     local ret = {
         enable = true,
         cancel = false,
         running = false,
+        immediately = immediately,
         name = name,
         callback = callback,
         delay = {
@@ -426,13 +436,13 @@ local function job_create(self, name, callback, delay, once, args)
 
     job_create_meta(ret)
 
-    job_re_cal_next_pointer(ret, self.wheels)
+    if not immediately then
+        job_re_cal_next_pointer(ret, self.wheels) 
+    end
 
     setmetatable(ret, {
         __tostring = job_tostring
     })
-
-    -- log(ERR, ret)
 
     return ret
 end
@@ -606,7 +616,7 @@ local function update_all_wheels(self)
                     wheel_insert(msec_wheel, job.next_pointer.msec, job)
 
                 else
-                    wheels.pending_jobs[name] = job
+                    wheels.ready_jobs[name] = job
                 end
             end
 
@@ -629,7 +639,7 @@ local function update_all_wheels(self)
                     wheel_insert(msec_wheel, job.next_pointer.msec, job)
 
                 else
-                    wheels.pending_jobs[name] = job
+                    wheels.ready_jobs[name] = job
                 end
             end
 
@@ -649,7 +659,7 @@ local function update_all_wheels(self)
                     wheel_insert(msec_wheel, job.next_pointer.msec, job)
 
                 else
-                    wheels.pending_jobs[name] = job
+                    wheels.ready_jobs[name] = job
                 end
             end
 
@@ -663,7 +673,7 @@ local function update_all_wheels(self)
     if callbacks then
         for name, job in pairs(callbacks) do
             if job_is_runable(job) then
-                wheels.pending_jobs[name] = job
+                wheels.ready_jobs[name] = job
             end
 
             callbacks[name] = nil
@@ -673,8 +683,31 @@ local function update_all_wheels(self)
 end
 
 
+local function mover_timer_callback(premature, self)
+    local semaphore_worker = self.semaphore_worker
+    local semaphore_mover = self.semaphore_mover
+    local opt_threads = self.opt.threads
+    local wheels = self.wheels
+
+    if premature then
+        return
+    end
+
+    while not exiting() and not self.destory do
+        local ok, err = semaphore_mover:wait(1)
+
+        if is_empty_table(wheels.pending_jobs) and not is_empty_table(wheels.ready_jobs) then
+            wheels.pending_jobs = wheels.ready_jobs
+            wheels.ready_jobs = {}
+            semaphore_worker:post(opt_threads)
+        end
+    end
+end
+
+
 local function worker_timer_callback(premature, self, thread_index)
-    local semaphore = self.semaphore
+    local semaphore_worker = self.semaphore_worker
+    local semaphore_mover = self.semaphore_mover
     local thread = self.threads[thread_index]
     local wheels = self.wheels
     local jobs = self.jobs
@@ -686,7 +719,7 @@ local function worker_timer_callback(premature, self, thread_index)
 
         -- TODO: check the return value
 
-        local ok, err = semaphore:wait(1)
+        local ok, err = semaphore_worker:wait(1)
 
         while not is_empty_table(wheels.pending_jobs) do
             thread.counter.trigger = thread.counter.trigger + 1
@@ -711,6 +744,10 @@ local function worker_timer_callback(premature, self, thread_index)
 
         end
 
+        if semaphore_mover:count() == 0 then
+            semaphore_mover:post(1)
+        end
+
         if thread.counter.trigger > self.opt.recreate_interval == 0 then
             thread.counter.trigger = 0
             timer_at(0, worker_timer_callback, self, thread_index)
@@ -722,7 +759,7 @@ end
 
 
 local function super_timer_callback(premature, self)
-    local semaphore = self.semaphore
+    local semaphore_mover = self.semaphore_mover
     local threads = self.threads
     local opt_threads = self.opt.threads
     local wheels = self.wheels
@@ -781,8 +818,8 @@ local function super_timer_callback(premature, self)
 
             self.expected_time = expected_time
 
-            if not is_empty_table(wheels.pending_jobs) then
-                semaphore:post(opt_threads)
+            if not is_empty_table(wheels.ready_jobs) then
+                semaphore_mover:post(1)
             end
 
         end
@@ -805,6 +842,12 @@ local function create(self ,name, callback, delay, once, args)
     local job = job_create(self, name, callback, delay, once, args)
     job_enable(job)
     jobs[name] = job
+
+    if job.immediately then
+        self.wheels.ready_jobs[name] = job
+        self.semaphore_mover:post(1)
+        return true, nil
+    end
 
     return insert_job_to_wheel(self, job)
 end
@@ -857,12 +900,16 @@ function _M:configure(options)
     self.real_time = 0
     self.expected_time = 0
     self.super_timer = false
+    self.mover_timer = false
+
     self.destory = false
 
-    self.semaphore = semaphore_module.new(0)
+    self.semaphore_worker = semaphore_module.new(0)
+    self.semaphore_mover = semaphore_module.new(0)
 
     self.wheels = {
-        pending_jobs = setmetatable({}, { __mode = "v" }),
+        ready_jobs = {},
+        pending_jobs = {},
         msec = wheel_init(10),
         sec = wheel_init(60),
         min = wheel_init(60),
@@ -893,6 +940,10 @@ function _M:start()
     if not self.super_timer then
         ok, err = timer_at(0, super_timer_callback, self)
         self.super_timer = true
+
+        if ok then
+            ok, err = timer_at(0, mover_timer_callback, self)
+        end
     end
 
     if not self.enable then
@@ -924,12 +975,10 @@ function _M:once(name, callback, delay, ...)
     assert(type(delay) == "number", "expected `delay to be a number")
     assert(delay >= 0, "expected `delay` to be greater than or equal to 0")
 
-    if delay >= MAX_EXPIRE or delay == 0 then
+    if delay >= MAX_EXPIRE or (delay ~= 0 and delay < 0.1)  then
         local ok, err = timer_at(delay, callback, ...)
         return ok ~= nil, err
     end
-
-    delay = max(delay, 0.11)
 
     local ok, err = create(self, name, callback, delay, true, { ... })
 
@@ -943,12 +992,10 @@ function _M:every(name, callback, interval, ...)
     assert(type(interval) == "number", "expected `interval to be a number")
     assert(interval > 0, "expected `interval` to be greater than or equal to 0")
 
-    if interval >= MAX_EXPIRE then
+    if interval >= MAX_EXPIRE or interval < 0.1 then
         local ok, err = timer_every(interval, callback, ...)
         return ok ~= nil, err
     end
-
-    interval = max(interval, 0.11)
 
     local ok, err = create(self, name, callback, interval, false, { ... })
 
