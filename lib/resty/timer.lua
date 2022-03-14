@@ -735,7 +735,7 @@ local function worker_timer_callback(premature, self, thread_index)
         local ok, err = semaphore_worker:wait(1)
 
         while not is_empty_table(wheels.pending_jobs) do
-            thread.counter.trigger = thread.counter.trigger + 1
+            thread.counter.runs = thread.counter.runs + 1
 
             local _name
 
@@ -765,8 +765,8 @@ local function worker_timer_callback(premature, self, thread_index)
             semaphore_mover:post(1)
         end
 
-        if thread.counter.trigger > self.opt.recreate_interval == 0 then
-            thread.counter.trigger = 0
+        if thread.counter.runs > self.opt.recreate_interval == 0 then
+            thread.counter.runs = 0
             timer_at(0, worker_timer_callback, self, thread_index)
             break
         end
@@ -908,7 +908,7 @@ function _M:configure(options)
     local opt = {
         max_expire = DEFAULT_MAX_EXPIRE,
 
-        -- restart a timer after a certain number of this timer triggers
+        -- restart a timer after a certain number of this timer runs
         recreate_interval = options and options.recreate_interval or DEFAULT_RECREATE_INTERVAL,
 
         -- number of timer will be created by OpenResty API
@@ -971,7 +971,7 @@ function _M:configure(options)
             alive = false,
             counter = {
                 -- number of runs
-                trigger = 0,
+                runs = 0,
 
                 -- in second
                 delay = 0,
