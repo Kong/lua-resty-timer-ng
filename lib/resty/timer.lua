@@ -26,6 +26,7 @@ local FOCUS_UPDATE_TIME = true
 local DEFAULT_THREADS = 32
 local DEFAULT_MAX_EXPIRE = 24 * 60 * 60
 local DEFAULT_RECREATE_INTERVAL = 50
+local DEFAULT_FOCUS_UPDATE_TIME = false
 
 local MAX_EXPIRE = 23 * 60 * 60 + 59 * 60
 
@@ -147,13 +148,17 @@ local function round(value, digits)
 end
 
 
+-- get average
 local function get_avg(cur_value, cur_count, old_avg)
+    -- recurrence formula
     return old_avg + ((cur_value - old_avg) / cur_count)
 end
 
 
 local function get_variance(cur_value, cur_count, old_variance, old_avg)
-    return (((cur_count - 1) / pow(cur_count, 2)) * pow(cur_value - old_avg, 2)) + (((cur_count - 1) / cur_count) * old_variance)
+    -- recurrence formula
+    return (((cur_count - 1) / pow(cur_count, 2)) * pow(cur_value - old_avg, 2)) +
+        (((cur_count - 1) / cur_count) * old_variance)
 end
 
 
@@ -281,11 +286,10 @@ local function job_re_cal_next_pointer(job, wheels)
     end
 
 
-
     assert(next_hour_pointer ~= 0 or
            next_minute_pointer ~= 0 or
            next_second_pointer ~= 0 or
-           next_msec_pointer ~= 0)
+           next_msec_pointer ~= 0, "unexpected error")
 
     job.next_pointer.hour = next_hour_pointer
     job.next_pointer.minute = next_minute_pointer
@@ -317,6 +321,7 @@ local function job_create_meta(job)
     local top_stack = callstack[1]
 
     if top_stack then
+        -- like `init.lua:128:start_timer()`
         meta.name = top_stack.source .. ":" .. top_stack.line .. ":" .. top_stack.func .. "()"
     end
 end
@@ -437,7 +442,7 @@ local function job_create(self, name, callback, delay, once, args)
     job_create_meta(ret)
 
     if not immediately then
-        job_re_cal_next_pointer(ret, self.wheels) 
+        job_re_cal_next_pointer(ret, self.wheels)
     end
 
     setmetatable(ret, {
@@ -589,6 +594,8 @@ local function insert_job_to_wheel(self, job)
 end
 
 
+-- rotate some wheels
+-- move all expired jobs from any wheel to `self.wheels.ready_jobs`
 local function update_all_wheels(self)
     local wheels = self.wheels
 
@@ -683,6 +690,8 @@ local function update_all_wheels(self)
 end
 
 
+-- move all jobs from `self.wheels.ready_jobs` to `self.wheels.pending_jobs`
+-- wake up the worker timer
 local function mover_timer_callback(premature, self)
     local semaphore_worker = self.semaphore_worker
     local semaphore_mover = self.semaphore_mover
@@ -694,6 +703,7 @@ local function mover_timer_callback(premature, self)
     end
 
     while not exiting() and not self.destory do
+        -- TODO: check the return value
         local ok, err = semaphore_mover:wait(1)
 
         if is_empty_table(wheels.pending_jobs) and not is_empty_table(wheels.ready_jobs) then
@@ -705,6 +715,10 @@ local function mover_timer_callback(premature, self)
 end
 
 
+-- exec all expired jobs
+-- re-insert the recurrent job
+-- delate once job in `self.jobs`
+-- wake up the mover timer
 local function worker_timer_callback(premature, self, thread_index)
     local semaphore_worker = self.semaphore_worker
     local semaphore_mover = self.semaphore_mover
@@ -718,7 +732,6 @@ local function worker_timer_callback(premature, self, thread_index)
         end
 
         -- TODO: check the return value
-
         local ok, err = semaphore_worker:wait(1)
 
         while not is_empty_table(wheels.pending_jobs) do
@@ -762,6 +775,9 @@ local function worker_timer_callback(premature, self, thread_index)
 end
 
 
+-- create all worker timer
+-- wake up mover timer
+-- update the status of all wheels
 local function super_timer_callback(premature, self)
     local semaphore_mover = self.semaphore_mover
     local threads = self.threads
@@ -777,7 +793,8 @@ local function super_timer_callback(premature, self)
 
     for i = 1, opt_threads do
         if not threads[i].alive then
-            timer_at(0, worker_timer_callback, self, i)
+            -- TODO : check the return value
+            local ok, err = timer_at(0, worker_timer_callback, self, i)
         end
     end
 
@@ -895,7 +912,10 @@ function _M:configure(options)
         recreate_interval = options and options.recreate_interval or DEFAULT_RECREATE_INTERVAL,
 
         -- number of timer will be created by OpenResty API
-        threads = options and options.threads or DEFAULT_THREADS
+        threads = options and options.threads or DEFAULT_THREADS,
+
+        -- call function `ngx.update_time` every run of timer job
+        fouce_update_time = options and options.fouce_update_time or DEFAULT_FOCUS_UPDATE_TIME
     }
 
     self.opt = opt
@@ -905,22 +925,43 @@ function _M:configure(options)
 
     self.threads = {}
     self.jobs = {}
+
+    -- the right time
     self.real_time = 0
+
+    -- expected time for this library
     self.expected_time = 0
+
+    -- has the super timer already been created?
     self.super_timer = false
+
+    -- has the mover timer already been created?
     self.mover_timer = false
 
     self.destory = false
 
     self.semaphore_worker = semaphore_module.new(0)
+
     self.semaphore_mover = semaphore_module.new(0)
 
     self.wheels = {
+        -- will be move to `pending_jobs` when by function `mover_timer_callback`
+        -- the function `update_all_wheels` adds all expired job to this table
         ready_jobs = {},
+
+        -- each job in this table will be run by function `worker_timer_callback`
         pending_jobs = {},
+
+        -- 100ms per slot
         msec = wheel_init(10),
+
+        -- 1 second per slot
         sec = wheel_init(60),
+
+        -- 1 minute per slot
         min = wheel_init(60),
+
+        -- 1 hour per slot
         hour = wheel_init(24),
     }
 
@@ -929,9 +970,14 @@ function _M:configure(options)
             index = i,
             alive = false,
             counter = {
+                -- number of runs
                 trigger = 0,
+
+                -- in second
                 delay = 0,
                 fault = 0,
+
+                -- number of recreations
                 recreate = 0,
             }
         }
