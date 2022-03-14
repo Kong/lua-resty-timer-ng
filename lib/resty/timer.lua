@@ -971,14 +971,7 @@ function _M:configure(options)
             alive = false,
             counter = {
                 -- number of runs
-                runs = 0,
-
-                -- in second
-                delay = 0,
-                fault = 0,
-
-                -- number of recreations
-                recreate = 0,
+                runs = 0
             }
         }
     end
