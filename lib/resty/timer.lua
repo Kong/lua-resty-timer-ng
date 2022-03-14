@@ -724,8 +724,10 @@ local function worker_timer_callback(premature, self, thread_index)
         while not is_empty_table(wheels.pending_jobs) do
             thread.counter.trigger = thread.counter.trigger + 1
 
+            local _name
+
             for name, job in pairs(wheels.pending_jobs) do
-                wheels.pending_jobs[name] = nil
+                _name = name
 
                 if job_is_runable(job) then
                     job_wrapper(job)
@@ -741,6 +743,8 @@ local function worker_timer_callback(premature, self, thread_index)
 
                 break
             end
+
+            wheels.pending_jobs[_name] = nil
 
         end
 
@@ -845,7 +849,11 @@ local function create(self ,name, callback, delay, once, args)
 
     if job.immediately then
         self.wheels.ready_jobs[name] = job
-        self.semaphore_mover:post(1)
+
+        if self.semaphore_mover:count() == 0 then
+            self.semaphore_mover:post(1)
+        end
+
         return true, nil
     end
 
@@ -975,7 +983,7 @@ function _M:once(name, callback, delay, ...)
     assert(type(delay) == "number", "expected `delay to be a number")
     assert(delay >= 0, "expected `delay` to be greater than or equal to 0")
 
-    if delay >= MAX_EXPIRE or (delay ~= 0 and delay < 0.1)  then
+    if delay >= MAX_EXPIRE or (delay ~= 0 and delay < 0.1) or not self.configured then
         local ok, err = timer_at(delay, callback, ...)
         return ok ~= nil, err
     end
@@ -992,7 +1000,7 @@ function _M:every(name, callback, interval, ...)
     assert(type(interval) == "number", "expected `interval to be a number")
     assert(interval > 0, "expected `interval` to be greater than or equal to 0")
 
-    if interval >= MAX_EXPIRE or interval < 0.1 then
+    if interval >= MAX_EXPIRE or interval < 0.1 or not self.configured then
         local ok, err = timer_every(interval, callback, ...)
         return ok ~= nil, err
     end
