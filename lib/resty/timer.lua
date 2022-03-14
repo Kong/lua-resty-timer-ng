@@ -703,10 +703,9 @@ local function mover_timer_callback(premature, self)
     end
 
     while not exiting() and not self.destory do
-        -- TODO: check the return value
-        local ok, err = semaphore_mover:wait(1)
+        local ok, _ = semaphore_mover:wait(1)
 
-        if is_empty_table(wheels.pending_jobs) and not is_empty_table(wheels.ready_jobs) then
+        if ok and is_empty_table(wheels.pending_jobs) and not is_empty_table(wheels.ready_jobs) then
             wheels.pending_jobs = wheels.ready_jobs
             wheels.ready_jobs = {}
             semaphore_worker:post(opt_threads)
@@ -720,6 +719,10 @@ end
 -- delate once job in `self.jobs`
 -- wake up the mover timer
 local function worker_timer_callback(premature, self, thread_index)
+    if premature then
+        return
+    end
+
     local semaphore_worker = self.semaphore_worker
     local semaphore_mover = self.semaphore_mover
     local thread = self.threads[thread_index]
@@ -727,48 +730,45 @@ local function worker_timer_callback(premature, self, thread_index)
     local jobs = self.jobs
 
     while not exiting() and not self.destory do
-        if premature then
-            return
-        end
+        local ok, _ = semaphore_worker:wait(1)
 
-        -- TODO: check the return value
-        local ok, err = semaphore_worker:wait(1)
+        if ok then
+            while not is_empty_table(wheels.pending_jobs) do
+                thread.counter.runs = thread.counter.runs + 1
 
-        while not is_empty_table(wheels.pending_jobs) do
-            thread.counter.runs = thread.counter.runs + 1
+                local _name
 
-            local _name
+                for name, job in pairs(wheels.pending_jobs) do
+                    _name = name
 
-            for name, job in pairs(wheels.pending_jobs) do
-                _name = name
+                    if job_is_runable(job) then
+                        job_wrapper(job)
 
-                if job_is_runable(job) then
-                    job_wrapper(job)
+                        if job_is_once(job) then
+                            jobs[name] = nil
 
-                    if job_is_once(job) then
-                        jobs[name] = nil
-
-                    elseif job_is_runable(job) then
-                        job_re_cal_next_pointer(job, wheels)
-                        insert_job_to_wheel(self, job)
+                        elseif job_is_runable(job) then
+                            job_re_cal_next_pointer(job, wheels)
+                            insert_job_to_wheel(self, job)
+                        end
                     end
+
+                    break
                 end
 
-                break
+                wheels.pending_jobs[_name] = nil
+
             end
 
-            wheels.pending_jobs[_name] = nil
+            if semaphore_mover:count() == 0 then
+                semaphore_mover:post(1)
+            end
 
-        end
-
-        if semaphore_mover:count() == 0 then
-            semaphore_mover:post(1)
-        end
-
-        if thread.counter.runs > self.opt.recreate_interval == 0 then
-            thread.counter.runs = 0
-            timer_at(0, worker_timer_callback, self, thread_index)
-            break
+            if thread.counter.runs > self.opt.recreate_interval == 0 then
+                thread.counter.runs = 0
+                timer_at(0, worker_timer_callback, self, thread_index)
+                break
+            end
         end
 
     end
