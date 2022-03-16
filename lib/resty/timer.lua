@@ -762,11 +762,11 @@ local function insert_job_to_wheel(self, job)
     local second_wheel = wheels.sec
     local msec_wheel = wheels.msec
 
-    -- update_all_wheels(self, 0)
+    update_all_wheels(self, 0)
 
-    -- if not is_empty_table(wheels.ready_jobs) then
-    --     self.semaphore_mover:post(1)
-    -- end
+    if not is_empty_table(wheels.ready_jobs) then
+        self.semaphore_mover:post(1)
+    end
 
     if job.next_pointer.hour ~= 0 then
         ok, err = wheel_insert(hour_wheel, job.next_pointer.hour, job)
