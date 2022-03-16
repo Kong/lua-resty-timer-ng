@@ -311,7 +311,7 @@ local function job_re_cal_next_pointer(job, wheels)
         if next_msec_pointer == 0 then
             next_msec_pointer = cur_msec_pointer
         end
-    
+
     elseif next_second_pointer ~= 0 then
         if next_msec_pointer == 0 then
             next_msec_pointer = cur_msec_pointer
@@ -707,26 +707,7 @@ local function update_all_wheels(self, min_delta)
     local delta = floor(max((self.real_time - self.expected_time) / 0.1, min_delta))
     local expected_time = self.expected_time
 
-    if delta < 1 then
-        local _, continue = wheel_move_to_next(msec_wheel)
-
-        if continue then
-            _, continue = wheel_move_to_next(second_wheel)
-
-            if continue then
-                _, continue = wheel_move_to_next(minute_wheel)
-
-                if continue then
-                    _, _ = wheel_move_to_next(hour_wheel)
-                end
-
-            end
-        end
-
-        featch_all_expired_jobs(self)
-        expected_time = expected_time + 0.1
-
-    else
+    if delta >= 1 then
         for i = 1, delta do
             local _, continue = wheel_move_to_next(msec_wheel)
 
