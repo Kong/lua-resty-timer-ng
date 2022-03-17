@@ -141,7 +141,7 @@ insulate("create a every timer | ", function ()
     end)
 
     it("interval = 1.1 #fast", function ()
-        helper(timer, tbl, TIMER_NAME, callback, 1)
+        helper(timer, tbl, TIMER_NAME, callback, 1.1)
     end)
 
     it("interval = 1.5 #fast", function ()
