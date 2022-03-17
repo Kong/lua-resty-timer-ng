@@ -368,6 +368,7 @@ local function job_copy(self, job)
         name = job.name,
         callback = job.callback,
         delay = {
+            origin = job.delay.delay_origin,
             hour = job.delay.hour,
             minute = job.delay.minute,
             second = job.delay.second,
@@ -397,6 +398,7 @@ end
 
 local function job_create(self, name, callback, delay, once, args)
     local delay_hour, delay_minute, delay_second, delay_msec
+    local delay_origin = delay
     local immediately = false
     local _
 
@@ -404,7 +406,7 @@ local function job_create(self, name, callback, delay, once, args)
         delay, delay_msec = modf(delay)
         delay_msec = delay_msec * 1000 + 10
         delay_msec = floor(delay_msec)
-        delay_msec = floor(delay_msec / 100)
+        delay_msec = floor((delay_msec + 10) / 100)
 
         delay_hour = modf(delay / 60 / 60)
         delay = delay % (60 * 60)
@@ -447,6 +449,7 @@ local function job_create(self, name, callback, delay, once, args)
         name = name,
         callback = callback,
         delay = {
+            origin = delay_origin,
             hour = delay_hour,
             minute = delay_minute,
             second = delay_second,
@@ -588,10 +591,10 @@ end
 local function wheel_move_to_next(wheel)
     assert(wheel)
 
-    local pointer, is_move_to_end = wheel_cal_pointer(wheel, wheel.pointer, 1)
+    local pointer, is_move_to_start = wheel_cal_pointer(wheel, wheel.pointer, 1)
     wheel.pointer = pointer
 
-    return wheel.array[wheel.pointer], is_move_to_end
+    return wheel.array[wheel.pointer], is_move_to_start
 end
 
 
@@ -600,7 +603,51 @@ local function wheel_get_jobs(wheel)
 end
 
 
-local function featch_all_expired_jobs(self)
+local function wheel_get_jobs_by_pointer(wheel, pointer)
+    assert(pointer > 0)
+    assert(pointer <= wheel.nelt)
+    return wheel.array[pointer]
+end
+
+
+local function select_one_minute(self)
+    local wheels = self.wheels
+    local msec_wheel = wheels.msec
+    local second_wheel = wheels.sec
+
+    local cur_msec_pointer = wheel_get_cur_pointer(msec_wheel)
+    -- local is_any_job_in_msec_wheel = false
+    local distance_in_msec_wheel = 0
+
+    for i = 1, 9 do
+        local p, is_move_to_start = wheel_cal_pointer(msec_wheel, cur_msec_pointer, i)
+
+        if is_move_to_start then
+            break
+        end
+
+        local jobs = wheel_get_jobs_by_pointer(msec_wheel, p)
+
+        if is_empty_table(jobs) then
+            distance_in_msec_wheel = distance_in_msec_wheel + 0.1
+
+        else
+            -- is_any_job_in_msec_wheel = true
+            break
+        end
+    end
+
+    -- if is_any_job_in_msec_wheel then
+        self.closet = distance_in_msec_wheel
+    -- end
+
+    -- local cur_second_pointer = wheel_get_cur_pointer(second_wheel)
+    -- local next_second_pointer, _ = wheel_cal_pointer(second_wheel, cur_second_pointer, 1)
+    -- local jobs = wheel_get_jobs_by_pointer(second_wheel, next_second_pointer)
+end
+
+
+local function fetch_all_expired_jobs(self)
     local wheels = self.wheels
 
     local hour_wheel = wheels.hour
@@ -693,7 +740,7 @@ local function featch_all_expired_jobs(self)
 end
 
 
-local function update_all_wheels(self, min_delta)
+local function update_all_wheels(self)
     local wheels = self.wheels
 
     local hour_wheel = wheels.hour
@@ -701,35 +748,32 @@ local function update_all_wheels(self, min_delta)
     local second_wheel = wheels.sec
     local msec_wheel = wheels.msec
 
-    featch_all_expired_jobs(self)
+    fetch_all_expired_jobs(self)
 
+    update_time()
     self.real_time = now()
-    local delta = floor(max((self.real_time - self.expected_time) / 0.1, min_delta))
-    local expected_time = self.expected_time
 
-    if delta >= 1 then
-        for i = 1, delta do
-            local _, continue = wheel_move_to_next(msec_wheel)
+    while self.real_time > self.expected_time do
+        local _, continue = wheel_move_to_next(msec_wheel)
+
+        if continue then
+            _, continue = wheel_move_to_next(second_wheel)
 
             if continue then
-                _, continue = wheel_move_to_next(second_wheel)
+                _, continue = wheel_move_to_next(minute_wheel)
 
                 if continue then
-                    _, continue = wheel_move_to_next(minute_wheel)
-
-                    if continue then
-                        _, _ = wheel_move_to_next(hour_wheel)
-                    end
-
+                    _, _ = wheel_move_to_next(hour_wheel)
                 end
-            end
 
-            featch_all_expired_jobs(self)
-            expected_time = expected_time + 0.1
+            end
         end
+
+        fetch_all_expired_jobs(self)
+        self.expected_time =  self.expected_time + 0.1
     end
 
-    self.expected_time = expected_time
+
 end
 
 
@@ -742,12 +786,6 @@ local function insert_job_to_wheel(self, job)
     local minute_wheel = wheels.min
     local second_wheel = wheels.sec
     local msec_wheel = wheels.msec
-
-    update_all_wheels(self, 0)
-
-    if not is_empty_table(wheels.ready_jobs) then
-        self.semaphore_mover:post(1)
-    end
 
     if job.next_pointer.hour ~= 0 then
         ok, err = wheel_insert(hour_wheel, job.next_pointer.hour, job)
@@ -764,6 +802,12 @@ local function insert_job_to_wheel(self, job)
     else
         assert(false, "unexpected error")
     end
+
+    -- self.closet = min(self.closet, job.delay.origin)
+
+    -- if self.semaphore_super:count() == 0 then
+    --     self.semaphore_super:post(1)
+    -- end
 
     if not ok then
         return false, err
@@ -832,6 +876,7 @@ local function worker_timer_callback(premature, self, thread_index)
                         jobs[name] = nil
 
                     elseif job_is_runable(job) then
+                        update_all_wheels(self)
                         job_re_cal_next_pointer(job, wheels)
                         insert_job_to_wheel(self, job)
                     end
@@ -862,6 +907,7 @@ end
 -- wake up mover timer
 -- update the status of all wheels
 local function super_timer_callback(premature, self)
+    local semaphore_super = self.semaphore_super
     local semaphore_mover = self.semaphore_mover
     local threads = self.threads
     local opt_threads = self.opt.threads
@@ -881,11 +927,11 @@ local function super_timer_callback(premature, self)
         end
     end
 
-    sleep(0.1)
+    -- sleep(0.1)
 
     update_time()
     self.real_time = now()
-    self.expected_time = self.real_time - 0.1
+    self.expected_time = self.real_time
 
     while not exiting() and not self.destory do
         if premature then
@@ -894,15 +940,22 @@ local function super_timer_callback(premature, self)
 
         if self.enable then
 
-            update_all_wheels(self, 1)
+            update_all_wheels(self)
 
             if not is_empty_table(wheels.ready_jobs) then
                 semaphore_mover:post(1)
             end
 
-        end
+            -- select_one_minute(self)
+            sleep(0.1)
+            -- sleep(0.1)
+            -- print_wheel(self)
+            -- log(ERR, max(self.closet, 0.1) .. ", " .. now() .. "\n+++++++++++++++")
+            -- semaphore_super:wait(max(self.closet, 0.1))
 
-        sleep(0.1)
+        else
+            sleep(0.1)
+        end
     end
 end
 
@@ -996,6 +1049,10 @@ function _M:configure(options)
     self.mover_timer = false
 
     self.destory = false
+
+    self.closet = 0.1
+
+    self.semaphore_super = semaphore_module.new(0)
 
     self.semaphore_worker = semaphore_module.new(0)
 
