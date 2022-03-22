@@ -46,7 +46,7 @@ jobs:
 
     strategy:
       matrix:
-        split: ["01", "02", "03", "04", "05"]
+        split: ["01", "02", "03", "04", "05", "06"]
         tag: ["fast", "slow_1", "slow_2", "slow_3", "slow_4", "slow_5"]
 
   

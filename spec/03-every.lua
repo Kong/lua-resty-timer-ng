@@ -9,20 +9,38 @@ local TIMER_NAME = "TEST-TIMER-EVERY"
 local TOLERANCE = 0.2
 local THREADS = 10
 
-local function helper(t, tbl, name, callback, interval)
+local function helper(strategy, t, tbl, name, callback, interval, sleep_second)
+    sleep_second = sleep_second or 0
+
     assert.has_no.errors(function ()
-        local ok, _ = t:every(name, callback, interval, tbl)
+        local ok, _ = t:every(name, callback, interval, tbl, sleep_second)
         assert.is_true(ok)
     end)
 
     local expected = now() + interval
-    sleep(interval + TOLERANCE)
+
+    if strategy == "callback_with_blocking_calls" then
+        expected = expected + sleep_second
+        sleep(interval + sleep_second + TOLERANCE)
+
+    else
+        sleep(interval + TOLERANCE)
+    end
+
     assert.near(expected, tbl.time, TOLERANCE)
 
     tbl.time = 0
 
     expected = expected + interval
-    sleep(interval + TOLERANCE)
+
+    if strategy == "callback_with_blocking_calls" then
+        expected = expected + sleep_second
+        sleep(interval + sleep_second + TOLERANCE)
+
+    else
+        sleep(interval + TOLERANCE)
+    end
+
     assert.near(expected, tbl.time, TOLERANCE)
 end
 
@@ -75,174 +93,116 @@ insulate("create a every timer with invalid arguments #fast | ", function ()
 end)
 
 
-insulate("create a every timer | ", function ()
-    local timer
-    local callback
-    local tbl
+local callback_with_blocking_calls = function(_, tbl, sleep_second, ...)
+    if sleep_second and sleep_second > 0 then
+        sleep(sleep_second)
+    end
 
-    randomize()
+    update_time()
+    tbl.time = now()
+end
 
-    setup(function ()
-        timer = require("resty.timer")
-        timer:configure({ threads = THREADS })
-        timer:start()
+local callback_without_blocking_calls = function(_, tbl, ...)
+    update_time()
+    tbl.time = now()
+end
 
-        tbl = {
-            time = 0
-        }
 
-        callback = function (_, tbl, ...)
+
+local strategies = {
+    callback_with_blocking_calls = callback_with_blocking_calls,
+    callback_without_blocking_calls = callback_without_blocking_calls
+}
+
+
+for strategy, callback in pairs(strategies) do
+    insulate("create a every timer #" .. strategy .. " | ", function ()
+        local timer
+        local tbl
+
+        randomize()
+
+        setup(function ()
+            timer = require("resty.timer")
+            timer:configure({ threads = THREADS })
+            timer:start()
+
+            tbl = {
+                time = 0
+            }
+        end)
+
+        teardown(function ()
+            timer:stop()
+            timer:unconfigure()
+            sleep(10)
+            assert.same(1, timer_running_count())
+        end)
+
+        before_each(function ()
             update_time()
-            tbl.time = now()
-        end
-    end)
+            tbl.time = 0
+        end)
 
-    teardown(function ()
-        local old_pending = timer_running_count()
-        timer:stop()
-        timer:unconfigure()
-        sleep(5)
-        local expected_pending = old_pending - THREADS - 2
-        assert.same(expected_pending, timer_running_count())
-    end)
-
-    before_each(function ()
-        update_time()
-        tbl.time = 0
-    end)
-
-    after_each(function ()
-        local ok, _ = timer:cancel(TIMER_NAME)
-        assert.is_true(ok)
-    end)
-
-    it("interval = 0.1 #fast", function ()
-        assert.has_no.errors(function ()
-            local ok, _ = timer:every(TIMER_NAME, callback, 0.1, tbl)
+        after_each(function ()
+            local ok, _ = timer:cancel(TIMER_NAME)
             assert.is_true(ok)
         end)
 
-        local expected = now() + 2 * 0.1
-        sleep(2 * 0.1 + TOLERANCE)
-        assert.is_true(tbl.time > expected)
+        -- it("interval = 0.1 #fast", function ()
+        --     helper(strategy, timer, tbl, TIMER_NAME, callback, 0.1, 0)
+        -- end)
 
-    end)
-
-    it("interval = 0.5 #fast", function ()
-        helper(timer, tbl, TIMER_NAME, callback, 0.5)
-    end)
-
-    it("interval = 0.9 #fast", function ()
-        helper(timer, tbl, TIMER_NAME, callback, 0.9)
-    end)
-
-    it("interval = 1 #fast", function ()
-        helper(timer, tbl, TIMER_NAME, callback, 1)
-    end)
-
-    it("interval = 1.1 #fast", function ()
-        helper(timer, tbl, TIMER_NAME, callback, 1.1)
-    end)
-
-    it("interval = 1.5 #fast", function ()
-        helper(timer, tbl, TIMER_NAME, callback, 1.5)
-    end)
-
-    it("interval = 1.9 #fast", function ()
-        helper(timer, tbl, TIMER_NAME, callback, 1.9)
-    end)
-
-    it("interval = 2 #fast", function ()
-        helper(timer, tbl, TIMER_NAME, callback, 2)
-    end)
-
-    it("interval = 10 #fast", function ()
-        helper(timer, tbl, TIMER_NAME, callback, 10)
-    end)
-
-    it("interval = 59 #slow_1", function ()
-        helper(timer, tbl, TIMER_NAME, callback, 59)
-    end)
-
-    it("interval = 59.9 #slow_2", function ()
-        helper(timer, tbl, TIMER_NAME, callback, 59.9)
-    end)
-
-    it("interval = 60 #slow_3", function ()
-        helper(timer, tbl, TIMER_NAME, callback, 60)
-    end)
-
-    it("interval = 60.1 #slow_4", function ()
-        helper(timer, tbl, TIMER_NAME, callback, 60.1)
-    end)
-
-    it("interval = 61 #slow_5", function ()
-        helper(timer, tbl, TIMER_NAME, callback, 61)
-    end)
-end)
-
-
-insulate("create a every timer #fast | ", function ()
-    local timer
-    local callback
-    local tbl
-
-    randomize()
-
-    setup(function ()
-        timer = require("resty.timer")
-        timer:configure()
-        timer:start()
-
-        tbl = {
-            time = 0
-        }
-
-        callback = function (_, tbl, ...)
-            update_time()
-            tbl.time = now()
-            sleep(3)
-        end
-    end)
-
-    teardown(function ()
-        timer:stop()
-        timer:unconfigure()
-        sleep(2)
-        assert.same(1, timer_running_count())
-    end)
-
-    before_each(function ()
-        update_time()
-        tbl.time = 0
-    end)
-
-    after_each(function ()
-        local ok, _ = timer:cancel(TIMER_NAME)
-        assert.is_true(ok)
-    end)
-
-    it("overlap", function ()
-        assert.has_no.errors(function ()
-            local ok, _ = timer:every(TIMER_NAME, callback, 1, tbl)
-            assert.is_true(ok)
+        it("interval = 0.5 #fast", function ()
+            helper(strategy, timer, tbl, TIMER_NAME, callback, 0.5, 0.4)
         end)
 
-        local expected = now() + 1
-        sleep(1 + TOLERANCE)
-        assert.near(expected, tbl.time, TOLERANCE)
+        it("interval = 0.9 #fast", function ()
+            helper(strategy, timer, tbl, TIMER_NAME, callback, 0.9, 0.5)
+        end)
 
-        sleep(1 + TOLERANCE)
-        assert.near(expected, tbl.time, TOLERANCE)
+        it("interval = 1 #fast", function ()
+            helper(strategy, timer, tbl, TIMER_NAME, callback, 1, 0.5)
+        end)
 
-        sleep(1 + TOLERANCE)
-        assert.near(expected, tbl.time, TOLERANCE)
+        it("interval = 1.1 #fast", function ()
+            helper(strategy, timer, tbl, TIMER_NAME, callback, 1.1, 0.5)
+        end)
 
-        sleep(3)
-        expected = expected + 4
-        assert.near(expected, tbl.time, TOLERANCE)
+        it("interval = 1.5 #fast", function ()
+            helper(strategy, timer, tbl, TIMER_NAME, callback, 1.5, 1)
+        end)
 
+        it("interval = 1.9 #fast", function ()
+            helper(strategy, timer, tbl, TIMER_NAME, callback, 1.9, 1)
+        end)
+
+        it("interval = 2 #fast", function ()
+            helper(strategy, timer, tbl, TIMER_NAME, callback, 2, 1)
+        end)
+
+        it("interval = 10 #fast", function ()
+            helper(strategy, timer, tbl, TIMER_NAME, callback, 10, 5)
+        end)
+
+        it("interval = 59 #slow_1", function ()
+            helper(strategy, timer, tbl, TIMER_NAME, callback, 59, 5)
+        end)
+
+        it("interval = 59.9 #slow_2", function ()
+            helper(strategy, timer, tbl, TIMER_NAME, callback, 59.9, 5)
+        end)
+
+        it("interval = 60 #slow_3", function ()
+            helper(strategy, timer, tbl, TIMER_NAME, callback, 60, 5)
+        end)
+
+        it("interval = 60.1 #slow_4", function ()
+            helper(strategy, timer, tbl, TIMER_NAME, callback, 60.1, 5)
+        end)
+
+        it("interval = 61 #slow_5", function ()
+            helper(strategy, timer, tbl, TIMER_NAME, callback, 61, 5)
+        end)
     end)
-
-
-end)
+end
