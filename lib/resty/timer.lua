@@ -646,6 +646,7 @@ local function wheel_get_job_by_pointer(wheel, pointer)
 end
 
 
+-- post some resources until `self.semaphore_super:count() == 1`
 local function wake_up_super_timer(self)
     local semaphore_super = self.semaphore_super
 
@@ -657,6 +658,7 @@ local function wake_up_super_timer(self)
 end
 
 
+-- post some resources until `self.semaphore_mover:count() == 1`
 local function wake_up_mover_timer(self)
     local semaphore_mover = self.semaphore_mover
 
@@ -689,12 +691,17 @@ local function update_closet(self)
         end
     end
 
+    -- TODO: to calculate this value, a baseline is needed,
+    --  i.e. the time when the super timer was last woken up.
     self.closet = delay
 
     return delay < old_closet
 end
 
 
+-- do the following things
+-- * add all expired jobs from wheels to `wheels.ready_jobs`
+-- * move some jobs from higher wheel to lower wheel
 local function fetch_all_expired_jobs(self)
     local wheels = self.wheels
 
@@ -823,7 +830,7 @@ local function update_all_wheels(self)
 end
 
 
-
+-- insert a job into the wheel group
 local function insert_job_to_wheel(self, job)
     local ok, err
 
@@ -890,7 +897,7 @@ end
 
 -- exec all expired jobs
 -- re-insert the recurrent job
--- delate once job in `self.jobs`
+-- delete once job from `self.jobs`
 -- wake up the mover timer
 local function worker_timer_callback(premature, self, thread_index)
     local semaphore_worker = self.semaphore_worker
@@ -942,9 +949,11 @@ local function worker_timer_callback(premature, self, thread_index)
 end
 
 
--- create all worker timer
--- wake up mover timer
--- update the status of all wheels
+-- do the following things
+-- * create all worker timer
+-- * wake up mover timer
+-- * update the status of all wheels
+-- * calculate wait time for `semaphore_super`
 local function super_timer_callback(premature, self)
     local semaphore_super = self.semaphore_super
     local threads = self.threads
@@ -1088,8 +1097,8 @@ function _M:configure(options)
     self.semaphore_mover = semaphore_module.new(0)
 
     self.wheels = {
-        -- will be move to `pending_jobs` when by function `mover_timer_callback`
-        -- the function `update_all_wheels` adds all expired job to this table
+        -- will be move to `pending_jobs` by function `mover_timer_callback`
+        -- the function `fetch_all_expired_jobs` adds all expired job to this table
         ready_jobs = {},
 
         -- each job in this table will be run by function `worker_timer_callback`
