@@ -387,7 +387,6 @@ local function job_create_meta(job)
             line = info.currentline,
             func = info.name or info.what,
             source = info.short_src
-            -- namewhat = info.namewhat
         }
     end
 
@@ -894,9 +893,7 @@ end
 -- delate once job in `self.jobs`
 -- wake up the mover timer
 local function worker_timer_callback(premature, self, thread_index)
-    local semaphore_super = self.semaphore_super
     local semaphore_worker = self.semaphore_worker
-    local semaphore_mover = self.semaphore_mover
     local thread = self.threads[thread_index]
     local wheels = self.wheels
     local jobs = self.jobs
@@ -1029,8 +1026,6 @@ function _M:configure(options)
         return false, "already configured"
     end
 
-    -- math.randomseed(os.time())
-
     if options then
         assert(type(options) == "table", "expected `options` to be a table")
 
@@ -1052,8 +1047,6 @@ function _M:configure(options)
     end
 
     local opt = {
-        max_expire = DEFAULT_MAX_EXPIRE,
-
         -- restart a timer after a certain number of this timer runs
         recreate_interval = options and options.recreate_interval or DEFAULT_RECREATE_INTERVAL,
 
