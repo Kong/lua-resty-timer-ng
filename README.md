@@ -14,7 +14,7 @@ http {
         local timer = require("resty.timer")
 
         local options = {
-            real_timer = 10,                -- restart a timer after a certain number of this timer triggers
+            threads = 10,                -- restart a timer after a certain number of this timer triggers
             recreate_interval = 50,         -- number of timer will be created by OpenResty API
         }
         timer:configure(options)
