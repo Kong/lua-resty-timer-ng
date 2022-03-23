@@ -73,7 +73,7 @@ insulate("timer #fast | ", function ()
         assert.same(0, tbl.time)
     end)
 
-    it("every create -> pause -> run -> cancel #only", function ()
+    it("every create -> pause -> run -> cancel", function ()
         assert.has_no.errors(function ()
             local ok, _ = timer:every(TIMER_NAME_EVERY, callback, 1, tbl)
             assert.is_true(ok)

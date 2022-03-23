@@ -128,7 +128,7 @@ for strategy, callback in pairs(strategies) do
             helper(strategy, timer, tbl, TIMER_NAME, callback, 0.1, 0.1)
         end)
 
-        it("delay = 0.5 #fast #only", function ()
+        it("delay = 0.5 #fast", function ()
             helper(strategy, timer, tbl, TIMER_NAME, callback, 0.5, 0.3)
         end)
 
