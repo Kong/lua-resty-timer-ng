@@ -1,11 +1,9 @@
 local sleep = ngx.sleep
-local log = ngx.log
-local ERR = ngx.ERR
 local update_time = ngx.update_time
 local now = ngx.now
 local timer_running_count = ngx.timer.running_count
 
-local TOLERANCE = 0.2
+-- local TOLERANCE = 0.2
 local THREADS = 32
 
 insulate("for every timer | ", function ()

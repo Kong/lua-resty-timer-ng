@@ -1,6 +1,4 @@
 local sleep = ngx.sleep
-local log = ngx.log
-local ERR = ngx.ERR
 local update_time = ngx.update_time
 local now = ngx.now
 local timer_running_count = ngx.timer.running_count
@@ -27,9 +25,9 @@ insulate("timer #fast | ", function ()
             time = 0
         }
 
-        callback = function (_, tbl, ...)
+        callback = function (_, _tbl, ...)
             update_time()
-            tbl.time = now()
+            _tbl.time = now()
         end
     end)
 
@@ -93,11 +91,12 @@ insulate("timer #fast | ", function ()
         sleep(1 + TOLERANCE)
         assert.near(expected, tbl.time, TOLERANCE)
 
-        local expected = expected + 1
+        expected = expected + 1
         sleep(1 + TOLERANCE)
         assert.near(expected, tbl.time, TOLERANCE)
 
         ok, _ = timer:cancel(TIMER_NAME_EVERY)
+        assert.is_true(ok)
 
         tbl.time = 0
         sleep(2 + TOLERANCE)

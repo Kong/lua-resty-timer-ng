@@ -1,6 +1,4 @@
 local sleep = ngx.sleep
-local log = ngx.log
-local ERR = ngx.ERR
 local update_time = ngx.update_time
 local now = ngx.now
 local timer_running_count = ngx.timer.running_count

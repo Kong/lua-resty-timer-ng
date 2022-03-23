@@ -1,5 +1,7 @@
 local semaphore_module = require "ngx.semaphore"
-local new_tab = require "table.new"
+
+-- TODO: use it to readuce overhead
+-- local new_tab = require "table.new"
 
 local unpack = table.unpack
 local debug_getinfo = debug.getinfo
@@ -8,13 +10,15 @@ local max = math.max
 local min = math.min
 local floor = math.floor
 local modf = math.modf
-local ceil = math.ceil
 local pow = math.pow
 local huge = math.huge
 local abs = math.abs
 
+-- luacheck: push ignore
 local log = ngx.log
 local ERR = ngx.ERR
+-- luacheck: pop
+
 local timer_at = ngx.timer.at
 local timer_every = ngx.timer.every
 local sleep = ngx.sleep
@@ -25,7 +29,6 @@ local update_time = ngx.update_time
 local FOCUS_UPDATE_TIME = true
 
 local DEFAULT_THREADS = 32
-local DEFAULT_MAX_EXPIRE = 24 * 60 * 60
 local DEFAULT_RECREATE_INTERVAL = 50
 local DEFAULT_FOCUS_UPDATE_TIME = false
 
@@ -69,6 +72,7 @@ local function is_empty_table(t)
         return true
     end
 
+    -- luacheck: ignore
     for k, v in pairs(t) do
         return false
     end
@@ -82,6 +86,7 @@ local function get_a_item_from_table(tbl)
         return nil
     end
 
+    -- luacheck: ignore
     for k, v in pairs(tbl) do
         return v
     end
@@ -90,93 +95,93 @@ local function get_a_item_from_table(tbl)
 end
 
 
-local function print_queue(self)
-    local pending_jobs = self.wheels.pending_jobs
-    local ready_jobs = self.wheels.ready_jobs
+-- local function print_queue(self)
+--     local pending_jobs = self.wheels.pending_jobs
+--     local ready_jobs = self.wheels.ready_jobs
 
-    update_time()
+--     update_time()
 
-    local str = "\n======== BEGIN PENDING ========" .. now() .. "\n"
+--     local str = "\n======== BEGIN PENDING ========" .. now() .. "\n"
 
-    for _, v in pairs(pending_jobs) do
-        str = str .. tostring(v) .. "\n"
-    end
+--     for _, v in pairs(pending_jobs) do
+--         str = str .. tostring(v) .. "\n"
+--     end
 
-    str = str .. "======== END PENDING ========\n"
+--     str = str .. "======== END PENDING ========\n"
 
-    str = str .. "======== BEGIN READY ========" .. tostring(self.semaphore_mover:count()) .. "\n"
+--     str = str .. "======== BEGIN READY ========" .. tostring(self.semaphore_mover:count()) .. "\n"
 
-    for _, v in pairs(ready_jobs) do
-        str = str .. tostring(v) .. "\n"
-    end
+--     for _, v in pairs(ready_jobs) do
+--         str = str .. tostring(v) .. "\n"
+--     end
 
-    str = str .. "======== END READY ========"
+--     str = str .. "======== END READY ========"
 
-    log(ERR, str)
-end
-
-
-local function print_wheel(self)
-    local _wheel = self.wheels
-    local wheel
-
-    update_time()
-
-    local str = "\n======== BEGIN MSEC ========" .. now() .. "\n"
-    wheel = _wheel.msec
-    str = str .. "pointer = " .. wheel.pointer .. "\n"
-    str = str .. "nelt = " .. wheel.nelt .. "\n"
-    for i, v in ipairs(wheel.array) do
-        for _, value in pairs(v) do
-            str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
-        end
-    end
-    str = str .. "========= END SECOND =========\n"
+--     log(ERR, str)
+-- end
 
 
-    str = "\n======== BEGIN MSEC ========" .. now() .. "\n"
-    wheel = _wheel.sec
-    str = str .. "pointer = " .. wheel.pointer .. "\n"
-    str = str .. "nelt = " .. wheel.nelt .. "\n"
-    for i, v in ipairs(wheel.array) do
-        for _, value in pairs(v) do
-            str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
-        end
-    end
-    str = str .. "========= END SECOND ========="
+-- local function print_wheel(self)
+--     local _wheel = self.wheels
+--     local wheel
+
+--     update_time()
+
+--     local str = "\n======== BEGIN MSEC ========" .. now() .. "\n"
+--     wheel = _wheel.msec
+--     str = str .. "pointer = " .. wheel.pointer .. "\n"
+--     str = str .. "nelt = " .. wheel.nelt .. "\n"
+--     for i, v in ipairs(wheel.array) do
+--         for _, value in pairs(v) do
+--             str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
+--         end
+--     end
+--     str = str .. "========= END SECOND =========\n"
 
 
-    str = "\n======== BEGIN MINUTE ========" .. now() .. "\n"
-    wheel = _wheel.sec
-    str = str .. "pointer = " .. wheel.pointer .. "\n"
-    str = str .. "nelt = " .. wheel.nelt .. "\n"
-    for i, v in ipairs(wheel.array) do
-        for _, value in pairs(v) do
-            str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
-        end
-    end
-    str = str .. "========= END MINUTE ========="
+--     str = str .. "\n======== BEGIN MSEC ========" .. now() .. "\n"
+--     wheel = _wheel.sec
+--     str = str .. "pointer = " .. wheel.pointer .. "\n"
+--     str = str .. "nelt = " .. wheel.nelt .. "\n"
+--     for i, v in ipairs(wheel.array) do
+--         for _, value in pairs(v) do
+--             str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
+--         end
+--     end
+--     str = str .. "========= END SECOND ========="
 
 
-    str = "\n======== BEGIN MINUTE ========" .. now() .. "\n"
-    wheel = _wheel.sec
-    str = str .. "pointer = " .. wheel.pointer .. "\n"
-    str = str .. "nelt = " .. wheel.nelt .. "\n"
-    for i, v in ipairs(wheel.array) do
-        for _, value in pairs(v) do
-            str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
-        end
-    end
-    str = str .. "========= END MINUTE ========="
-
-    log(ERR, str)
-end
+--     str = str .. "\n======== BEGIN MINUTE ========" .. now() .. "\n"
+--     wheel = _wheel.sec
+--     str = str .. "pointer = " .. wheel.pointer .. "\n"
+--     str = str .. "nelt = " .. wheel.nelt .. "\n"
+--     for i, v in ipairs(wheel.array) do
+--         for _, value in pairs(v) do
+--             str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
+--         end
+--     end
+--     str = str .. "========= END MINUTE ========="
 
 
-local function round(value, digits)
-    local x = 10 * digits
-    return floor(value * x + 0.5) / x
-end
+--     str = str .. "\n======== BEGIN MINUTE ========" .. now() .. "\n"
+--     wheel = _wheel.sec
+--     str = str .. "pointer = " .. wheel.pointer .. "\n"
+--     str = str .. "nelt = " .. wheel.nelt .. "\n"
+--     for i, v in ipairs(wheel.array) do
+--         for _, value in pairs(v) do
+--             str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
+--         end
+--     end
+--     str = str .. "========= END MINUTE ========="
+
+--     log(ERR, str)
+-- end
+
+
+-- local function round(value, digits)
+--     local x = 10 * digits
+--     return floor(value * x + 0.5) / x
+-- end
 
 
 -- get average
@@ -259,6 +264,8 @@ end
 
 
 local function job_re_cal_next_pointer(job, wheels)
+    local _
+
     local delay_hour = job.delay.hour
     local delay_minute = job.delay.minute
     local delay_second = job.delay.second
@@ -399,46 +406,45 @@ local function job_create_meta(job)
 end
 
 
-local function job_copy(self, job)
-    local ret = {
-        enable = true,
-        cancel = false,
-        running = false,
-        name = job.name,
-        callback = job.callback,
-        delay = {
-            hour = job.delay.hour,
-            minute = job.delay.minute,
-            second = job.delay.second,
-            msec = job.delay.msec
-        },
-        next_pointer = {
-            hour = 0,
-            minute = 0,
-            second = 0,
-            msec = 0
-        },
-        once = job.once,
-        args = job.args,
-        stats = job.stats,
-        meta = job.meta
-    }
+-- local function job_copy(self, job)
+--     local ret = {
+--         enable = true,
+--         cancel = false,
+--         running = false,
+--         name = job.name,
+--         callback = job.callback,
+--         delay = {
+--             hour = job.delay.hour,
+--             minute = job.delay.minute,
+--             second = job.delay.second,
+--             msec = job.delay.msec
+--         },
+--         next_pointer = {
+--             hour = 0,
+--             minute = 0,
+--             second = 0,
+--             msec = 0
+--         },
+--         once = job.once,
+--         args = job.args,
+--         stats = job.stats,
+--         meta = job.meta
+--     }
 
-    job_re_cal_next_pointer(ret, self.wheels)
+--     job_re_cal_next_pointer(ret, self.wheels)
 
-    setmetatable(ret, {
-        __tostring = job_tostring
-    })
+--     setmetatable(ret, {
+--         __tostring = job_tostring
+--     })
 
-    return ret
-end
+--     return ret
+-- end
 
 
 local function job_create(self, name, callback, delay, once, args)
     local delay_origin = delay
     local delay_hour, delay_minute, delay_second, delay_msec
     local immediately = false
-    local _
 
     if delay ~= 0 then
         delay, delay_msec = modf(delay)
@@ -878,7 +884,7 @@ local function mover_timer_callback(premature, self)
 
     while not exiting() and not self.destory do
         -- TODO: check the return value
-        local ok, err = semaphore_mover:wait(1)
+        semaphore_mover:wait(1)
 
         local is_no_pending_jobs = is_empty_table(wheels.pending_jobs)
         local is_no_ready_jobs = is_empty_table(wheels.ready_jobs)
@@ -911,7 +917,7 @@ local function worker_timer_callback(premature, self, thread_index)
         end
 
         -- TODO: check the return value
-        local ok, err = semaphore_worker:wait(1)
+        semaphore_worker:wait(1)
 
         while not is_empty_table(wheels.pending_jobs) do
             thread.counter.runs = thread.counter.runs + 1
@@ -964,8 +970,8 @@ local function super_timer_callback(premature, self)
 
     for i = 1, opt_threads do
         if not threads[i].alive then
-            -- TODO : check the return value
-            local ok, err = timer_at(0, worker_timer_callback, self, i)
+            assert((timer_at(0, worker_timer_callback, self, i)),
+                "failed to create native timer")
         end
     end
 
