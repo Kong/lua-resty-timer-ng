@@ -16,7 +16,7 @@ insulate("timer #fast | ", function ()
 
     randomize()
 
-    setup(function ()
+    lazy_setup(function ()
         timer = require("resty.timer")
         timer:configure({ threads = THREADS })
         timer:start()
@@ -31,7 +31,7 @@ insulate("timer #fast | ", function ()
         end
     end)
 
-    teardown(function ()
+    lazy_teardown(function ()
         timer:stop()
         timer:unconfigure()
         sleep(2)
@@ -73,7 +73,7 @@ insulate("timer #fast | ", function ()
         assert.same(0, tbl.time)
     end)
 
-    it("every create -> pause -> run -> cancel", function ()
+    it("every create -> pause -> run -> cancel #only", function ()
         assert.has_no.errors(function ()
             local ok, _ = timer:every(TIMER_NAME_EVERY, callback, 1, tbl)
             assert.is_true(ok)

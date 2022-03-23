@@ -35,7 +35,7 @@ insulate("create a once timer with invalid arguments #fast | ", function ()
 
     randomize()
 
-    setup(function ()
+    lazy_setup(function ()
         timer = require("resty.timer")
         timer:configure({ threads = THREADS })
         timer:start()
@@ -43,7 +43,7 @@ insulate("create a once timer with invalid arguments #fast | ", function ()
         empty_callback = function (_, ...) end
     end)
 
-    teardown(function ()
+    lazy_teardown(function ()
         timer:stop()
         timer:unconfigure()
         sleep(2)
@@ -93,7 +93,7 @@ for strategy, callback in pairs(strategies) do
 
         randomize()
 
-        setup(function ()
+        lazy_setup(function ()
             timer = require("resty.timer")
             timer:configure()
             timer:start()
@@ -101,7 +101,7 @@ for strategy, callback in pairs(strategies) do
             tbl = { time = 0 }
         end)
 
-        teardown(function ()
+        lazy_teardown(function ()
             timer:stop()
             timer:unconfigure()
             sleep(10)

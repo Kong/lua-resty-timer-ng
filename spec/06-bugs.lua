@@ -11,13 +11,13 @@ insulate("for every timer | ", function ()
 
     randomize()
 
-    setup(function ()
+    lazy_setup(function ()
         timer = require("resty.timer")
         timer:configure({ threads = THREADS })
         timer:start()
     end)
 
-    teardown(function ()
+    lazy_teardown(function ()
         timer:stop()
         timer:unconfigure()
         sleep(2)

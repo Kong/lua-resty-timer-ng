@@ -16,7 +16,7 @@ insulate("system start -> stop -> start #fast | ", function ()
 
     randomize()
 
-    setup(function ()
+    lazy_setup(function ()
         timer = require("resty.timer")
         timer:configure({ threads = THREADS })
         timer:start()
@@ -31,7 +31,7 @@ insulate("system start -> stop -> start #fast | ", function ()
         end
     end)
 
-    teardown(function ()
+    lazy_teardown(function ()
         timer:stop()
         timer:unconfigure()
         sleep(2)
