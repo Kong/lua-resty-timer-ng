@@ -449,7 +449,7 @@ function _M:configure(options)
         threads = options and options.threads or DEFAULT_THREADS,
 
         -- call function `ngx.update_time` every run of timer job
-        fouce_update_time = options and options.fouce_update_time or DEFAULT_FOCUS_UPDATE_TIME
+        fouce_update_time = options and options.fouce_update_time or DEFAULT_FOCUS_UPDATE_TIME,
     }
 
     self.opt = opt
@@ -509,8 +509,8 @@ function _M:configure(options)
             alive = false,
             counter = {
                 -- number of runs
-                runs = 0
-            }
+                runs = 0,
+            },
         }
     end
 
@@ -657,7 +657,7 @@ function _M:stats()
     local sys = {
         running = 0,
         pending = 0,
-        waiting = 0
+        waiting = 0,
     }
 
     local jobs = {}
@@ -680,14 +680,14 @@ function _M:stats()
             runtime = job.runtime,
             runs = stats.runs,
             faults = stats.faults,
-            last_err_msg = stats.last_err_msg
+            last_err_msg = stats.last_err_msg,
         }
     end
 
 
     return {
         sys = sys,
-        timers = jobs
+        timers = jobs,
     }
 end
 

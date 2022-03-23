@@ -51,7 +51,7 @@ end
 
 local meta_table = {
     __index = _M,
-    __tostring = job_tostring
+    __tostring = job_tostring,
 }
 
 
@@ -70,7 +70,7 @@ local function job_create_meta(job)
         callstack[i] = {
             line = info.currentline,
             func = info.name or info.what,
-            source = info.short_src
+            source = info.short_src,
         }
     end
 
@@ -296,13 +296,13 @@ function _M.new(wheels, name, callback, delay, once, args)
             hour = delay_hour,
             minute = delay_minute,
             second = delay_second,
-            msec = delay_msec
+            msec = delay_msec,
         },
         next_pointer = {
             hour = 0,
             minute = 0,
             second = 0,
-            msec = 0
+            msec = 0,
         },
         _once = once,
         args = args,
@@ -311,17 +311,17 @@ function _M.new(wheels, name, callback, delay, once, args)
                 avg = 0,
                 max = -1,
                 min = huge,
-                variance = 0
+                variance = 0,
             },
 
             runs = 0,
             finish = 0,
-            last_err_msg = ""
+            last_err_msg = "",
         },
         meta = {
             name = "[C]",
-            callstack = {}
-        }
+            callstack = {},
+        },
     }
 
     job_create_meta(self)

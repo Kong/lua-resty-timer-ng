@@ -6,7 +6,7 @@ local ERR = ngx.ERR
 local _M = {}
 
 local meta_table = {
-    __index = _M
+    __index = _M,
 }
 
 
@@ -69,7 +69,7 @@ function _M.new(nelt)
     local self = {
         pointer = 1,
         nelt = nelt,
-        array = {}
+        array = {},
     }
 
     for i = 1, self.nelt do
