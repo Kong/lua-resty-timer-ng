@@ -1,4 +1,4 @@
-local semaphore_module = require "ngx.semaphore"
+local semaphore = require "ngx.semaphore"
 
 -- TODO: use it to readuce overhead
 -- local new_tab = require "table.new"
@@ -476,11 +476,11 @@ function _M:configure(options)
 
     self.closet = huge
 
-    self.semaphore_super = semaphore_module.new(0)
+    self.semaphore_super = semaphore.new(0)
 
-    self.semaphore_worker = semaphore_module.new(0)
+    self.semaphore_worker = semaphore.new(0)
 
-    self.semaphore_mover = semaphore_module.new(0)
+    self.semaphore_mover = semaphore.new(0)
 
     self.wheels = {
         -- will be move to `pending_jobs` by function `mover_timer_callback`
