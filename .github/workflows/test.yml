@@ -47,12 +47,9 @@ jobs:
     strategy:
       matrix:
         busted_args:
-        - "-t fast spec/01*.lua"
+        - "-t fast spec/01*.lua spec/04*.lua spec/05*.spec spec/06*.lua"
         - "-t fast spec/02*.lua"
         - "-t fast spec/03*.lua"
-        - "-t fast spec/04*.lua"
-        - "-t fast spec/05*.lua"
-        - "-t fast spec/06*.lua"
         - "-t slow_1 spec/02*.lua"
         - "-t slow_2 spec/02*.lua"
         - "-t slow_3 spec/02*.lua"
@@ -61,8 +58,6 @@ jobs:
         - "-t slow_3 spec/03*.lua"
         - "-t slow_4 spec/03*.lua"
         - "-t slow_5 spec/03*.lua"
-        # split: ["01", "02", "03", "04", "05", "06"]
-        # tag: ["fast", "slow_1", "slow_2", "slow_3", "slow_4", "slow_5"]
 
   
     steps:
