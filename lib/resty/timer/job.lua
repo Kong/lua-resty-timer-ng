@@ -25,7 +25,7 @@ local function job_tostring(job)
     local str = ""
 
     local stats = job.stats
-    local delay = job.delay
+    local offset = job.offset
     local next_pointer = job.next_pointer
     local runtime = stats.runtime
     local meta = job.meta
@@ -33,10 +33,10 @@ local function job_tostring(job)
     str = str .. "name = " .. job.name
     str = str .. ", enable = " .. tostring(job._enable)
     str = str .. ", cancel = " .. tostring(job._cancel)
-    str = str .. ", delay.hour = " .. tostring(delay.hour)
-    str = str .. ", delay.minute = " .. tostring(delay.minute)
-    str = str .. ", delay.second = " .. tostring(delay.second)
-    str = str .. ", delay.msec = " .. tostring(delay.msec)
+    str = str .. ", offset.hour = " .. tostring(offset.hour)
+    str = str .. ", offset.minute = " .. tostring(offset.minute)
+    str = str .. ", offset.second = " .. tostring(offset.second)
+    str = str .. ", offset.msec = " .. tostring(offset.msec)
     str = str .. ", next.hour = " .. tostring(next_pointer.hour)
     str = str .. ", next.minute = " .. tostring(next_pointer.minute)
     str = str .. ", next.second = " .. tostring(next_pointer.second)
@@ -89,10 +89,10 @@ end
 local function job_re_cal_next_pointer(job, wheels)
     local _
 
-    local delay_hour = job.delay.hour
-    local delay_minute = job.delay.minute
-    local delay_second = job.delay.second
-    local delay_msec = job.delay.msec
+    local offset_hour = job.offset.hour
+    local offset_minute = job.offset.minute
+    local offset_second = job.offset.second
+    local offset_msec = job.offset.msec
 
     local hour_wheel = wheels.hour
     local minute_wheel = wheels.min
@@ -111,57 +111,57 @@ local function job_re_cal_next_pointer(job, wheels)
 
     local up = false
 
-    if delay_msec then
+    if offset_msec then
         next_msec_pointer, up =
-            msec_wheel:cal_pointer(cur_msec_pointer, delay_msec)
+            msec_wheel:cal_pointer(cur_msec_pointer, offset_msec)
     end
 
-    if delay_second or up then
+    if offset_second or up then
 
-        if not delay_second then
-            delay_second = 0
+        if not offset_second then
+            offset_second = 0
         end
 
         if up then
-            delay_second = delay_second + 1
+            offset_second = offset_second + 1
         end
 
         next_second_pointer, up =
-            second_wheel:cal_pointer(cur_second_pointer, delay_second)
+            second_wheel:cal_pointer(cur_second_pointer, offset_second)
 
     else
         up = false
     end
 
-    if delay_minute or up then
+    if offset_minute or up then
 
-        if not delay_minute then
-            delay_minute = 0
+        if not offset_minute then
+            offset_minute = 0
         end
 
         if up then
-            delay_minute = delay_minute + 1
+            offset_minute = offset_minute + 1
         end
 
         next_minute_pointer, up =
-            minute_wheel:cal_pointer(cur_minute_pointer, delay_minute)
+            minute_wheel:cal_pointer(cur_minute_pointer, offset_minute)
 
     else
         up = false
     end
 
-    if delay_hour or up then
+    if offset_hour or up then
 
-        if not delay_hour then
-            delay_hour = 0
+        if not offset_hour then
+            offset_hour = 0
         end
 
         if up then
-            delay_hour = delay_hour + 1
+            offset_hour = offset_hour + 1
         end
 
         next_hour_pointer, _ =
-            hour_wheel:cal_pointer(cur_hour_pointer, delay_hour)
+            hour_wheel:cal_pointer(cur_hour_pointer, offset_hour)
     end
 
     if next_hour_pointer ~= 0 then
@@ -249,40 +249,39 @@ end
 
 function _M.new(wheels, name, callback, delay, once, args)
     local delay_origin = delay
-    local delay_hour, delay_minute, delay_second, delay_msec
+    local offset_hour, offset_minute, offset_second, offset_msec
     local immediately = false
 
     if delay ~= 0 then
-        delay, delay_msec = modf(delay)
-        delay_msec = delay_msec * 1000 + 10
-        delay_msec = floor(delay_msec)
-        delay_msec = floor(delay_msec / 100)
+        delay, offset_msec = modf(delay)
+        offset_msec = offset_msec * 10
+        offset_msec = floor(offset_msec)
 
-        delay_hour = modf(delay / 60 / 60)
+        offset_hour = modf(delay / 60 / 60)
         delay = delay % (60 * 60)
 
-        delay_minute = modf(delay / 60)
-        delay_second = delay % 60
+        offset_minute = modf(delay / 60)
+        offset_second = delay % 60
 
-        if delay_msec == 10 then
-            delay_second = delay_second + 1
-            delay_msec = nil
+        if offset_msec == 10 then
+            offset_second = offset_second + 1
+            offset_msec = nil
         end
 
-        if delay_second == 0 then
-            if delay_hour == 0 and delay_minute == 0 then
-                delay_second = nil
+        if offset_second == 0 then
+            if offset_hour == 0 and offset_minute == 0 then
+                offset_second = nil
             end
         end
 
-        if delay_minute == 0 then
-            if delay_hour == 0 then
-                delay_minute = nil
+        if offset_minute == 0 then
+            if offset_hour == 0 then
+                offset_minute = nil
             end
         end
 
-        if delay_hour == 0 then
-            delay_hour = nil
+        if offset_hour == 0 then
+            offset_hour = nil
         end
 
     else
@@ -298,12 +297,12 @@ function _M.new(wheels, name, callback, delay, once, args)
         _immediately = immediately,
         name = name,
         callback = callback,
-        delay = {
-            origin = delay_origin,
-            hour = delay_hour,
-            minute = delay_minute,
-            second = delay_second,
-            msec = delay_msec,
+        delay = delay_origin,
+        offset = {
+            hour = offset_hour,
+            minute = offset_minute,
+            second = offset_second,
+            msec = offset_msec,
         },
         next_pointer = {
             hour = 0,
