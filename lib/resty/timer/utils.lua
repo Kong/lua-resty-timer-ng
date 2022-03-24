@@ -1,6 +1,11 @@
 local pow = math.pow
 local floor = math.floor
-local assert = assert
+local std_assert = assert
+
+-- luacheck: push ignore
+local log = ngx.log
+local ERR = ngx.ERR
+-- luacheck: pop
 
 local has_table_isempty, table_isempty = pcall(require, "table.isempty")
 
@@ -12,8 +17,11 @@ function _M.assert(v, message)
         message = "assertion failed!"
     end
 
-    assert(v, debug.traceback(message))
+    std_assert(v, debug.traceback(message))
 end
+
+
+local assert = _M.assert
 
 
 -- get average
@@ -59,6 +67,16 @@ function _M.get_a_item_from_table(tbl)
     end
 
     return nil
+end
+
+
+function _M.table_append(dst, src)
+    assert(dst and src)
+
+    for k, v in pairs(src) do
+        assert(not dst[k])
+        dst[k] = v
+    end
 end
 
 
