@@ -16,13 +16,13 @@ end
 
 
 function _M:cal_pointer(pointer, offset)
-    local nelt = self.nelt
+    local nelts = self.nelts
     local p = pointer
     local old = p
 
-    p = (p + offset) % (nelt + 1)
+    p = (p + offset) % (nelts + 1)
 
-    if old + offset > nelt then
+    if old + offset > nelts then
         return p + 1, true
     end
 
@@ -65,14 +65,14 @@ function _M:get_jobs_by_pointer(pointer)
 end
 
 
-function _M.new(nelt)
+function _M.new(nelts)
     local self = {
         pointer = 1,
-        nelt = nelt,
+        nelts = nelts,
         array = {},
     }
 
-    for i = 1, self.nelt do
+    for i = 1, self.nelts do
         self.array[i] = setmetatable({ }, { __mode = "v" })
     end
 
