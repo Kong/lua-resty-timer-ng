@@ -154,7 +154,7 @@ local function job_re_cal_next_pointer(job, wheels)
             delay_hour = delay_hour + 1
         end
 
-        next_hour_pointer, _ = hour_wheel:cal_pointer(hour_wheel, cur_hour_pointer, delay_hour)
+        next_hour_pointer, _ = hour_wheel:cal_pointer(cur_hour_pointer, delay_hour)
     end
 
     if next_hour_pointer ~= 0 then
