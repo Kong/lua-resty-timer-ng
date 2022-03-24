@@ -27,13 +27,13 @@ insulate("configure with invalid options #fast | ", function ()
     end)
 
 
-    insulate("invalid `recreate_interval` | ", function ()
+    insulate("invalid `restart_thread_after_runs` | ", function ()
         insulate("not a number", function ()
             local timer = require("resty.timer")
             it("", function ()
                 assert.has.errors(function ()
                     timer:configure({
-                        recreate_interval = ""
+                        restart_thread_after_runs = ""
                     })
                 end)
             end)
@@ -44,13 +44,13 @@ insulate("configure with invalid options #fast | ", function ()
             it("", function ()
                 assert.has.errors(function ()
                     timer:configure({
-                        recreate_interval = -1
+                        restart_thread_after_runs = -1
                     })
                 end)
 
                 assert.has.errors(function ()
                     timer:configure({
-                        recreate_interval = 0
+                        restart_thread_after_runs = 0
                     })
                 end)
             end)
@@ -61,7 +61,7 @@ insulate("configure with invalid options #fast | ", function ()
             it("", function ()
                 assert.has.errors(function ()
                     timer:configure({
-                        recreate_interval = 0.1
+                        restart_thread_after_runs = 0.1
                     })
                 end)
             end)
