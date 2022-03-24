@@ -254,8 +254,9 @@ function _M.new(wheels, name, callback, delay, once, args)
 
     if delay ~= 0 then
         delay, offset_msec = modf(delay)
-        offset_msec = offset_msec * 10
-        offset_msec = floor(offset_msec)
+        offset_msec = offset_msec * 1000 + 10
+        offset_msec = floor(floor(offset_msec) / 100)
+
 
         offset_hour = modf(delay / 60 / 60)
         delay = delay % (60 * 60)
