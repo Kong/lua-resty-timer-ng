@@ -78,7 +78,8 @@ local function job_create_meta(job)
 
     if top_stack then
         -- like `init.lua:128:start_timer()`
-        meta.name = top_stack.source .. ":" .. top_stack.line .. ":" .. top_stack.func .. "()"
+        meta.name = top_stack.source .. ":" .. top_stack.line .. ":"
+            .. top_stack.func .. "()"
     end
 end
 
@@ -109,7 +110,8 @@ local function job_re_cal_next_pointer(job, wheels)
     local up = false
 
     if delay_msec then
-        next_msec_pointer, up = msec_wheel:cal_pointer(cur_msec_pointer, delay_msec)
+        next_msec_pointer, up =
+            msec_wheel:cal_pointer(cur_msec_pointer, delay_msec)
     end
 
     if delay_second or up then
@@ -122,7 +124,8 @@ local function job_re_cal_next_pointer(job, wheels)
             delay_second = delay_second + 1
         end
 
-        next_second_pointer, up = second_wheel:cal_pointer(cur_second_pointer, delay_second)
+        next_second_pointer, up =
+            second_wheel:cal_pointer(cur_second_pointer, delay_second)
 
     else
         up = false
@@ -138,7 +141,8 @@ local function job_re_cal_next_pointer(job, wheels)
             delay_minute = delay_minute + 1
         end
 
-        next_minute_pointer, up = minute_wheel:cal_pointer(cur_minute_pointer, delay_minute)
+        next_minute_pointer, up =
+            minute_wheel:cal_pointer(cur_minute_pointer, delay_minute)
 
     else
         up = false
@@ -154,7 +158,8 @@ local function job_re_cal_next_pointer(job, wheels)
             delay_hour = delay_hour + 1
         end
 
-        next_hour_pointer, _ = hour_wheel:cal_pointer(cur_hour_pointer, delay_hour)
+        next_hour_pointer, _ =
+            hour_wheel:cal_pointer(cur_hour_pointer, delay_hour)
     end
 
     if next_hour_pointer ~= 0 then

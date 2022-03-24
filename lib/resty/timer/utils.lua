@@ -12,8 +12,8 @@ end
 
 function _M.get_variance(cur_value, cur_count, old_variance, old_avg)
     -- recurrence formula
-    return (((cur_count - 1) / pow(cur_count, 2)) * pow(cur_value - old_avg, 2)) +
-        (((cur_count - 1) / cur_count) * old_variance)
+    return (((cur_count - 1) / pow(cur_count, 2)) * pow(cur_value - old_avg, 2))
+        + (((cur_count - 1) / cur_count) * old_variance)
 end
 
 
@@ -72,7 +72,8 @@ end
 
 --     str = str .. "======== END PENDING ========\n"
 
---     str = str .. "======== BEGIN READY ========" .. tostring(self.semaphore_mover:count()) .. "\n"
+--     str = str .. "======== BEGIN READY ========"
+--        .. tostring(self.semaphore_mover:count()) .. "\n"
 
 --     for _, v in pairs(ready_jobs) do
 --         str = str .. tostring(v) .. "\n"

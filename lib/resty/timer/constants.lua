@@ -1,7 +1,7 @@
 local _M = {
     DEFAULT_THREADS = 32,
 
-    -- restart the thread after every 50 tasks have been run
+    -- restart the thread after every 50 jobs have been run
     DEFAULT_RESTART_THREAD_AFTER_RUNS = 50,
 
     DEFAULT_FOCUS_UPDATE_TIME = true,
