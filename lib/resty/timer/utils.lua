@@ -1,4 +1,5 @@
 local pow = math.pow
+local floor = math.floor
 
 local has_table_isempty, table_isempty = pcall(require, "table.isempty")
 
@@ -64,92 +65,92 @@ function _M.float_compare(left, right)
     end
 end
 
--- local function print_queue(self)
---     local pending_jobs = self.wheels.pending_jobs
---     local ready_jobs = self.wheels.ready_jobs
+function _M.print_queue(self)
+    local pending_jobs = self.wheels.pending_jobs
+    local ready_jobs = self.wheels.ready_jobs
 
---     update_time()
+    ngx.update_time()
 
---     local str = "\n======== BEGIN PENDING ========" .. now() .. "\n"
+    local str = "\n======== BEGIN PENDING ========" .. ngx.now() .. "\n"
 
---     for _, v in pairs(pending_jobs) do
---         str = str .. tostring(v) .. "\n"
---     end
+    for _, v in pairs(pending_jobs) do
+        str = str .. tostring(v) .. "\n"
+    end
 
---     str = str .. "======== END PENDING ========\n"
+    str = str .. "======== END PENDING ========\n"
 
---     str = str .. "======== BEGIN READY ========"
---        .. tostring(self.semaphore_mover:count()) .. "\n"
+    str = str .. "======== BEGIN READY ========"
+       .. tostring(self.semaphore_mover:count()) .. "\n"
 
---     for _, v in pairs(ready_jobs) do
---         str = str .. tostring(v) .. "\n"
---     end
+    for _, v in pairs(ready_jobs) do
+        str = str .. tostring(v) .. "\n"
+    end
 
---     str = str .. "======== END READY ========"
+    str = str .. "======== END READY ========"
 
---     log(ERR, str)
--- end
-
-
--- function _M:print_wheel(wheels)
---     local wheel
-
---     ngx.update_time()
-
---     local str = "\n======== BEGIN MSEC ========" .. ngx.now() .. "\n"
---     wheel = wheels.msec
---     str = str .. "pointer = " .. wheel.pointer .. "\n"
---     str = str .. "nelt = " .. wheel.nelt .. "\n"
---     for i, v in ipairs(wheel.array) do
---         for _, value in pairs(v) do
---             str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
---         end
---     end
---     str = str .. "========= END MSEC =========\n"
+    ngx.log(ngx.ERR, str)
+end
 
 
---     str = str .. "\n======== BEGIN SECOND ========\n"
---     wheel = wheels.sec
---     str = str .. "pointer = " .. wheel.pointer .. "\n"
---     str = str .. "nelt = " .. wheel.nelt .. "\n"
---     for i, v in ipairs(wheel.array) do
---         for _, value in pairs(v) do
---             str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
---         end
---     end
---     str = str .. "========= END SECOND ========="
+function _M.print_wheel(wheels)
+    local wheel
+
+    ngx.update_time()
+
+    local str = "\n======== BEGIN MSEC ========" .. ngx.now() .. "\n"
+    wheel = wheels.msec
+    str = str .. "pointer = " .. wheel.pointer .. "\n"
+    str = str .. "nelts = " .. wheel.nelts .. "\n"
+    for i, v in ipairs(wheel.slots) do
+        for _, value in pairs(v) do
+            str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
+        end
+    end
+    str = str .. "========= END MSEC =========\n"
 
 
-    -- str = str .. "\n======== BEGIN MINUTE ========\n"
-    -- wheel = wheels.min
-    -- str = str .. "pointer = " .. wheel.pointer .. "\n"
-    -- str = str .. "nelt = " .. wheel.nelt .. "\n"
-    -- for i, v in ipairs(wheel.array) do
-    --     for _, value in pairs(v) do
-    --         str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
-    --     end
-    -- end
-    -- str = str .. "========= END MINUTE ========="
+    str = str .. "\n======== BEGIN SECOND ========\n"
+    wheel = wheels.sec
+    str = str .. "pointer = " .. wheel.pointer .. "\n"
+    str = str .. "nelts = " .. wheel.nelts .. "\n"
+    for i, v in ipairs(wheel.slots) do
+        for _, value in pairs(v) do
+            str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
+        end
+    end
+    str = str .. "========= END SECOND ========="
 
 
-    -- str = str .. "\n======== BEGIN HOUR ========\n"
-    -- wheel = wheels.hour
-    -- str = str .. "pointer = " .. wheel.pointer .. "\n"
-    -- str = str .. "nelt = " .. wheel.nelt .. "\n"
-    -- for i, v in ipairs(wheel.array) do
-    --     for _, value in pairs(v) do
-    --         str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
-    --     end
-    -- end
-    -- str = str .. "========= END HOUR ========="
-
---     ngx.log(ngx.ERR, str)
--- end
+    str = str .. "\n======== BEGIN MINUTE ========\n"
+    wheel = wheels.min
+    str = str .. "pointer = " .. wheel.pointer .. "\n"
+    str = str .. "nelts = " .. wheel.nelts .. "\n"
+    for i, v in ipairs(wheel.slots) do
+        for _, value in pairs(v) do
+            str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
+        end
+    end
+    str = str .. "========= END MINUTE ========="
 
 
--- local function round(value, digits)
---     local x = 10 * digits
---     return floor(value * x + 0.5) / x
--- end
+    str = str .. "\n======== BEGIN HOUR ========\n"
+    wheel = wheels.hour
+    str = str .. "pointer = " .. wheel.pointer .. "\n"
+    str = str .. "nelts = " .. wheel.nelts .. "\n"
+    for i, v in ipairs(wheel.slots) do
+        for _, value in pairs(v) do
+            str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
+        end
+    end
+    str = str .. "========= END HOUR ========="
+
+    ngx.log(ngx.ERR, str)
+end
+
+
+function _M:round(value, digits)
+    local x = 10 * digits
+    return floor(value * x + 0.5) / x
+end
 
 return _M
