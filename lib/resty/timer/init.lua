@@ -624,7 +624,7 @@ function _M:run(name)
 
         if not old_job:is_runable() then
             return create(self, old_job.name, old_job.callback,
-                old_job.delay.origin, old_job:is_once(), old_job.args)
+                old_job.delay_origin, old_job:is_once(), old_job.args)
 
         else
             return false, "running"
