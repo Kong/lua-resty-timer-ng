@@ -17,8 +17,6 @@ local timer_at = ngx.timer.at
 local timer_every = ngx.timer.every
 local sleep = ngx.sleep
 local exiting = ngx.worker.exiting
-local now = ngx.now
-local update_time = ngx.update_time
 
 local job_module = require("resty.timer.job")
 local utils_module = require("resty.timer.utils")
