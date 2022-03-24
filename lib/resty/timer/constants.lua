@@ -1,3 +1,7 @@
+local utils = require("resty.timer.utils")
+
+local assert = utils.assert
+
 local _M = {
     DEFAULT_THREADS = 32,
 

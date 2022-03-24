@@ -25,6 +25,8 @@ local utils_module = require("resty.timer.utils")
 local wheel_module = require("resty.timer.wheel")
 local constants = require("resty.timer.constants")
 
+local assert = utils_module.assert
+
 local _M = {}
 
 

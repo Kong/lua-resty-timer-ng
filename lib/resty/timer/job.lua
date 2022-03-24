@@ -18,6 +18,8 @@ local now = ngx.now
 
 local utils = require("resty.timer.utils")
 
+local assert = utils.assert
+
 local _M = {}
 
 

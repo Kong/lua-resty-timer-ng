@@ -1,9 +1,19 @@
 local pow = math.pow
 local floor = math.floor
+local assert = assert
 
 local has_table_isempty, table_isempty = pcall(require, "table.isempty")
 
 local _M = {}
+
+
+function _M.assert(v, message)
+    if message == nil then
+        message = "assertion failed!"
+    end
+
+    assert(v, debug.traceback(message))
+end
 
 
 -- get average

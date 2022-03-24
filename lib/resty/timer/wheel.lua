@@ -3,6 +3,10 @@ local log = ngx.log
 local ERR = ngx.ERR
 -- luacheck: pop
 
+local utils = require("resty.timer.utils")
+
+local assert = utils.assert
+
 local _M = {}
 
 local meta_table = {
