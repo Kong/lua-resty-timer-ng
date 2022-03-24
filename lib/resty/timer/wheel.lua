@@ -31,13 +31,13 @@ end
 
 
 function _M:insert(pointer, job)
-    assert(self.array)
+    assert(self.slots)
     assert(pointer > 0)
 
-    local _job = self.array[pointer][job.name]
+    local _job = self.slots[pointer][job.name]
 
     if not _job or not _job:is_runable() then
-        self.array[pointer][job.name] = job
+        self.slots[pointer][job.name] = job
 
     else
         return false, "already exists job"
@@ -51,17 +51,17 @@ function _M:move_to_next()
     local pointer, is_move_to_end = self:cal_pointer(self.pointer, 1)
     self.pointer = pointer
 
-    return self.array[self.pointer], is_move_to_end
+    return self.slots[self.pointer], is_move_to_end
 end
 
 
 function _M:get_jobs()
-    return self.array[self.pointer]
+    return self.slots[self.pointer]
 end
 
 
 function _M:get_jobs_by_pointer(pointer)
-    return self.array[pointer]
+    return self.slots[pointer]
 end
 
 
@@ -69,11 +69,11 @@ function _M.new(nelts)
     local self = {
         pointer = 1,
         nelts = nelts,
-        array = {},
+        slots = {},
     }
 
     for i = 1, self.nelts do
-        self.array[i] = setmetatable({ }, { __mode = "v" })
+        self.slots[i] = setmetatable({ }, { __mode = "v" })
     end
 
     return setmetatable(self, meta_table)
