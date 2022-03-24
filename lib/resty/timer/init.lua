@@ -52,12 +52,16 @@ local function wake_up_mover_timer(self)
 end
 
 
-local function update_closet(self)
-    local old_closet = self.closet
+-- calculate how long until the next timer expires
+local function update_closest(self)
+    local old_closest = self.closest
     local delay = 0
     local msec_wheel = self.wheels.msec
     local cur_msec_pointer = msec_wheel:get_cur_pointer()
-    for i = 1, 9 do
+
+    -- `constants.MSEC_WHEEL_SLOTS - 1` means
+    -- ignore the current slot
+    for i = 1, constants.MSEC_WHEEL_SLOTS - 1 do
         local pointer, is_move_to_start =
             msec_wheel:cal_pointer(cur_msec_pointer, i)
 
@@ -76,9 +80,9 @@ local function update_closet(self)
 
     -- TODO: to calculate this value, a baseline is needed,
     --  i.e. the time when the super timer was last woken up.
-    self.closet = delay
+    self.closest = delay
 
-    return delay < old_closet
+    return delay < old_closest
 end
 
 
@@ -372,10 +376,10 @@ local function super_timer_callback(premature, self)
                 wake_up_mover_timer(self)
             end
 
-            update_closet(self)
-            local closet = max(self.closet, constants.RESOLUTION)
-            self.closet = huge
-            semaphore_super:wait(closet)
+            update_closest(self)
+            local closest = max(self.closest, constants.RESOLUTION)
+            self.closest = huge
+            semaphore_super:wait(closest)
 
         else
             sleep(constants.RESOLUTION)
@@ -487,7 +491,7 @@ function _M:configure(options)
 
     self.destory = false
 
-    self.closet = huge
+    self.closest = huge
 
     self.semaphore_super = semaphore.new(0)
 
