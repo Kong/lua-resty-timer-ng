@@ -7,6 +7,8 @@ local floor = math.floor
 local modf = math.modf
 local huge = math.huge
 
+local pcall = pcall
+
 -- luacheck: push ignore
 local log = ngx.log
 local ERR = ngx.ERR
