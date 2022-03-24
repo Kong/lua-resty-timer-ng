@@ -1,5 +1,7 @@
 local pow = math.pow
 
+local has_table_isempty, table_isempty = pcall(require, "table.isempty")
+
 local _M = {}
 
 
@@ -20,6 +22,10 @@ end
 function _M.is_empty_table(t)
     if not t then
         return true
+    end
+
+    if has_table_isempty then
+        return table_isempty(t)
     end
 
     -- luacheck: ignore
