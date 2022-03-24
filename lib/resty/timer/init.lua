@@ -20,15 +20,10 @@ local exiting = ngx.worker.exiting
 local now = ngx.now
 local update_time = ngx.update_time
 
-local DEFAULT_THREADS = 32
-local DEFAULT_RECREATE_INTERVAL = 50
-local DEFAULT_FOCUS_UPDATE_TIME = false
-
-local MAX_EXPIRE = 23 * 60 * 60 + 59 * 60
-
 local job_module = require("resty.timer.job")
 local utils_module = require("resty.timer.utils")
 local wheel_module = require("resty.timer.wheel")
+local constants = require("resty.timer.constants")
 
 local _M = {}
 
@@ -65,7 +60,7 @@ local function update_closet(self)
     for i = 1, 9 do
         local pointer, is_move_to_start = msec_wheel:cal_pointer(cur_msec_pointer, i)
 
-        delay = delay + 0.1
+        delay = delay + constants.RESOLUTION
 
         if is_move_to_start then
             break
@@ -210,7 +205,7 @@ local function update_all_wheels(self)
         end
 
         fetch_all_expired_jobs(self)
-        self.expected_time =  self.expected_time + 0.1
+        self.expected_time =  self.expected_time + constants.RESOLUTION
     end
 end
 
@@ -355,11 +350,11 @@ local function super_timer_callback(premature, self)
         end
     end
 
-    sleep(0.1)
+    sleep(constants.RESOLUTION)
 
     update_time()
     self.real_time = now()
-    self.expected_time = self.real_time - 0.1
+    self.expected_time = self.real_time - constants.RESOLUTION
 
     while not exiting() and not self.destory do
         if premature then
@@ -374,12 +369,12 @@ local function super_timer_callback(premature, self)
             end
 
             update_closet(self)
-            local closet = max(self.closet, 0.1)
+            local closet = max(self.closet, constants.RESOLUTION)
             self.closet = huge
             semaphore_super:wait(closet)
 
         else
-            sleep(0.1)
+            sleep(constants.RESOLUTION)
         end
     end
 end
@@ -443,13 +438,13 @@ function _M:configure(options)
 
     local opt = {
         -- restart a timer after a certain number of this timer runs
-        recreate_interval = options and options.recreate_interval or DEFAULT_RECREATE_INTERVAL,
+        recreate_interval = options and options.recreate_interval or constants.DEFAULT_RECREATE_INTERVAL,
 
         -- number of timer will be created by OpenResty API
-        threads = options and options.threads or DEFAULT_THREADS,
+        threads = options and options.threads or constants.DEFAULT_THREADS,
 
         -- call function `ngx.update_time` every run of timer job
-        fouce_update_time = options and options.fouce_update_time or DEFAULT_FOCUS_UPDATE_TIME,
+        fouce_update_time = options and options.fouce_update_time or constants.DEFAULT_FOCUS_UPDATE_TIME,
     }
 
     self.opt = opt
@@ -491,16 +486,16 @@ function _M:configure(options)
         pending_jobs = {},
 
         -- 100ms per slot
-        msec = wheel_module.new(10),
+        msec = wheel_module.new(constants.MSEC_WHEEL_SLOTS),
 
         -- 1 second per slot
-        sec = wheel_module.new(60),
+        sec = wheel_module.new(constants.SECOND_WHEEL_SLOTS),
 
         -- 1 minute per slot
-        min = wheel_module.new(60),
+        min = wheel_module.new(constants.MINUTE_WHEEL_SLOTS),
 
         -- 1 hour per slot
-        hour = wheel_module.new(24),
+        hour = wheel_module.new(constants.HOUR_WHEEL_SLOTS),
     }
 
     for i = 1, self.opt.threads do
@@ -560,7 +555,7 @@ function _M:once(name, callback, delay, ...)
     assert(type(delay) == "number", "expected `delay to be a number")
     assert(delay >= 0, "expected `delay` to be greater than or equal to 0")
 
-    if delay >= MAX_EXPIRE or (delay ~= 0 and delay < 0.1) or not self.configured then
+    if delay >= constants.MAX_EXPIRE or (delay ~= 0 and delay < constants.RESOLUTION) or not self.configured then
         local ok, err = timer_at(delay, callback, ...)
         return ok ~= nil, err
     end
@@ -577,7 +572,7 @@ function _M:every(name, callback, interval, ...)
     assert(type(interval) == "number", "expected `interval to be a number")
     assert(interval > 0, "expected `interval` to be greater than or equal to 0")
 
-    if interval >= MAX_EXPIRE or interval < 0.1 or not self.configured then
+    if interval >= constants.MAX_EXPIRE or interval < constants.RESOLUTION or not self.configured then
         local ok, err = timer_every(interval, callback, ...)
         return ok ~= nil, err
     end
