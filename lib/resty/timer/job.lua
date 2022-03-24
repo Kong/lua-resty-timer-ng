@@ -1,4 +1,5 @@
 local unpack = table.unpack
+local concat = table.concat
 local debug_getinfo = debug.getinfo
 
 local max = math.max
@@ -24,32 +25,32 @@ local _M = {}
 
 
 local function job_tostring(job)
-    local str = ""
-
     local stats = job.stats
     local offset = job.offset
     local next_pointer = job.next_pointer
     local runtime = stats.runtime
     local meta = job.meta
 
-    str = str .. "name = " .. job.name
-    str = str .. ", enable = " .. tostring(job._enable)
-    str = str .. ", cancel = " .. tostring(job._cancel)
-    str = str .. ", offset.hour = " .. tostring(offset.hour)
-    str = str .. ", offset.minute = " .. tostring(offset.minute)
-    str = str .. ", offset.second = " .. tostring(offset.second)
-    str = str .. ", offset.msec = " .. tostring(offset.msec)
-    str = str .. ", next.hour = " .. tostring(next_pointer.hour)
-    str = str .. ", next.minute = " .. tostring(next_pointer.minute)
-    str = str .. ", next.second = " .. tostring(next_pointer.second)
-    str = str .. ", next.msec = " .. tostring(next_pointer.msec)
-    str = str .. ", runtime.max = " .. runtime.max
-    str = str .. ", runtime.min = " .. runtime.min
-    str = str .. ", runtime.avg = " .. runtime.avg
-    str = str .. ", runtime.variance = " .. runtime.variance
-    str = str .. ", meta.name = " .. meta.name
+    local tbl = {
+        "name = ",                  tostring(job.name),
+        ", enable = ",              tostring(job._enable),
+        ", cancel = ",              tostring(job._cancel),
+        ", once = ",                tostring(job._once),
+        ", offset.hour = ",         tostring(offset.hour),
+        ", offset.minute = ",       tostring(offset.minute),
+        ", offset.second = ",       tostring(offset.second),
+        ", next.hour = ",           tostring(next_pointer.hour),
+        ", next.minute = ",         tostring(next_pointer.minute),
+        ", next.second = ",         tostring(next_pointer.second),
+        ", next.msec = ",           tostring(next_pointer.msec),
+        ", runtime.max = ",         tostring(runtime.max),
+        ", runtime.min = ",         tostring(runtime.min),
+        ", runtime.avg = ",         tostring(runtime.avg),
+        ", runtime.variance = ",    tostring(runtime.variance),
+        ", meta.name = ",           tostring(meta.name),
+    }
 
-    return str
+    return concat(tbl)
 end
 
 
