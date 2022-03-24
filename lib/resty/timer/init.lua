@@ -319,7 +319,7 @@ local function worker_timer_callback(premature, self, thread_index)
             wake_up_mover_timer(self)
         end
 
-        if thread.counter.runs > self.opt.recreate_interval == 0 then
+        if thread.counter.runs > self.opt.restart_thread_after_runs == 0 then
             thread.counter.runs = 0
             -- TODO: check return value
             timer_at(0, worker_timer_callback, self, thread_index)
@@ -419,12 +419,12 @@ function _M:configure(options)
     if options then
         assert(type(options) == "table", "expected `options` to be a table")
 
-        if options.recreate_interval then
-            assert(type(options.recreate_interval) == "number", "expected `recreate_interval` to be a number")
-            assert(options.recreate_interval > 0, "expected `recreate_interval` to be greater than 0")
+        if options.restart_thread_after_runs then
+            assert(type(options.restart_thread_after_runs) == "number", "expected `restart_thread_after_runs` to be a number")
+            assert(options.restart_thread_after_runs > 0, "expected `restart_thread_after_runs` to be greater than 0")
 
-            local _, tmp = modf(options.recreate_interval)
-            assert(tmp == 0, "expected `recreate_interval` to be a integer")
+            local _, tmp = modf(options.restart_thread_after_runs)
+            assert(tmp == 0, "expected `restart_thread_after_runs` to be a integer")
         end
 
         if options.threads then
@@ -438,7 +438,7 @@ function _M:configure(options)
 
     local opt = {
         -- restart a timer after a certain number of this timer runs
-        recreate_interval = options and options.recreate_interval or constants.DEFAULT_RECREATE_INTERVAL,
+        restart_thread_after_runs = options and options.restart_thread_after_runs or constants.DEFAULT_RESTART_THREAD_AFTER_RUNS,
 
         -- number of timer will be created by OpenResty API
         threads = options and options.threads or constants.DEFAULT_THREADS,
