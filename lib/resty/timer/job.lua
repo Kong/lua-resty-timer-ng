@@ -97,10 +97,10 @@ local function job_re_cal_next_pointer(job, wheels)
     local offset_second = job.offset.second
     local offset_msec = job.offset.msec
 
-    local hour_wheel = wheels.hour_wheel
-    local minute_wheel = wheels.minute_wheel
-    local second_wheel = wheels.second_wheel
-    local msec_wheel = wheels.msec_wheel
+    local hour_wheel = wheels.hour
+    local minute_wheel = wheels.min
+    local second_wheel = wheels.sec
+    local msec_wheel = wheels.msec
 
     local cur_hour_pointer = hour_wheel:get_cur_pointer()
     local cur_minute_pointer = minute_wheel:get_cur_pointer()
