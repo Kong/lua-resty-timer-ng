@@ -73,7 +73,7 @@ local function update_closet(self)
 
         local jobs = msec_wheel:get_jobs_by_pointer(pointer)
 
-        if not utils_module:is_empty_table(jobs) then
+        if not utils_module.is_empty_table(jobs) then
             break
         end
     end
@@ -193,7 +193,7 @@ local function update_all_wheels(self)
     update_time()
     self.real_time = now()
 
-    while utils_module:float_compare(self.real_time, self.expected_time) == 1 do
+    while utils_module.float_compare(self.real_time, self.expected_time) == 1 do
         local _, continue = msec_wheel:move_to_next()
 
         if continue then
@@ -265,8 +265,8 @@ local function mover_timer_callback(premature, self)
         -- TODO: check the return value
         semaphore_mover:wait(1)
 
-        local is_no_pending_jobs = utils_module:is_empty_table(wheels.pending_jobs)
-        local is_no_ready_jobs = utils_module:is_empty_table(wheels.ready_jobs)
+        local is_no_pending_jobs = utils_module.is_empty_table(wheels.pending_jobs)
+        local is_no_ready_jobs = utils_module.is_empty_table(wheels.ready_jobs)
 
         if not is_no_pending_jobs then
             semaphore_worker:post(opt_threads)
@@ -298,10 +298,10 @@ local function worker_timer_callback(premature, self, thread_index)
         -- TODO: check the return value
         semaphore_worker:wait(1)
 
-        while not utils_module:is_empty_table(wheels.pending_jobs) do
+        while not utils_module.is_empty_table(wheels.pending_jobs) do
             thread.counter.runs = thread.counter.runs + 1
 
-            local job = utils_module:get_a_item_from_table(wheels.pending_jobs)
+            local job = utils_module.get_a_item_from_table(wheels.pending_jobs)
 
             wheels.pending_jobs[job.name] = nil
 
@@ -320,7 +320,7 @@ local function worker_timer_callback(premature, self, thread_index)
             end
         end
 
-        if not utils_module:is_empty_table(wheels.ready_jobs) then
+        if not utils_module.is_empty_table(wheels.ready_jobs) then
             wake_up_mover_timer(self)
         end
 
@@ -369,7 +369,7 @@ local function super_timer_callback(premature, self)
         if self.enable then
             update_all_wheels(self)
 
-            if not utils_module:is_empty_table(wheels.ready_jobs) then
+            if not utils_module.is_empty_table(wheels.ready_jobs) then
                 wake_up_mover_timer(self)
             end
 

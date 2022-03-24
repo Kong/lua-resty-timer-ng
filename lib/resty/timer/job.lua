@@ -366,10 +366,10 @@ function _M:execute()
     runtime.min = min(runtime.min, spend)
 
     local old_avg = runtime.avg
-    runtime.avg = utils:get_avg(spend, finish, old_avg)
+    runtime.avg = utils.get_avg(spend, finish, old_avg)
 
     local old_variance = runtime.variance
-    runtime.variance = utils:get_variance(spend, finish, old_variance, old_avg)
+    runtime.variance = utils.get_variance(spend, finish, old_variance, old_avg)
 
 end
 

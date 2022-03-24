@@ -4,20 +4,20 @@ local _M = {}
 
 
 -- get average
-function _M:get_avg(cur_value, cur_count, old_avg)
+function _M.get_avg(cur_value, cur_count, old_avg)
     -- recurrence formula
     return old_avg + ((cur_value - old_avg) / cur_count)
 end
 
 
-function _M:get_variance(cur_value, cur_count, old_variance, old_avg)
+function _M.get_variance(cur_value, cur_count, old_variance, old_avg)
     -- recurrence formula
     return (((cur_count - 1) / pow(cur_count, 2)) * pow(cur_value - old_avg, 2)) +
         (((cur_count - 1) / cur_count) * old_variance)
 end
 
 
-function _M:is_empty_table(t)
+function _M.is_empty_table(t)
     if not t then
         return true
     end
@@ -31,7 +31,7 @@ function _M:is_empty_table(t)
 end
 
 
-function _M:get_a_item_from_table(tbl)
+function _M.get_a_item_from_table(tbl)
     if not tbl then
         return nil
     end
@@ -45,7 +45,7 @@ function _M:get_a_item_from_table(tbl)
 end
 
 
-function _M:float_compare(left, right)
+function _M.float_compare(left, right)
     local delta = left - right
     if delta < -0.01 then
         return -1
