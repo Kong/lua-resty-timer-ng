@@ -1,3 +1,5 @@
+local pairs = pairs
+
 local semaphore = require "ngx.semaphore"
 
 -- TODO: use it to readuce overhead

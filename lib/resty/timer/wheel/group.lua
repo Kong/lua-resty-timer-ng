@@ -1,3 +1,4 @@
+local pairs = pairs
 local setmetatable = setmetatable
 
 local ngx = ngx

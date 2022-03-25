@@ -1,6 +1,8 @@
 local pow = math.pow
 local floor = math.floor
+
 local std_assert = assert
+local pairs = pairs
 
 local ngx = ngx
 
