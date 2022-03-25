@@ -11,7 +11,27 @@ local log = ngx.log
 local ERR = ngx.ERR
 -- luacheck: pop
 
-local has_table_isempty, table_isempty = pcall(require, "table.isempty")
+local table_isempty
+
+do
+    local has_table_isempty, _table_isempty = pcall(require, "table.isempty")
+
+    if has_table_isempty then
+        table_isempty = _table_isempty
+
+    else
+        table_isempty = function(tbl)
+            -- luacheck: ignore
+            for _, _ in pairs(tbl) do
+                return false
+            end
+
+            return true
+        end
+    end
+end
+
+
 
 local _M = {}
 
@@ -42,21 +62,15 @@ function _M.get_variance(cur_value, cur_count, old_variance, old_avg)
 end
 
 
-function _M.is_empty_table(t)
-    if not t then
+function _M.is_empty_table(tbl)
+    assert(type(tbl) == "table",
+        "expected `tbl` to be a `table`")
+
+    if not tbl then
         return true
     end
 
-    if has_table_isempty then
-        return table_isempty(t)
-    end
-
-    -- luacheck: ignore
-    for k, v in pairs(t) do
-        return false
-    end
-
-    return true
+    return table_isempty(tbl)
 end
 
 
