@@ -10,6 +10,8 @@ local huge = math.huge
 
 local pcall = pcall
 
+local ngx = ngx
+
 -- luacheck: push ignore
 local log = ngx.log
 local ERR = ngx.ERR

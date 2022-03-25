@@ -3,6 +3,8 @@ local semaphore = require "ngx.semaphore"
 -- TODO: use it to readuce overhead
 -- local new_tab = require "table.new"
 
+local ngx = ngx
+
 local max = math.max
 local modf = math.modf
 local huge = math.huge

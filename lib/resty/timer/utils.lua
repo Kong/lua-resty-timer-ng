@@ -2,6 +2,8 @@ local pow = math.pow
 local floor = math.floor
 local std_assert = assert
 
+local ngx = ngx
+
 -- luacheck: push ignore
 local log = ngx.log
 local ERR = ngx.ERR
