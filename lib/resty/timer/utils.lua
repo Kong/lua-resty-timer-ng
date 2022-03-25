@@ -126,7 +126,7 @@ function _M.print_wheel(wheels)
     ngx.update_time()
 
     local str = "\n======== BEGIN MSEC ========" .. ngx.now() .. "\n"
-    wheel = wheels.msec_wheel
+    wheel = wheels.msec
     str = str .. "pointer = " .. wheel.pointer .. "\n"
     str = str .. "nelts = " .. wheel.nelts .. "\n"
     for i, v in ipairs(wheel.slots) do
@@ -138,7 +138,7 @@ function _M.print_wheel(wheels)
 
 
     str = str .. "\n======== BEGIN SECOND ========\n"
-    wheel = wheels.second_wheel
+    wheel = wheels.sec
     str = str .. "pointer = " .. wheel.pointer .. "\n"
     str = str .. "nelts = " .. wheel.nelts .. "\n"
     for i, v in ipairs(wheel.slots) do
@@ -150,7 +150,7 @@ function _M.print_wheel(wheels)
 
 
     str = str .. "\n======== BEGIN MINUTE ========\n"
-    wheel = wheels.minute_wheel
+    wheel = wheels.min
     str = str .. "pointer = " .. wheel.pointer .. "\n"
     str = str .. "nelts = " .. wheel.nelts .. "\n"
     for i, v in ipairs(wheel.slots) do
@@ -162,7 +162,7 @@ function _M.print_wheel(wheels)
 
 
     str = str .. "\n======== BEGIN HOUR ========\n"
-    wheel = wheels.hour_wheel
+    wheel = wheels.hour
     str = str .. "pointer = " .. wheel.pointer .. "\n"
     str = str .. "nelts = " .. wheel.nelts .. "\n"
     for i, v in ipairs(wheel.slots) do
