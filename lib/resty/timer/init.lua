@@ -1,6 +1,10 @@
 local pairs = pairs
 
-local semaphore = require "ngx.semaphore"
+local semaphore = require("ngx.semaphore")
+local job_module = require("resty.timer.job")
+local utils_module = require("resty.timer.utils")
+local wheel_group_module = require("resty.timer.wheel.group")
+local constants = require("resty.timer.constants")
 
 -- TODO: use it to readuce overhead
 -- local new_tab = require "table.new"
@@ -23,11 +27,6 @@ local sleep = ngx.sleep
 local exiting = ngx.worker.exiting
 local now = ngx.now
 local update_time = ngx.update_time
-
-local job_module = require("resty.timer.job")
-local utils_module = require("resty.timer.utils")
-local wheel_group_module = require("resty.timer.wheel.group")
-local constants = require("resty.timer.constants")
 
 local assert = utils_module.assert
 

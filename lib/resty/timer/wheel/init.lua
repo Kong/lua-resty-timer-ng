@@ -1,3 +1,5 @@
+local utils = require("resty.timer.utils")
+
 local setmetatable = setmetatable
 
 local ngx = ngx
@@ -6,8 +8,6 @@ local ngx = ngx
 local log = ngx.log
 local ERR = ngx.ERR
 -- luacheck: pop
-
-local utils = require("resty.timer.utils")
 
 local assert = utils.assert
 

@@ -1,3 +1,5 @@
+local utils = require("resty.timer.utils")
+
 local unpack = table.unpack
 local concat = table.concat
 local debug_getinfo = debug.getinfo
@@ -19,8 +21,6 @@ local ERR = ngx.ERR
 -- luacheck: pop
 
 local now = ngx.now
-
-local utils = require("resty.timer.utils")
 
 local assert = utils.assert
 

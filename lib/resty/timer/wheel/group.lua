@@ -1,3 +1,7 @@
+local utils_module = require("resty.timer.utils")
+local wheel_module = require("resty.timer.wheel")
+local constants = require("resty.timer.constants")
+
 local pairs = pairs
 local setmetatable = setmetatable
 
@@ -10,10 +14,6 @@ local ERR = ngx.ERR
 
 local now = ngx.now
 local update_time = ngx.update_time
-
-local utils_module = require("resty.timer.utils")
-local wheel_module = require("resty.timer.wheel")
-local constants = require("resty.timer.constants")
 
 local assert = utils_module.assert
 
