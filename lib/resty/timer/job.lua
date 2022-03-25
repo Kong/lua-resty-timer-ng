@@ -1,6 +1,7 @@
 local unpack = table.unpack
 local concat = table.concat
 local debug_getinfo = debug.getinfo
+local setmetatable = setmetatable
 
 local max = math.max
 local min = math.min

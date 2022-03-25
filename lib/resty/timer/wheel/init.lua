@@ -1,3 +1,5 @@
+local setmetatable = setmetatable
+
 local ngx = ngx
 
 -- luacheck: push ignore
