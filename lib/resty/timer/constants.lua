@@ -10,7 +10,7 @@ local _M = {
 
     DEFAULT_FOCUS_UPDATE_TIME = true,
 
-    -- 23:59:00
+    -- 23 hour 59 minute 00 second
     MAX_EXPIRE = 23 * 60 * 60 + 59 * 60,
 
     -- 100ms
@@ -41,7 +41,7 @@ assert(_M.RESOLUTION * _M.MSEC_WHEEL_SLOTS == 1,
     "`RESOLUTION` and `MSEC_WHEEL_SLOTS`")
 
 
--- `-10` means don't touch the boundary, i.e. 23:59:59
+-- `-10` means don't touch the boundary, i.e. 23 hour 59 minute 00 second
 -- you can also change it to `-2` (min)
 local _max_expire = _M.RESOLUTION
     * _M.MSEC_WHEEL_SLOTS
