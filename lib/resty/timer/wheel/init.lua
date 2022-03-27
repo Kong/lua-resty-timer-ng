@@ -25,16 +25,18 @@ end
 
 function _M:cal_pointer(pointer, offset)
     local nelts = self.nelts
+    local is_spin_to_start_slot = false
     local p = pointer
     local old = p
 
     p = (p + offset) % (nelts + 1)
 
     if old + offset > nelts then
-        return p + 1, true
+        is_spin_to_start_slot = true
+        p = p + 1
     end
 
-    return p, false
+    return p, is_spin_to_start_slot
 end
 
 

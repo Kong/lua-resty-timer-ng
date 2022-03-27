@@ -113,39 +113,39 @@ local function job_re_cal_next_pointer(job, wheels)
     local next_second_pointer = 0
     local next_msec_pointer = 0
 
-    local up = false
+    local is_spin_to_start_slot = false
 
     if offset_msec~= 0 then
-        next_msec_pointer, up =
+        next_msec_pointer, is_spin_to_start_slot =
             msec_wheel:cal_pointer(cur_msec_pointer, offset_msec)
     end
 
-    if offset_second~= 0 or up then
-        if up then
+    if offset_second~= 0 or is_spin_to_start_slot then
+        if is_spin_to_start_slot then
             offset_second = offset_second + 1
         end
 
-        next_second_pointer, up =
+        next_second_pointer, is_spin_to_start_slot =
             second_wheel:cal_pointer(cur_second_pointer, offset_second)
 
     else
-        up = false
+        is_spin_to_start_slot = false
     end
 
-    if offset_minute~= 0 or up then
-        if up then
+    if offset_minute~= 0 or is_spin_to_start_slot then
+        if is_spin_to_start_slot then
             offset_minute = offset_minute + 1
         end
 
-        next_minute_pointer, up =
+        next_minute_pointer, is_spin_to_start_slot =
             minute_wheel:cal_pointer(cur_minute_pointer, offset_minute)
 
     else
-        up = false
+        is_spin_to_start_slot = false
     end
 
-    if offset_hour~= 0 or up then
-        if up then
+    if offset_hour~= 0 or is_spin_to_start_slot then
+        if is_spin_to_start_slot then
             offset_hour = offset_hour + 1
         end
 
