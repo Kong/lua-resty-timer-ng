@@ -34,12 +34,12 @@ function _M:update_closest()
     -- `constants.MSEC_WHEEL_SLOTS - 1` means
     -- ignore the current slot
     for i = 1, constants.MSEC_WHEEL_SLOTS - 1 do
-        local pointer, is_move_to_start =
+        local pointer, is_spin_to_start_slot =
             msec_wheel:cal_pointer(cur_msec_pointer, i)
 
         delay = delay + constants.RESOLUTION
 
-        if is_move_to_start then
+        if is_spin_to_start_slot then
             break
         end
 
@@ -68,10 +68,10 @@ function _M:fetch_all_expired_jobs()
     local msec_wheel = self.msec_wheel
 
 
-    local callbacks = hour_wheel:get_jobs()
+    local jobs = hour_wheel:get_jobs()
 
-    if callbacks then
-        for name, job in pairs(callbacks) do
+    if jobs then
+        for name, job in pairs(jobs) do
 
             local next = job.next_pointer
 
@@ -88,14 +88,14 @@ function _M:fetch_all_expired_jobs()
                 self.ready_jobs[name] = job
             end
 
-            callbacks[name] = nil
+            jobs[name] = nil
         end
     end
 
-    callbacks = minute_wheel:get_jobs()
+    jobs = minute_wheel:get_jobs()
 
-    if callbacks then
-        for name, job in pairs(callbacks) do
+    if jobs then
+        for name, job in pairs(jobs) do
 
             if job:is_runable() then
                 local next = job.next_pointer
@@ -111,14 +111,14 @@ function _M:fetch_all_expired_jobs()
                 end
             end
 
-            callbacks[name] = nil
+            jobs[name] = nil
         end
     end
 
-    callbacks = second_wheel:get_jobs()
+    jobs = second_wheel:get_jobs()
 
-    if callbacks then
-        for name, job in pairs(callbacks) do
+    if jobs then
+        for name, job in pairs(jobs) do
 
             if job:is_runable() then
                 local next = job.next_pointer
@@ -131,20 +131,20 @@ function _M:fetch_all_expired_jobs()
                 end
             end
 
-            callbacks[name] = nil
+            jobs[name] = nil
         end
     end
 
 
-    callbacks = msec_wheel:get_jobs()
+    jobs = msec_wheel:get_jobs()
 
-    if callbacks then
-        for name, job in pairs(callbacks) do
+    if jobs then
+        for name, job in pairs(jobs) do
             if job:is_runable() then
                 self.ready_jobs[name] = job
             end
 
-            callbacks[name] = nil
+            jobs[name] = nil
         end
     end
 end
@@ -162,16 +162,16 @@ function _M:sync_time()
     self.real_time = now()
 
     while utils.float_compare(self.real_time, self.expected_time) == 1 do
-        local _, continue = msec_wheel:spin_pointer_one_slot()
+        local _, is_spin_to_start_slot = msec_wheel:spin_pointer_one_slot()
 
-        if continue then
-            _, continue = second_wheel:spin_pointer_one_slot()
+        if is_spin_to_start_slot then
+            _, is_spin_to_start_slot = second_wheel:spin_pointer_one_slot()
 
-            if continue then
-                _, continue = minute_wheel:spin_pointer_one_slot()
+            if is_spin_to_start_slot then
+                _, is_spin_to_start_slot = minute_wheel:spin_pointer_one_slot()
 
-                if continue then
-                    _, _ = hour_wheel:spin_pointer_one_slot()
+                if is_spin_to_start_slot then
+                    hour_wheel:spin_pointer_one_slot()
                 end
 
             end
