@@ -93,8 +93,6 @@ end
 
 
 local function job_re_cal_next_pointer(job, wheels)
-    local _
-
     local offset_hour = job.offset.hour
     local offset_minute = job.offset.minute
     local offset_second = job.offset.second
