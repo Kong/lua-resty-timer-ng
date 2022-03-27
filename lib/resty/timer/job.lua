@@ -117,17 +117,12 @@ local function job_re_cal_next_pointer(job, wheels)
 
     local up = false
 
-    if offset_msec then
+    if offset_msec~= 0 then
         next_msec_pointer, up =
             msec_wheel:cal_pointer(cur_msec_pointer, offset_msec)
     end
 
-    if offset_second or up then
-
-        if not offset_second then
-            offset_second = 0
-        end
-
+    if offset_second~= 0 or up then
         if up then
             offset_second = offset_second + 1
         end
@@ -139,12 +134,7 @@ local function job_re_cal_next_pointer(job, wheels)
         up = false
     end
 
-    if offset_minute or up then
-
-        if not offset_minute then
-            offset_minute = 0
-        end
-
+    if offset_minute~= 0 or up then
         if up then
             offset_minute = offset_minute + 1
         end
@@ -156,12 +146,7 @@ local function job_re_cal_next_pointer(job, wheels)
         up = false
     end
 
-    if offset_hour or up then
-
-        if not offset_hour then
-            offset_hour = 0
-        end
-
+    if offset_hour~= 0 or up then
         if up then
             offset_hour = offset_hour + 1
         end
@@ -269,22 +254,6 @@ function _M.new(wheels, name, callback, delay, once, args)
 
         offset_minute = modf(delay / 60)
         offset_second = delay % 60
-
-        if offset_second == 0 then
-            if offset_hour == 0 and offset_minute == 0 then
-                offset_second = nil
-            end
-        end
-
-        if offset_minute == 0 then
-            if offset_hour == 0 then
-                offset_minute = nil
-            end
-        end
-
-        if offset_hour == 0 then
-            offset_hour = nil
-        end
 
     else
         immediately = true
