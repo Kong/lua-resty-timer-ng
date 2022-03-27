@@ -2,8 +2,8 @@ local pairs = pairs
 
 local semaphore = require("ngx.semaphore")
 local job_module = require("resty.timer.job")
-local utils_module = require("resty.timer.utils")
-local wheel_group_module = require("resty.timer.wheel.group")
+local utils = require("resty.timer.utils")
+local wheel_group = require("resty.timer.wheel.group")
 local constants = require("resty.timer.constants")
 
 -- TODO: use it to readuce overhead
@@ -28,7 +28,7 @@ local exiting = ngx.worker.exiting
 local now = ngx.now
 local update_time = ngx.update_time
 
-local assert = utils_module.assert
+local assert = utils.assert
 
 local _M = {}
 
@@ -74,10 +74,10 @@ local function mover_timer_callback(premature, self)
         semaphore_mover:wait(1)
 
         local is_no_pending_jobs =
-            utils_module.is_empty_table(wheels.pending_jobs)
+            utils.is_empty_table(wheels.pending_jobs)
 
         local is_no_ready_jobs =
-            utils_module.is_empty_table(wheels.ready_jobs)
+            utils.is_empty_table(wheels.ready_jobs)
 
         if not is_no_pending_jobs then
             semaphore_worker:post(opt_threads)
@@ -109,10 +109,10 @@ local function worker_timer_callback(premature, self, thread_index)
         -- TODO: check the return value
         semaphore_worker:wait(1)
 
-        while not utils_module.is_empty_table(wheels.pending_jobs) do
+        while not utils.is_empty_table(wheels.pending_jobs) do
             thread.counter.runs = thread.counter.runs + 1
 
-            local job = utils_module.get_a_item_from_table(wheels.pending_jobs)
+            local job = utils.get_a_item_from_table(wheels.pending_jobs)
 
             wheels.pending_jobs[job.name] = nil
 
@@ -131,7 +131,7 @@ local function worker_timer_callback(premature, self, thread_index)
             end
         end
 
-        if not utils_module.is_empty_table(wheels.ready_jobs) then
+        if not utils.is_empty_table(wheels.ready_jobs) then
             wake_up_mover_timer(self)
         end
 
@@ -180,7 +180,7 @@ local function super_timer_callback(premature, self)
         if self.enable then
             wheels:sync_time()
 
-            if not utils_module.is_empty_table(wheels.ready_jobs) then
+            if not utils.is_empty_table(wheels.ready_jobs) then
                 wake_up_mover_timer(self)
             end
 
@@ -300,7 +300,7 @@ function _M:configure(options)
 
     self.semaphore_mover = semaphore.new(0)
 
-    self.wheels = wheel_group_module.new()
+    self.wheels = wheel_group.new()
 
     for i = 1, self.opt.threads do
         self.threads[i] = {

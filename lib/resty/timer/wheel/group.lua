@@ -1,5 +1,5 @@
-local utils_module = require("resty.timer.utils")
-local wheel_module = require("resty.timer.wheel")
+local utils = require("resty.timer.utils")
+local wheel = require("resty.timer.wheel")
 local constants = require("resty.timer.constants")
 
 local pairs = pairs
@@ -15,7 +15,7 @@ local ERR = ngx.ERR
 local now = ngx.now
 local update_time = ngx.update_time
 
-local assert = utils_module.assert
+local assert = utils.assert
 
 local _M = {}
 
@@ -45,7 +45,7 @@ function _M:update_closest()
 
         local jobs = msec_wheel:get_jobs_by_pointer(pointer)
 
-        if not utils_module.is_empty_table(jobs) then
+        if not utils.is_empty_table(jobs) then
             break
         end
     end
@@ -161,7 +161,7 @@ function _M:sync_time()
     update_time()
     self.real_time = now()
 
-    while utils_module.float_compare(self.real_time, self.expected_time) == 1 do
+    while utils.float_compare(self.real_time, self.expected_time) == 1 do
         local _, continue = msec_wheel:move_to_next()
 
         if continue then
@@ -232,16 +232,16 @@ function _M.new()
         pending_jobs = {},
 
         -- 100ms per slot
-        msec_wheel = wheel_module.new(constants.MSEC_WHEEL_SLOTS),
+        msec_wheel = wheel.new(constants.MSEC_WHEEL_SLOTS),
 
         -- 1 second per slot
-        second_wheel = wheel_module.new(constants.SECOND_WHEEL_SLOTS),
+        second_wheel = wheel.new(constants.SECOND_WHEEL_SLOTS),
 
         -- 1 minute per slot
-        minute_wheel = wheel_module.new(constants.MINUTE_WHEEL_SLOTS),
+        minute_wheel = wheel.new(constants.MINUTE_WHEEL_SLOTS),
 
         -- 1 hour per slot
-        hour_wheel = wheel_module.new(constants.HOUR_WHEEL_SLOTS),
+        hour_wheel = wheel.new(constants.HOUR_WHEEL_SLOTS),
     }
 
 
