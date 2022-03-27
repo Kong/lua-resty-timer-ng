@@ -57,11 +57,11 @@ function _M:insert(pointer, job)
 end
 
 
-function _M:move_to_next()
-    local pointer, is_move_to_end = self:cal_pointer(self.pointer, 1)
+function _M:spin_pointer_one_slot()
+    local pointer, is_spin_to_start_slot = self:cal_pointer(self.pointer, 1)
     self.pointer = pointer
 
-    return self.slots[self.pointer], is_move_to_end
+    return self.slots[self.pointer], is_spin_to_start_slot
 end
 
 

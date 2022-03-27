@@ -162,16 +162,16 @@ function _M:sync_time()
     self.real_time = now()
 
     while utils.float_compare(self.real_time, self.expected_time) == 1 do
-        local _, continue = msec_wheel:move_to_next()
+        local _, continue = msec_wheel:spin_pointer_one_slot()
 
         if continue then
-            _, continue = second_wheel:move_to_next()
+            _, continue = second_wheel:spin_pointer_one_slot()
 
             if continue then
-                _, continue = minute_wheel:move_to_next()
+                _, continue = minute_wheel:spin_pointer_one_slot()
 
                 if continue then
-                    _, _ = hour_wheel:move_to_next()
+                    _, _ = hour_wheel:spin_pointer_one_slot()
                 end
 
             end
