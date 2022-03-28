@@ -236,6 +236,11 @@ function _M:is_once()
 end
 
 
+function _M:is_cancel()
+    return self._cancel
+end
+
+
 function _M:is_runable()
     return self._enable and not self._cancel and not self._running
 end
