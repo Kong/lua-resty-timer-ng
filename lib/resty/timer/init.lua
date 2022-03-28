@@ -154,6 +154,10 @@ local function worker_timer_callback(premature, self, thread_index)
 
         if thread.counter.runs > self.opt.restart_thread_after_runs == 0 then
             thread.counter.runs = 0
+
+            -- Since the native timer only releases resources when it is destroyed,
+            -- including resources created by `job:execute()`
+            -- it needs to be destroyed and recreated periodically.
             native_timer_at(0, worker_timer_callback, self, thread_index)
             break
         end
