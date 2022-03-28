@@ -291,10 +291,12 @@ function _M.new()
         -- will be move to `pending_jobs` by function `mover_timer_callback`
         -- the function `fetch_all_expired_jobs`
         -- adds all expired job to this table
+        -- TODO: use `utils.table_new`
         ready_jobs = {},
 
         -- each job in this table will
         -- be run by function `worker_timer_callback`
+        -- TODO: use `utils.table_new`
         pending_jobs = {},
 
         -- 100ms per slot

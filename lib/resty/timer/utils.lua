@@ -32,6 +32,22 @@ do
 end
 
 
+local table_new
+
+do
+    local has_table_new, _table_new = pcall(require, "table.new")
+
+    if has_table_new then
+        table_new = _table_new
+
+    else
+        table_new = function ()
+            return { }
+        end
+    end
+end
+
+
 
 local _M = {}
 
@@ -59,6 +75,11 @@ function _M.get_variance(cur_value, cur_count, old_variance, old_avg)
     -- recurrence formula
     return (((cur_count - 1) / pow(cur_count, 2)) * pow(cur_value - old_avg, 2))
         + (((cur_count - 1) / cur_count) * old_variance)
+end
+
+
+function _M.table_new(narray, nhash)
+    return table_new(narray, nhash)
 end
 
 

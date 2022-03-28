@@ -95,6 +95,8 @@ local function mover_timer_callback(premature, self)
 
         if not is_no_ready_jobs then
             wheels.pending_jobs = wheels.ready_jobs
+
+            -- TODO; use `utils.table_new`
             wheels.ready_jobs = {}
             semaphore_worker:post(opt_threads)
         end
@@ -304,7 +306,7 @@ function _M:configure(options)
     -- enable/diable entire timing system
     self.enable = false
 
-    self.threads = {}
+    self.threads = utils.table_new(opt.threads, 0)
     self.jobs = {}
 
     -- has the super timer already been created?
@@ -484,6 +486,7 @@ function _M:stats()
         waiting = 0,
     }
 
+    -- TODO: use `utils.table_new`
     local jobs = {}
 
     for name, job in pairs(self.jobs) do
