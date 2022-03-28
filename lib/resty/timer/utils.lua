@@ -102,13 +102,13 @@ function _M.float_compare(left, right)
     local delta = left - right
     if delta < -0.01 then
         return -1
-
-    elseif delta > 0.01 then
-        return 1
-
-    else
-        return 0
     end
+
+    if delta > 0.01 then
+        return 1
+    end
+
+    return 0
 end
 
 function _M.print_queue(self)

@@ -81,12 +81,16 @@ local function mover_timer_callback(premature, self)
 
         if not is_no_pending_jobs then
             semaphore_worker:post(opt_threads)
+            goto continue
+        end
 
-        elseif is_no_pending_jobs and not is_no_ready_jobs then
+        if is_no_pending_jobs and not is_no_ready_jobs then
             wheels.pending_jobs = wheels.ready_jobs
             wheels.ready_jobs = {}
             semaphore_worker:post(opt_threads)
         end
+
+        ::continue::
     end
 end
 
@@ -121,14 +125,18 @@ local function worker_timer_callback(premature, self, thread_index)
 
                 if job:is_once() then
                     jobs[job.name] = nil
+                    goto continue
+                end
 
-                elseif job:is_runable() then
+                if job:is_runable() then
                     wheels:sync_time()
                     job:re_cal_next_pointer(wheels)
                     wheels:insert_job(job)
                     wake_up_super_timer(self)
                 end
             end
+
+            ::continue::
         end
 
         if not utils.is_empty_table(wheels.ready_jobs) then
@@ -142,7 +150,7 @@ local function worker_timer_callback(premature, self, thread_index)
             break
         end
 
-    end
+    end -- the top while
 end
 
 
