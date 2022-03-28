@@ -267,6 +267,12 @@ function _M.new(wheels, name, callback, delay, once, args)
         delay, offset_msec = modf(delay)
         offset_msec = offset_msec * 1000 + 10
         offset_msec = floor(floor(offset_msec) / 100)
+
+        -- Arithmetically, the maximum of `offset_msec`
+        -- should be `9` now,
+        -- but due to floating point errors,
+        -- there may be some unexpected cases here.
+        -- So here we deal with it.
         offset_msec = min(offset_msec, 9)
 
         offset_hour = modf(delay / 60 / 60)
