@@ -124,9 +124,10 @@ local function job_re_cal_next_pointer(job, wheels)
     if offset_second~= 0 or is_spin_to_start_slot then
 
         -- Suppose the current pointer of the `msec_wheel` points to slot 7
-        -- and the `msec_wheel` has ten slots. 
+        -- and the `msec_wheel` has ten slots.
         -- `offset_msec = 4`, which results in 1 at this point,
-        -- but obviously we need to make the pointer of the `minute_wheel` spin, like a clock.
+        -- but obviously we need to make
+        -- the pointer of the `minute_wheel` spin, like a clock.
         -- Same for `offset_minute` and `offset_hour`.
         if is_spin_to_start_slot then
             offset_second = offset_second + 1
@@ -161,9 +162,10 @@ local function job_re_cal_next_pointer(job, wheels)
     end
 
 
-    -- Suppose a job will expire in one minute 
+    -- Suppose a job will expire in one minute
     -- and we need to spin the pointer of the `minute_wheel`,
-    -- but obviously we should not have the second and msec pointer pointing to zero,
+    -- but obviously we should not make the
+    -- second and msec pointer pointing to zero,
     -- they should point to the current position.
 
     if next_hour_pointer ~= 0 then
