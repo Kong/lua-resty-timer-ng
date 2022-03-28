@@ -81,35 +81,37 @@ function _M:fetch_all_expired_jobs()
 
     if jobs then
         for name, job in pairs(jobs) do
-            if job:is_runable() then
-                local next = job.next_pointer
-                jobs[name] = nil
-
-                -- if `next.minute` is equal 0,
-                -- it means that this job does
-                -- not need to be inserted
-                -- into the `minute_wheel`.
-                -- Same for `next.second` and `next.msec`
-
-                if next.minute ~= 0 then
-                    minute_wheel:insert(job.next_pointer.minute, job)
-                    goto continue
-                end
-
-                if next.second ~= 0 then
-                    second_wheel:insert(job.next_pointer.second, job)
-                    goto continue
-                end
-
-                if next.msec ~= 0 then
-                    msec_wheel:insert(job.next_pointer.msec, job)
-                    goto continue
-                end
-
-                self.ready_jobs[name] = job
+            if not job:is_runable() then
+                goto continue
             end
-            ::continue::
 
+            local next = job.next_pointer
+            jobs[name] = nil
+
+            -- if `next.minute` is equal 0,
+            -- it means that this job does
+            -- not need to be inserted
+            -- into the `minute_wheel`.
+            -- Same for `next.second` and `next.msec`
+
+            if next.minute ~= 0 then
+                minute_wheel:insert(job.next_pointer.minute, job)
+                goto continue
+            end
+
+            if next.second ~= 0 then
+                second_wheel:insert(job.next_pointer.second, job)
+                goto continue
+            end
+
+            if next.msec ~= 0 then
+                msec_wheel:insert(job.next_pointer.msec, job)
+                goto continue
+            end
+
+            self.ready_jobs[name] = job
+
+            ::continue::
         end
     end
 
@@ -117,23 +119,24 @@ function _M:fetch_all_expired_jobs()
 
     if jobs then
         for name, job in pairs(jobs) do
-
-            if job:is_runable() then
-                local next = job.next_pointer
-                jobs[name] = nil
-
-                if next.second ~= 0 then
-                    second_wheel:insert(job.next_pointer.second, job)
-                    goto continue
-                end
-
-                if next.msec ~= 0 then
-                    msec_wheel:insert(job.next_pointer.msec, job)
-                    goto continue
-                end
-
-                self.ready_jobs[name] = job
+            if not job:is_runable() then
+                goto continue
             end
+
+            local next = job.next_pointer
+            jobs[name] = nil
+
+            if next.second ~= 0 then
+                second_wheel:insert(job.next_pointer.second, job)
+                goto continue
+            end
+
+            if next.msec ~= 0 then
+                msec_wheel:insert(job.next_pointer.msec, job)
+                goto continue
+            end
+
+            self.ready_jobs[name] = job
 
             ::continue::
         end
@@ -143,18 +146,19 @@ function _M:fetch_all_expired_jobs()
 
     if jobs then
         for name, job in pairs(jobs) do
-
-            if job:is_runable() then
-                local next = job.next_pointer
-                jobs[name] = nil
-
-                if next.msec ~= 0 then
-                    msec_wheel:insert(job.next_pointer.msec, job)
-                    goto continue
-                end
-
-                self.ready_jobs[name] = job
+            if not job:is_runable() then
+                goto continue
             end
+
+            local next = job.next_pointer
+            jobs[name] = nil
+
+            if next.msec ~= 0 then
+                msec_wheel:insert(job.next_pointer.msec, job)
+                goto continue
+            end
+
+            self.ready_jobs[name] = job
 
             ::continue::
         end
@@ -165,16 +169,18 @@ function _M:fetch_all_expired_jobs()
 
     if jobs then
         for name, job in pairs(jobs) do
+            if not job:is_runable() then
+                goto continue
+            end
+
+            jobs[name] = nil
 
             -- all jobs in the slot
             -- pointed by the `msec_wheel` pointer
             -- will be executed
+            self.ready_jobs[name] = job
 
-            if job:is_runable() then
-                self.ready_jobs[name] = job
-            end
-
-            jobs[name] = nil
+            ::continue::
         end
     end
 end
@@ -200,18 +206,25 @@ function _M:sync_time()
 
         local _, is_spin_to_start_slot = msec_wheel:spin_pointer_one_slot()
 
-        if is_spin_to_start_slot then
-            _, is_spin_to_start_slot = second_wheel:spin_pointer_one_slot()
-
-            if is_spin_to_start_slot then
-                _, is_spin_to_start_slot = minute_wheel:spin_pointer_one_slot()
-
-                if is_spin_to_start_slot then
-                    hour_wheel:spin_pointer_one_slot()
-                end
-
-            end
+        if not is_spin_to_start_slot then
+            goto stop_spining
         end
+
+        _, is_spin_to_start_slot = second_wheel:spin_pointer_one_slot()
+
+        if not is_spin_to_start_slot then
+            goto stop_spining
+        end
+
+        _, is_spin_to_start_slot = minute_wheel:spin_pointer_one_slot()
+
+        if not is_spin_to_start_slot then
+            goto stop_spining
+        end
+
+        hour_wheel:spin_pointer_one_slot()
+
+        ::stop_spining::
 
         self:fetch_all_expired_jobs()
 
