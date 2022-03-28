@@ -81,32 +81,33 @@ function _M:fetch_all_expired_jobs()
 
     if jobs then
         for name, job in pairs(jobs) do
-            local next = job.next_pointer
-            jobs[name] = nil
+            if job:is_runable() then
+                local next = job.next_pointer
+                jobs[name] = nil
 
-            -- if `next.minute` is equal 0,
-            -- it means that this job does
-            -- not need to be inserted
-            -- into the `minute_wheel`.
-            -- Same for `next.second` and `next.msec`
+                -- if `next.minute` is equal 0,
+                -- it means that this job does
+                -- not need to be inserted
+                -- into the `minute_wheel`.
+                -- Same for `next.second` and `next.msec`
 
-            if next.minute ~= 0 then
-                minute_wheel:insert(job.next_pointer.minute, job)
-                goto continue
+                if next.minute ~= 0 then
+                    minute_wheel:insert(job.next_pointer.minute, job)
+                    goto continue
+                end
+
+                if next.second ~= 0 then
+                    second_wheel:insert(job.next_pointer.second, job)
+                    goto continue
+                end
+
+                if next.msec ~= 0 then
+                    msec_wheel:insert(job.next_pointer.msec, job)
+                    goto continue
+                end
+
+                self.ready_jobs[name] = job
             end
-
-            if next.second ~= 0 then
-                second_wheel:insert(job.next_pointer.second, job)
-                goto continue
-            end
-
-            if next.msec ~= 0 then
-                msec_wheel:insert(job.next_pointer.msec, job)
-                goto continue
-            end
-
-            self.ready_jobs[name] = job
-
             ::continue::
 
         end
