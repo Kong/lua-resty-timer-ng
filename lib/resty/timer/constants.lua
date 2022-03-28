@@ -27,6 +27,9 @@ local _M = {
 
     -- 1 hour per slot
     HOUR_WHEEL_SLOTS = 24,
+
+    MSG_FATAL_FAILED_CREATE_NATIVE_TIMER
+        = "failed to create a native timer: "
 }
 
 

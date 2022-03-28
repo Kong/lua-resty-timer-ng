@@ -33,6 +33,15 @@ local assert = utils.assert
 local _M = {}
 
 
+local function native_timer_at(delay, callback, ...)
+    local ok, err = timer_at(delay, callback, ...)
+    assert(ok,
+        constants.MSG_FATAL_FAILED_CREATE_NATIVE_TIMER
+        -- `err` maybe `nil`
+        .. tostring(err))
+end
+
+
 -- post some resources until `self.semaphore_super:count() == 1`
 local function wake_up_super_timer(self)
     local semaphore_super = self.semaphore_super
@@ -145,8 +154,7 @@ local function worker_timer_callback(premature, self, thread_index)
 
         if thread.counter.runs > self.opt.restart_thread_after_runs == 0 then
             thread.counter.runs = 0
-            -- TODO: check return value
-            timer_at(0, worker_timer_callback, self, thread_index)
+            native_timer_at(0, worker_timer_callback, self, thread_index)
             break
         end
 
@@ -169,8 +177,7 @@ local function super_timer_callback(premature, self)
 
     for i = 1, opt_threads do
         if not threads[i].alive then
-            assert((timer_at(0, worker_timer_callback, self, i)),
-                "failed to create native timer")
+            native_timer_at(0, worker_timer_callback, self, i)
         end
     end
 
@@ -330,12 +337,9 @@ function _M:start()
     local ok, err = true, nil
 
     if not self.super_timer then
-        ok, err = timer_at(0, super_timer_callback, self)
+        native_timer_at(0, super_timer_callback, self)
+        native_timer_at(0, mover_timer_callback, self)
         self.super_timer = true
-
-        if ok then
-            ok, err = timer_at(0, mover_timer_callback, self)
-        end
     end
 
     if not self.enable then
