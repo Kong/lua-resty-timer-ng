@@ -33,6 +33,10 @@ function _M:cal_pointer(pointer, offset)
 
     if old + offset > nelts then
         is_spin_to_start_slot = true
+
+        -- example: (3 + 5) % 8 = 0
+        -- but the index of the first slot of the wheel is 1
+        -- so `+ 1`
         p = p + 1
     end
 

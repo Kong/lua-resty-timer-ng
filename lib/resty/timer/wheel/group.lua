@@ -39,6 +39,15 @@ function _M:update_closest()
 
         delay = delay + constants.RESOLUTION
 
+        -- Scan only to the end point, not the whole wheel.
+        -- why?
+        -- Because there might be some jobs falling from the higher wheel
+        -- when the pointer of the `msec_wheel` spins to the starting point.
+        -- If the whole wheel is scanned
+        -- and the result obtained is used as the sleep time of the super timer,
+        -- some jobs of higher wheels may not be executed in time.
+        -- This is because the super timer will only be woken up
+        -- when any wheels are modified or when the semaphore timeout.
         if is_spin_to_start_slot then
             break
         end
@@ -74,6 +83,12 @@ function _M:fetch_all_expired_jobs()
         for name, job in pairs(jobs) do
 
             local next = job.next_pointer
+
+            -- if `next.minute` is equal 0,
+            -- it means that this job does
+            -- not need to be inserted
+            -- into the `minute_wheel`.
+            -- Same for `next.second` and `next.msec`
 
             if next.minute ~= 0 then
                 minute_wheel:insert(job.next_pointer.minute, job)
@@ -140,6 +155,11 @@ function _M:fetch_all_expired_jobs()
 
     if jobs then
         for name, job in pairs(jobs) do
+
+            -- all jobs in the slot
+            -- pointed by the `msec_wheel` pointer
+            -- will be executed
+
             if job:is_runable() then
                 self.ready_jobs[name] = job
             end
@@ -156,12 +176,18 @@ function _M:sync_time()
     local second_wheel = self.second_wheel
     local msec_wheel = self.msec_wheel
 
+    -- perhaps some jobs have expired but not been fetched
     self:fetch_all_expired_jobs()
 
     update_time()
     self.real_time = now()
 
+    -- Until the difference with the real time is less than 100ms
     while utils.float_compare(self.real_time, self.expected_time) == 1 do
+
+        -- if the pointer of a wheel spins to the starting point,
+        -- then the pointer of a higher wheel should spin too.
+
         local _, is_spin_to_start_slot = msec_wheel:spin_pointer_one_slot()
 
         if is_spin_to_start_slot then
@@ -178,6 +204,7 @@ function _M:sync_time()
         end
 
         self:fetch_all_expired_jobs()
+
         self.expected_time =  self.expected_time + constants.RESOLUTION
     end
 end
@@ -190,6 +217,13 @@ function _M:insert_job(job)
     local minute_wheel = self.minute_wheel
     local second_wheel = self.second_wheel
     local msec_wheel = self.msec_wheel
+
+    -- if `next.minute` is equal 0,
+    -- it means that this job does
+    -- not need to be inserted
+    -- into the `minute_wheel`.
+    -- Same for `next.second`,`next.msec`,
+    -- and `next.hour`
 
     if job.next_pointer.hour ~= 0 then
         ok, err = hour_wheel:insert(job.next_pointer.hour, job)
