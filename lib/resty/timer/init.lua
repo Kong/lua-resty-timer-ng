@@ -109,15 +109,16 @@ end
 -- delete once job from `self.jobs`
 -- wake up the mover timer
 local function worker_timer_callback(premature, self, thread_index)
+    if premature then
+        return
+    end
+
     local semaphore_worker = self.semaphore_worker
     local thread = self.threads[thread_index]
     local wheels = self.wheels
     local jobs = self.jobs
 
     while not exiting() and not self.destory do
-        if premature then
-            return
-        end
 
         -- TODO: check the return value
         semaphore_worker:wait(1)
@@ -173,6 +174,10 @@ end
 -- * update the status of all wheels
 -- * calculate wait time for `semaphore_super`
 local function super_timer_callback(premature, self)
+    if premature then
+        return
+    end
+
     local semaphore_super = self.semaphore_super
     local threads = self.threads
     local opt_threads = self.opt.threads
@@ -193,10 +198,6 @@ local function super_timer_callback(premature, self)
     wheels.expected_time = wheels.real_time - constants.RESOLUTION
 
     while not exiting() and not self.destory do
-        if premature then
-            return
-        end
-
         if self.enable then
             wheels:sync_time()
 
