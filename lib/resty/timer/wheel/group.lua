@@ -282,6 +282,12 @@ function _M.new()
 
         closest = 0,
 
+        -- Why use two queues?
+        -- Because a zero-delay timer may create another zero-delay timer,
+        -- and all zero-delay timers will be
+        -- inserted directly into the queue,
+        -- at which point it will cause the queue to never be empty.
+
         -- will be move to `pending_jobs` by function `mover_timer_callback`
         -- the function `fetch_all_expired_jobs`
         -- adds all expired job to this table
