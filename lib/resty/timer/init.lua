@@ -125,7 +125,7 @@ local function worker_timer_callback(premature, self, thread_index)
         while not utils.table_is_empty(wheels.pending_jobs) do
             thread.counter.runs = thread.counter.runs + 1
 
-            local job = utils.get_a_item_from_table(wheels.pending_jobs)
+            local job = utils.table_get_a_item(wheels.pending_jobs)
 
             wheels.pending_jobs[job.name] = nil
 

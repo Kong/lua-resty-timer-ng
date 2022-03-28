@@ -74,7 +74,7 @@ function _M.table_is_empty(tbl)
 end
 
 
-function _M.get_a_item_from_table(tbl)
+function _M.table_get_a_item(tbl)
     if not tbl then
         return nil
     end
