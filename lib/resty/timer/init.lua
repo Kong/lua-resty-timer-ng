@@ -84,7 +84,7 @@ local function mover_timer_callback(premature, self)
             goto continue
         end
 
-        if is_no_pending_jobs and not is_no_ready_jobs then
+        if not is_no_ready_jobs then
             wheels.pending_jobs = wheels.ready_jobs
             wheels.ready_jobs = {}
             semaphore_worker:post(opt_threads)
