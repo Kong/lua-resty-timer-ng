@@ -83,10 +83,10 @@ local function mover_timer_callback(premature, self)
         semaphore_mover:wait(1)
 
         local is_no_pending_jobs =
-            utils.is_empty_table(wheels.pending_jobs)
+            utils.table_is_empty(wheels.pending_jobs)
 
         local is_no_ready_jobs =
-            utils.is_empty_table(wheels.ready_jobs)
+            utils.table_is_empty(wheels.ready_jobs)
 
         if not is_no_pending_jobs then
             semaphore_worker:post(opt_threads)
@@ -122,7 +122,7 @@ local function worker_timer_callback(premature, self, thread_index)
         -- TODO: check the return value
         semaphore_worker:wait(1)
 
-        while not utils.is_empty_table(wheels.pending_jobs) do
+        while not utils.table_is_empty(wheels.pending_jobs) do
             thread.counter.runs = thread.counter.runs + 1
 
             local job = utils.get_a_item_from_table(wheels.pending_jobs)
@@ -148,7 +148,7 @@ local function worker_timer_callback(premature, self, thread_index)
             ::continue::
         end
 
-        if not utils.is_empty_table(wheels.ready_jobs) then
+        if not utils.table_is_empty(wheels.ready_jobs) then
             wake_up_mover_timer(self)
         end
 
@@ -200,7 +200,7 @@ local function super_timer_callback(premature, self)
         if self.enable then
             wheels:sync_time()
 
-            if not utils.is_empty_table(wheels.ready_jobs) then
+            if not utils.table_is_empty(wheels.ready_jobs) then
                 wake_up_mover_timer(self)
             end
 

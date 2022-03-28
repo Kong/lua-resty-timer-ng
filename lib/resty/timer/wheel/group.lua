@@ -54,7 +54,7 @@ function _M:update_closest()
 
         local jobs = msec_wheel:get_jobs_by_pointer(pointer)
 
-        if not utils.is_empty_table(jobs) then
+        if not utils.table_is_empty(jobs) then
             break
         end
     end

@@ -62,7 +62,7 @@ function _M.get_variance(cur_value, cur_count, old_variance, old_avg)
 end
 
 
-function _M.is_empty_table(tbl)
+function _M.table_is_empty(tbl)
     assert(type(tbl) == "table",
         "expected `tbl` to be a `table`")
 
