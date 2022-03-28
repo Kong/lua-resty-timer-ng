@@ -152,7 +152,7 @@ local function worker_timer_callback(premature, self, thread_index)
             wake_up_mover_timer(self)
         end
 
-        if thread.counter.runs > self.opt.restart_thread_after_runs == 0 then
+        if thread.counter.runs > self.opt.restart_thread_after_runs then
             thread.counter.runs = 0
 
             -- Since the native timer only releases resources when it is destroyed,
