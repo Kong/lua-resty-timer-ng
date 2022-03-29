@@ -14,18 +14,18 @@ http {
         local timer = require("resty.timer")
 
         local options = {
-            threads = 10,                -- restart a timer after a certain number of this timer triggers
-            recreate_interval = 50,         -- number of timer will be created by OpenResty API
+            threads = 10,                           -- restart a timer after a certain number of this timer triggers
+            restart_thread_after_runs = 50,
         }
         timer:configure(options)
 
         -- ‘premature’ is used to be compatible with existing callback functions and will be removed in the future
-        fuction callback_once(premature, ...)
+        local fuction callback_once(premature, ...)
             -- do something
             ngx.log(ngx.ERR, "in timer example-once")
         end
 
-        function callback_every(premature, ...)
+        local function callback_every(premature, ...)
             -- do something
             ngx.log(ngx.ERR, "in timer example-every")
         end
