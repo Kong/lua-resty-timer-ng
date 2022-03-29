@@ -76,6 +76,8 @@ function _M:fetch_all_expired_jobs()
     local second_wheel = self.second_wheel
     local msec_wheel = self.msec_wheel
 
+    -- Start processing jobs
+    -- that expire in the hour_wheel.
 
     local jobs = hour_wheel:get_jobs()
 
@@ -116,6 +118,10 @@ function _M:fetch_all_expired_jobs()
         end
     end
 
+
+    -- Start processing jobs
+    -- that expire in the minute_wheel.
+
     jobs = minute_wheel:get_jobs()
 
     if jobs then
@@ -144,6 +150,10 @@ function _M:fetch_all_expired_jobs()
         end
     end
 
+
+    -- Start processing jobs
+    -- that expire in the hour_wheel.
+
     jobs = second_wheel:get_jobs()
 
     if jobs then
@@ -167,6 +177,9 @@ function _M:fetch_all_expired_jobs()
         end
     end
 
+
+    -- Start processing jobs
+    -- that expire in the hour_wheel.
 
     jobs = msec_wheel:get_jobs()
 
@@ -210,6 +223,7 @@ function _M:sync_time()
         local _, is_spin_to_start_slot = msec_wheel:spin_pointer_one_slot()
 
         if not is_spin_to_start_slot then
+            -- TODO: abuse for `goto` ?
             goto stop_spining
         end
 

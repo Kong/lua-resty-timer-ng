@@ -66,10 +66,13 @@ local meta_table = {
 local function job_create_meta(job)
     local meta = job.meta
     local callstack = meta.callstack
-    local base = 4
+
+    -- job_create_meta + job.new + create + once | every = 4
+    -- function `create` in file `lib/resty/timer/init.lua`
+    local base_callstack_level = 4
 
     for i = 1, 3 do
-        local info = debug_getinfo(i + base, "nSl")
+        local info = debug_getinfo(i + base_callstack_level, "nSl")
 
         if not info or info.short_src == "[C]" then
             break
@@ -116,12 +119,12 @@ local function job_re_cal_next_pointer(job, wheels)
 
     local is_spin_to_start_slot = false
 
-    if offset_msec~= 0 then
+    if offset_msec ~= 0 then
         next_msec_pointer, is_spin_to_start_slot =
             msec_wheel:cal_pointer(cur_msec_pointer, offset_msec)
     end
 
-    if offset_second~= 0 or is_spin_to_start_slot then
+    if offset_second ~= 0 or is_spin_to_start_slot then
 
         -- Suppose the current pointer of the `msec_wheel` points to slot 7
         -- and the `msec_wheel` has ten slots.
@@ -140,7 +143,7 @@ local function job_re_cal_next_pointer(job, wheels)
         is_spin_to_start_slot = false
     end
 
-    if offset_minute~= 0 or is_spin_to_start_slot then
+    if offset_minute ~= 0 or is_spin_to_start_slot then
         if is_spin_to_start_slot then
             offset_minute = offset_minute + 1
         end
@@ -152,7 +155,7 @@ local function job_re_cal_next_pointer(job, wheels)
         is_spin_to_start_slot = false
     end
 
-    if offset_hour~= 0 or is_spin_to_start_slot then
+    if offset_hour ~= 0 or is_spin_to_start_slot then
         if is_spin_to_start_slot then
             offset_hour = offset_hour + 1
         end
@@ -194,6 +197,8 @@ local function job_re_cal_next_pointer(job, wheels)
         if next_msec_pointer == 0 then
             next_msec_pointer = cur_msec_pointer
         end
+    -- else
+        -- nop
     end
 
 

@@ -84,7 +84,7 @@ function _M.new(nelts)
     local self = {
         pointer = 1,
         nelts = nelts,
-        slots = utils.table_new(0, nelts),
+        slots = utils.table_new(nelts, 0),
     }
 
     for i = 1, self.nelts do

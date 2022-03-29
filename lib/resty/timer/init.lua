@@ -1,5 +1,3 @@
-local pairs = pairs
-
 local semaphore = require("ngx.semaphore")
 local job_module = require("resty.timer.job")
 local utils = require("resty.timer.utils")
@@ -12,9 +10,13 @@ local constants = require("resty.timer.constants")
 local ngx = ngx
 
 local max = math.max
+local random = math.random
 local modf = math.modf
 local huge = math.huge
 local abs = math.abs
+local pairs = pairs
+local tostring = tostring
+local type = type
 
 -- luacheck: push ignore
 local log = ngx.log
@@ -43,6 +45,7 @@ end
 
 
 -- post some resources until `self.semaphore_super:count() == 1`
+-- TODO: rename the first argument ?
 local function wake_up_super_timer(self)
     local semaphore_super = self.semaphore_super
 
@@ -55,6 +58,7 @@ end
 
 
 -- post some resources until `self.semaphore_mover:count() == 1`
+-- TODO: rename the first argument ?
 local function wake_up_mover_timer(self)
     local semaphore_mover = self.semaphore_mover
 
@@ -132,20 +136,22 @@ local function worker_timer_callback(premature, self, thread_index)
 
             wheels.pending_jobs[job.name] = nil
 
+            if not job:is_runable() then
+                goto continue
+            end
+
+            job:execute()
+
+            if job:is_once() then
+                jobs[job.name] = nil
+                goto continue
+            end
+
             if job:is_runable() then
-                job:execute()
-
-                if job:is_once() then
-                    jobs[job.name] = nil
-                    goto continue
-                end
-
-                if job:is_runable() then
-                    wheels:sync_time()
-                    job:re_cal_next_pointer(wheels)
-                    wheels:insert_job(job)
-                    wake_up_super_timer(self)
-                end
+                wheels:sync_time()
+                job:re_cal_next_pointer(wheels)
+                wheels:insert_job(job)
+                wake_up_super_timer(self)
             end
 
             ::continue::
@@ -223,7 +229,7 @@ local function create(self ,name, callback, delay, once, args)
     local wheels = self.wheels
     local jobs = self.jobs
     if not name then
-        name = tostring(math.random())
+        name = tostring(random())
     end
 
     if jobs[name] then
@@ -237,7 +243,7 @@ local function create(self ,name, callback, delay, once, args)
     jobs[name] = job
 
     if job:is_immediately() then
-        self.wheels.ready_jobs[name] = job
+        wheels.ready_jobs[name] = job
         wake_up_mover_timer(self)
 
         return true, nil
@@ -296,9 +302,9 @@ function _M:configure(options)
             or constants.DEFAULT_THREADS,
 
         -- call function `ngx.update_time` every run of timer job
-        fouce_update_time = options
-            and options.fouce_update_time
-            or constants.DEFAULT_FOCUS_UPDATE_TIME,
+        force_update_time = options
+            and options.force_update_time
+            or constants.DEFAULT_FORCE_UPDATE_TIME,
     }
 
     self.opt = opt
@@ -317,11 +323,11 @@ function _M:configure(options)
 
     self.destory = false
 
-    self.semaphore_super = semaphore.new(0)
+    self.semaphore_super = semaphore.new()
 
-    self.semaphore_worker = semaphore.new(0)
+    self.semaphore_worker = semaphore.new()
 
-    self.semaphore_mover = semaphore.new(0)
+    self.semaphore_mover = semaphore.new()
 
     self.wheels = wheel_group.new()
 
@@ -366,6 +372,7 @@ function _M:stop()
 end
 
 
+-- TODO: rename this method
 function _M:unconfigure()
     self.destory = true
     self.configured = false
@@ -387,6 +394,7 @@ function _M:once(name, callback, delay, ...)
         return ok ~= nil, err
     end
 
+    -- TODO: desc the logic and add related tests
     local ok, err = create(self, name, callback, delay, true, { ... })
 
     return ok, err
@@ -420,19 +428,16 @@ function _M:run(name)
     local old_job = jobs[name]
     jobs[name] = nil
 
-    if old_job then
-
-        if not old_job:is_runable() then
-            return create(self, old_job.name, old_job.callback,
-                old_job.delay, old_job:is_once(), old_job.args)
-
-        else
-            return false, "running"
-        end
-
-    else
+    if not old_job then
         return false, "timer not found"
     end
+
+    if old_job:is_runable() then
+        return false, "running"
+    end
+
+    return create(self, old_job.name, old_job.callback,
+        old_job.delay, old_job:is_once(), old_job.args)
 end
 
 
@@ -442,19 +447,15 @@ function _M:pause(name)
     local jobs = self.jobs
     local job = jobs[name]
 
-    if job then
-
-        if job:is_enable() then
-            job:pause()
-
-        else
-            return false, "already paused"
-        end
-
-
-    else
+    if not job then
         return false, "timer not found"
     end
+
+    if not job:is_enable() then
+        return false, "already paused"
+    end
+
+    job:pause()
 
     return true, nil
 end

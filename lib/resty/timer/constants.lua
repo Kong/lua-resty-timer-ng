@@ -8,7 +8,7 @@ local _M = {
     -- restart the thread after every 50 jobs have been run
     DEFAULT_RESTART_THREAD_AFTER_RUNS = 50,
 
-    DEFAULT_FOCUS_UPDATE_TIME = true,
+    DEFAULT_FORCE_UPDATE_TIME = true,
 
     -- 23 hour 59 minute 00 second
     MAX_EXPIRE = 23 * 60 * 60 + 59 * 60,
@@ -29,13 +29,8 @@ local _M = {
     HOUR_WHEEL_SLOTS = 24,
 
     MSG_FATAL_FAILED_CREATE_NATIVE_TIMER
-        = "failed to create a native timer: "
+        = "failed to create a native timer: ",
 }
-
-
-local meta_table = { __index = _M }
-
-setmetatable(_M, meta_table)
 
 
 -- 100ms * 10 = 1 second

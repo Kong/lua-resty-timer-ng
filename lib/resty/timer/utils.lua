@@ -1,5 +1,6 @@
 local pow = math.pow
 local floor = math.floor
+local pcall = pcall
 
 local std_assert = assert
 local pairs = pairs
@@ -84,9 +85,6 @@ end
 
 
 function _M.table_is_empty(tbl)
-    assert(type(tbl) == "table",
-        "expected `tbl` to be a `table`")
-
     if not tbl then
         return true
     end
@@ -101,7 +99,7 @@ function _M.table_get_a_item(tbl)
     end
 
     -- luacheck: ignore
-    for k, v in pairs(tbl) do
+    for _, v in pairs(tbl) do
         return v
     end
 
