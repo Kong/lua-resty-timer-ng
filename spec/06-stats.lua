@@ -85,7 +85,7 @@ insulate("stats |", function ()
         assert.near(5, timer_info.runtime.min, TOLERANCE)
         assert.same(3, timer_info.runs)
         assert.same(1, timer_info.faults)
-        assert.same("spec/06-stats.lua:60: expected error", timer_info.last_err_msg)
+        assert.not_same("", timer_info.last_err_msg)
 
         assert.is_true((timer:cancel(timer_name)))
     end)
