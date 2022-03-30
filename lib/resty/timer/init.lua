@@ -480,6 +480,7 @@ end
 
 function _M:stats()
     local pending_jobs = self.wheels.pending_jobs
+    local ready_jobs = self.wheels.ready_jobs
 
     local sys = {
         running = 0,
@@ -494,7 +495,7 @@ function _M:stats()
         if job.running then
             sys.running = sys.running + 1
 
-        elseif not pending_jobs[name] then
+        elseif pending_jobs[name] or ready_jobs[name] then
             sys.pending = sys.pending + 1
 
         else
@@ -504,10 +505,10 @@ function _M:stats()
         local stats = job.stats
         jobs[name] = {
             name = name,
-            meta = job.meta,
-            runtime = job.runtime,
+            meta = job:get_metadata(),
+            runtime = utils.table_deepcopy(job.stats.runtime),
             runs = stats.runs,
-            faults = stats.faults,
+            faults = stats.runs - stats.finish,
             last_err_msg = stats.last_err_msg,
         }
     end
