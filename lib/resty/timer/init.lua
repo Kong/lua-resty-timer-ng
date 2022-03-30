@@ -21,6 +21,7 @@ local type = type
 -- luacheck: push ignore
 local log = ngx.log
 local ERR = ngx.ERR
+local DEBUG = ngx.DEBUG
 -- luacheck: pop
 
 local timer_at = ngx.timer.at
@@ -33,6 +34,11 @@ local update_time = ngx.update_time
 local assert = utils.assert
 
 local _M = {}
+
+
+local function log_dbg(...)
+    log(DEBUG, "[timer] " .. ...)
+end
 
 
 local function native_timer_at(delay, callback, ...)
@@ -73,18 +79,26 @@ end
 -- move all jobs from `self.wheels.ready_jobs` to `self.wheels.pending_jobs`
 -- wake up the worker timer
 local function mover_timer_callback(premature, self)
+    log_dbg("mover timer has been started")
+
     local semaphore_worker = self.semaphore_worker
     local semaphore_mover = self.semaphore_mover
     local opt_threads = self.opt.threads
     local wheels = self.wheels
 
     if premature then
+        log_dbg("exit mover timer due to `premature`")
         return
     end
 
     while not exiting() and not self.destory do
-        -- TODO: check the return value
-        semaphore_mover:wait(1)
+        log_dbg("waiting on `semaphore_mover` for 1 second")
+
+        local ok, err = semaphore_mover:wait(1)
+
+        if not ok then
+            log_dbg("failed to wait on `semaphore_mover`: " .. err)
+        end
 
         local is_no_pending_jobs =
             utils.table_is_empty(wheels.pending_jobs)
@@ -107,6 +121,8 @@ local function mover_timer_callback(premature, self)
 
         ::continue::
     end
+
+    log_dbg("exit mover timer")
 end
 
 
@@ -115,7 +131,10 @@ end
 -- delete once job from `self.jobs`
 -- wake up the mover timer
 local function worker_timer_callback(premature, self, thread_index)
+    log_dbg("thread #", thread_index, " has been started")
+
     if premature then
+        log_dbg("exit thread #", thread_index, " due to `premature`")
         return
     end
 
@@ -125,29 +144,43 @@ local function worker_timer_callback(premature, self, thread_index)
     local jobs = self.jobs
 
     while not exiting() and not self.destory do
+        log_dbg("waiting on `semaphore_worker` for 1 second")
+        local ok, err = semaphore_worker:wait(1)
 
-        -- TODO: check the return value
-        semaphore_worker:wait(1)
+        if not ok then
+            log_dbg("failed to wait on `semaphore_worker`: " .. err)
+        end
 
         while not utils.table_is_empty(wheels.pending_jobs) do
             thread.counter.runs = thread.counter.runs + 1
+
+            log_dbg("thread #" .. thread_index ..
+                " was run " .. thread.counter.runs .. " times")
 
             local job = utils.table_get_a_item(wheels.pending_jobs)
 
             wheels.pending_jobs[job.name] = nil
 
+            log_dbg("timer ", job.name,
+                " is expected to be executed by thread #", thread_index )
+
             if not job:is_runable() then
+                log_dbg("timer ", job.name, " is not runable")
                 goto continue
             end
 
+            log_dbg("execute timer ", job.name, "in thread #", thread_index)
             job:execute()
 
             if job:is_once() then
+                log_dbg("timer ", job.name,
+                    "need to be executed only once")
                 jobs[job.name] = nil
                 goto continue
             end
 
             if job:is_runable() then
+                log_dbg("reschedule timer #", thread_index)
                 wheels:sync_time()
                 job:re_cal_next_pointer(wheels)
                 wheels:insert_job(job)
@@ -168,11 +201,14 @@ local function worker_timer_callback(premature, self, thread_index)
             -- when it is destroyed,
             -- including resources created by `job:execute()`
             -- it needs to be destroyed and recreated periodically.
+            log_dbg("re-create thread #",  thread_index)
             native_timer_at(0, worker_timer_callback, self, thread_index)
             break
         end
 
     end -- the top while
+
+    log_dbg("exit thread #", thread_index)
 end
 
 
@@ -182,7 +218,10 @@ end
 -- * update the status of all wheels
 -- * calculate wait time for `semaphore_super`
 local function super_timer_callback(premature, self)
+    log_dbg("super timer has been started")
+
     if premature then
+        log_dbg("exit super timer due to `premature`")
         return
     end
 
@@ -195,6 +234,7 @@ local function super_timer_callback(premature, self)
 
     for i = 1, opt_threads do
         if not threads[i].alive then
+            log_dbg("creating thread #" .. i .. " of " .. opt_threads)
             native_timer_at(0, worker_timer_callback, self, i)
         end
     end
@@ -216,6 +256,8 @@ local function super_timer_callback(premature, self)
             wheels:update_closest()
             local closest = max(wheels.closest, constants.RESOLUTION)
             wheels.closest = huge
+
+            log_dbg("waiting on `semaphore_super` for " .. closest .. " second")
             semaphore_super:wait(closest)
 
         else
@@ -241,6 +283,8 @@ local function create(self ,name, callback, delay, once, args)
     local job = job_module.new(wheels, name, callback, delay, once, args)
     job:enable()
     jobs[name] = job
+
+    log_dbg("trying to create a new timer: " .. tostring(job))
 
     if job:is_immediately() then
         wheels.ready_jobs[name] = job
@@ -390,6 +434,7 @@ function _M:once(name, callback, delay, ...)
         or (delay ~= 0 and delay < constants.RESOLUTION)
         or not self.configured then
 
+        log_dbg("fallback to ngx.timer.every [delay = " .. delay .. "]")
         local ok, err = timer_at(delay, callback, ...)
         return ok ~= nil, err
     end
@@ -411,6 +456,7 @@ function _M:every(name, callback, interval, ...)
         or interval < constants.RESOLUTION
         or not self.configured then
 
+        log_dbg("fallback to ngx.timer.every [interval = " .. interval .. "]")
         local ok, err = timer_every(interval, callback, ...)
         return ok ~= nil, err
     end
