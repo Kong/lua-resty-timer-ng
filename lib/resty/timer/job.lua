@@ -256,6 +256,11 @@ function _M:is_immediately()
 end
 
 
+function _M:get_metadata()
+    return utils.table_deepcopy(self.meta)
+end
+
+
 function _M:re_cal_next_pointer(wheels)
     job_re_cal_next_pointer(self, wheels)
 end
