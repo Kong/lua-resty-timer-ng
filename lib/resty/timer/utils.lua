@@ -49,6 +49,32 @@ do
 end
 
 
+local table_deepcopy
+
+do
+    local has_penlight_tablex, pl_tablex = pcall(require, "pl.tablex")
+    if has_penlight_tablex then
+        table_deepcopy = pl_tablex.deepcopy
+
+    else
+        table_deepcopy = function(tbl)
+            local ret = {}
+
+            for k, v in pairs(tbl) do
+                if type(v) ~= "table" then
+                    ret[k] = v
+
+                else
+                    ret[k] = table_deepcopy(v)
+                end
+            end
+
+            return ret
+        end
+    end
+end
+
+
 
 local _M = {}
 
@@ -114,6 +140,11 @@ function _M.table_append(dst, src)
         assert(not dst[k])
         dst[k] = v
     end
+end
+
+
+function _M.table_deepcopy(tbl)
+    return table_deepcopy(tbl)
 end
 
 
