@@ -288,7 +288,7 @@ local function create(self ,name, callback, delay, once, args)
 
     log_notice("trying to create a new timer: " .. tostring(job))
 
-    if job:is_immediately() then
+    if job:is_immediate() then
         wheels.ready_jobs[name] = job
         wake_up_mover_timer(self)
 
