@@ -246,7 +246,7 @@ function _M:is_cancel()
 end
 
 
-function _M:is_runable()
+function _M:is_runnable()
     return self._enable and not self._cancel and not self._running
 end
 
@@ -350,7 +350,7 @@ function _M:execute()
     stats.runs = stats.runs + 1
     local start = now()
 
-    if not self:is_runable() then
+    if not self:is_runnable() then
         return
     end
 

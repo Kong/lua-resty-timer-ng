@@ -85,7 +85,7 @@ function _M:fetch_all_expired_jobs()
         for name, job in pairs(jobs) do
             jobs[name] = nil
 
-            if not job:is_runable() then
+            if not job:is_runnable() then
                 goto continue
             end
 
@@ -128,7 +128,7 @@ function _M:fetch_all_expired_jobs()
         for name, job in pairs(jobs) do
             jobs[name] = nil
 
-            if not job:is_runable() then
+            if not job:is_runnable() then
                 goto continue
             end
 
@@ -160,7 +160,7 @@ function _M:fetch_all_expired_jobs()
         for name, job in pairs(jobs) do
             jobs[name] = nil
 
-            if not job:is_runable() then
+            if not job:is_runnable() then
                 goto continue
             end
 
@@ -187,7 +187,7 @@ function _M:fetch_all_expired_jobs()
         for name, job in pairs(jobs) do
             jobs[name] = nil
 
-            if not job:is_runable() then
+            if not job:is_runnable() then
                 goto continue
             end
 

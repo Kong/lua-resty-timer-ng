@@ -165,7 +165,7 @@ local function worker_timer_callback(premature, self, thread_index)
             log_notice("timer ", job.name,
                 " is expected to be executed by thread #", thread_index )
 
-            if not job:is_runable() then
+            if not job:is_runnable() then
                 log_notice("timer ", job.name, " is not runable")
                 goto continue
             end
@@ -180,7 +180,7 @@ local function worker_timer_callback(premature, self, thread_index)
                 goto continue
             end
 
-            if job:is_runable() then
+            if job:is_runnable() then
                 log_notice("reschedule timer #", thread_index)
                 wheels:sync_time()
                 job:re_cal_next_pointer(wheels)
@@ -483,7 +483,7 @@ function _M:run(name)
         return false, "timer not found"
     end
 
-    if old_job:is_runable() then
+    if old_job:is_runnable() then
         return false, "running"
     end
 
