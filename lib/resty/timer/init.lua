@@ -434,7 +434,8 @@ function _M:once(name, callback, delay, ...)
 
     if delay >= constants.MAX_EXPIRE
         or (delay ~= 0 and delay < constants.RESOLUTION)
-        or not self.configured then
+        or not self.configured
+        or not self.enable then
 
         log_notice("fallback to ngx.timer.every [delay = " .. delay .. "]")
         local ok, err = timer_at(delay, callback, ...)
@@ -456,7 +457,8 @@ function _M:every(name, callback, interval, ...)
 
     if interval >= constants.MAX_EXPIRE
         or interval < constants.RESOLUTION
-        or not self.configured then
+        or not self.configured
+        or not self.enable then
 
         log_notice("fallback to ngx.timer.every [interval = "
             .. interval .. "]")
