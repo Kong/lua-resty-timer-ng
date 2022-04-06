@@ -241,7 +241,7 @@ function _M:is_once()
 end
 
 
-function _M:is_cancel()
+function _M:is_cancelled()
     return self._cancel
 end
 
