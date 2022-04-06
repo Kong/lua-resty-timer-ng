@@ -502,7 +502,7 @@ function _M:pause(name)
         return false, "timer not found"
     end
 
-    if not job:is_enable() then
+    if not job:is_enabled() then
         return false, "already paused"
     end
 

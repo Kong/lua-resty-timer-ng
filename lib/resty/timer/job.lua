@@ -231,7 +231,7 @@ function _M:enable()
 end
 
 
-function _M:is_enable()
+function _M:is_enabled()
     return self._enable
 end
 
