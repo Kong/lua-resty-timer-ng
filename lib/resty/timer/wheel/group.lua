@@ -152,7 +152,7 @@ function _M:fetch_all_expired_jobs()
 
 
     -- Start processing jobs
-    -- that expire in the hour_wheel.
+    -- that expire in the second_wheel.
 
     jobs = second_wheel:get_jobs()
 
@@ -179,7 +179,7 @@ function _M:fetch_all_expired_jobs()
 
 
     -- Start processing jobs
-    -- that expire in the hour_wheel.
+    -- that expire in the msec_wheel.
 
     jobs = msec_wheel:get_jobs()
 
