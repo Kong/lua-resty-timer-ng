@@ -150,43 +150,62 @@ local function worker_timer_callback(premature, self, thread_index)
     local jobs = self.jobs
 
     while not exiting() and not self.destory do
-        log_notice("waiting on `semaphore_worker` for 1 second")
+        log_notice("waiting on `semaphore_worker` for 1 second in thread #"
+            .. thread_index)
         local ok, err = semaphore_worker:wait(1)
 
         if not ok and err ~= "timeout" then
-            log_error("failed to wait on `semaphore_worker`: " .. err)
+            log_error(string.format(
+                "failed to wait on `semaphore_worker` in thread #%d: %s",
+                thread_index, err))
         end
 
         while not utils.table_is_empty(wheels.pending_jobs) do
             thread.counter.runs = thread.counter.runs + 1
 
-            log_notice("thread #" .. thread_index ..
-                " was run " .. thread.counter.runs .. " times")
+            log_notice(string.format(
+                "thread #%d was run %d times",
+                thread_index, thread.counter.runs
+            ))
 
             local job = utils.table_get_a_item(wheels.pending_jobs)
 
             wheels.pending_jobs[job.name] = nil
 
-            log_notice("timer ", job.name,
-                " is expected to be executed by thread #", thread_index )
+            log_notice(string.format(
+                "timer %s is expected to be executed by thread #%d",
+                job.name, thread_index
+            ))
 
             if not job:is_runnable() then
-                log_notice("timer ", job.name, " is not runnable")
+                log_notice(string.format(
+                    "timer %s is not runnable",
+                    job.name
+                ))
+
                 goto continue
             end
 
-            log_notice("execute timer ", job.name, "in thread #", thread_index)
+            log_notice(string.format(
+                "execute timer %s in thread #",
+                job.name, thread_index
+            ))
             job:execute()
 
             if job:is_once() then
-                log_notice("timer ", job.name,
-                    "need to be executed only once")
+                log_notice(string.format(
+                    "timer %s need to be executed only once",
+                    job.name
+                ))
                 jobs[job.name] = nil
                 goto continue
             end
 
             if job:is_runnable() then
-                log_notice("reschedule timer #", thread_index)
+                log_notice(string.format(
+                    "reschedule timer %s in thread #%d",
+                    job.name, thread_index
+                ))
                 wheels:sync_time()
                 job:re_cal_next_pointer(wheels)
                 wheels:insert_job(job)
@@ -207,14 +226,20 @@ local function worker_timer_callback(premature, self, thread_index)
             -- when it is destroyed,
             -- including resources created by `job:execute()`
             -- it needs to be destroyed and recreated periodically.
-            log_notice("re-create thread #",  thread_index)
+            log_notice(string.format(
+                "re-create thread #%d",
+                thread_index
+            ))
             native_timer_at(0, worker_timer_callback, self, thread_index)
             break
         end
 
     end -- the top while
 
-    log_notice("exit thread #", thread_index)
+    log_notice(string.format(
+        "exit thread #%d",
+        thread_index
+    ))
 end
 
 
@@ -240,7 +265,10 @@ local function super_timer_callback(premature, self)
 
     for i = 1, opt_threads do
         if not threads[i].alive then
-            log_notice("creating thread #" .. i .. " of " .. opt_threads)
+            log_notice(string.format(
+                "creating thread #%d of %d",
+                i, opt_threads
+            ))
             native_timer_at(0, worker_timer_callback, self, i)
         end
     end
@@ -263,8 +291,10 @@ local function super_timer_callback(premature, self)
             local closest = max(wheels.closest, constants.RESOLUTION)
             wheels.closest = huge
 
-            log_notice("waiting on `semaphore_super` for "
-                .. closest .. " second")
+            log_notice(string.format(
+                "waiting on `semaphore_super` for %d second",
+                closest))
+
             local ok, err = semaphore_super:wait(closest)
 
             if not ok and err == "timeout" then
