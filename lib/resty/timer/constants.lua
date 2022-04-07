@@ -48,8 +48,8 @@ local _max_expire = _M.RESOLUTION
     * _M.HOUR_WHEEL_SLOTS
     - 10
 
--- `MAX_EXPIRE` should not exceed the maximum supported range of the wheels
+
 assert(_M.MAX_EXPIRE < _max_expire,
-    "perhaps you need to update some constants")
+    "`MAX_EXPIRE` should not exceed the maximum supported range of the wheels")
 
 return _M
