@@ -298,7 +298,7 @@ local function super_timer_callback(premature, self)
 
             local ok, err = semaphore_super:wait(closest)
 
-            if not ok and err == "timeout" then
+            if not ok and err ~= "timeout" then
                 log_error("failed to wait on `semaphore_super`: " .. err)
             end
 
