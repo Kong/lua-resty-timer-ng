@@ -37,8 +37,13 @@ local assert = utils.assert
 local _M = {}
 
 
-local function log_notice(thread_index, ...)
+local function log_notice(...)
     log(NOTICE, "[timer] ", ...)
+end
+
+
+local function log_error(...)
+    log(ERR, "[timer] ", ...)
 end
 
 
@@ -98,7 +103,7 @@ local function mover_timer_callback(premature, self)
         local ok, err = semaphore_mover:wait(1)
 
         if not ok and err ~= "timeout" then
-            log_notice("failed to wait on `semaphore_mover`: " .. err)
+            log_error("failed to wait on `semaphore_mover`: " .. err)
         end
 
         local is_no_pending_jobs =
@@ -148,8 +153,8 @@ local function worker_timer_callback(premature, self, thread_index)
         log_notice("waiting on `semaphore_worker` for 1 second")
         local ok, err = semaphore_worker:wait(1)
 
-        if not ok then
-            log_notice("failed to wait on `semaphore_worker`: " .. err)
+        if not ok and err ~= "timeout" then
+            log_error("failed to wait on `semaphore_worker`: " .. err)
         end
 
         while not utils.table_is_empty(wheels.pending_jobs) do
@@ -260,7 +265,11 @@ local function super_timer_callback(premature, self)
 
             log_notice("waiting on `semaphore_super` for "
                 .. closest .. " second")
-            semaphore_super:wait(closest)
+            local ok, err = semaphore_super:wait(closest)
+
+            if not ok and err == "timeout" then
+                log_error("failed to wait on `semaphore_super`: " .. err)
+            end
 
         else
             sleep(constants.RESOLUTION)
