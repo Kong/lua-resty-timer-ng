@@ -14,6 +14,7 @@ local random = math.random
 local modf = math.modf
 local huge = math.huge
 local abs = math.abs
+local string_format = string.format
 local pairs = pairs
 local tostring = tostring
 local type = type
@@ -155,7 +156,7 @@ local function worker_timer_callback(premature, self, thread_index)
         local ok, err = semaphore_worker:wait(1)
 
         if not ok and err ~= "timeout" then
-            log_error(string.format(
+            log_error(string_format(
                 "failed to wait on `semaphore_worker` in thread #%d: %s",
                 thread_index, err))
         end
@@ -163,7 +164,7 @@ local function worker_timer_callback(premature, self, thread_index)
         while not utils.table_is_empty(wheels.pending_jobs) do
             thread.counter.runs = thread.counter.runs + 1
 
-            log_notice(string.format(
+            log_notice(string_format(
                 "thread #%d was run %d times",
                 thread_index, thread.counter.runs
             ))
@@ -172,13 +173,13 @@ local function worker_timer_callback(premature, self, thread_index)
 
             wheels.pending_jobs[job.name] = nil
 
-            log_notice(string.format(
+            log_notice(string_format(
                 "timer %s is expected to be executed by thread #%d",
                 job.name, thread_index
             ))
 
             if not job:is_runnable() then
-                log_notice(string.format(
+                log_notice(string_format(
                     "timer %s is not runnable",
                     job.name
                 ))
@@ -186,14 +187,14 @@ local function worker_timer_callback(premature, self, thread_index)
                 goto continue
             end
 
-            log_notice(string.format(
+            log_notice(string_format(
                 "execute timer %s in thread #",
                 job.name, thread_index
             ))
             job:execute()
 
             if job:is_once() then
-                log_notice(string.format(
+                log_notice(string_format(
                     "timer %s need to be executed only once",
                     job.name
                 ))
@@ -202,7 +203,7 @@ local function worker_timer_callback(premature, self, thread_index)
             end
 
             if job:is_runnable() then
-                log_notice(string.format(
+                log_notice(string_format(
                     "reschedule timer %s in thread #%d",
                     job.name, thread_index
                 ))
@@ -226,7 +227,7 @@ local function worker_timer_callback(premature, self, thread_index)
             -- when it is destroyed,
             -- including resources created by `job:execute()`
             -- it needs to be destroyed and recreated periodically.
-            log_notice(string.format(
+            log_notice(string_format(
                 "re-create thread #%d",
                 thread_index
             ))
@@ -236,7 +237,7 @@ local function worker_timer_callback(premature, self, thread_index)
 
     end -- the top while
 
-    log_notice(string.format(
+    log_notice(string_format(
         "exit thread #%d",
         thread_index
     ))
@@ -265,7 +266,7 @@ local function super_timer_callback(premature, self)
 
     for i = 1, opt_threads do
         if not threads[i].alive then
-            log_notice(string.format(
+            log_notice(string_format(
                 "creating thread #%d of %d",
                 i, opt_threads
             ))
@@ -291,7 +292,7 @@ local function super_timer_callback(premature, self)
             local closest = max(wheels.closest, constants.RESOLUTION)
             wheels.closest = huge
 
-            log_notice(string.format(
+            log_notice(string_format(
                 "waiting on `semaphore_super` for %d second",
                 closest))
 
