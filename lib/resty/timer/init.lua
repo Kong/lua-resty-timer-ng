@@ -130,7 +130,7 @@ end
 -- exec all expired jobs
 -- re-insert the recurrent job
 -- delete once job from `self.jobs`
--- wake up the mover timer
+-- wake up the super timer
 local function worker_timer_callback(premature, self, thread_index)
     log_notice("thread #", thread_index, " has been started")
 
@@ -166,7 +166,7 @@ local function worker_timer_callback(premature, self, thread_index)
                 " is expected to be executed by thread #", thread_index )
 
             if not job:is_runnable() then
-                log_notice("timer ", job.name, " is not runable")
+                log_notice("timer ", job.name, " is not runnable")
                 goto continue
             end
 
