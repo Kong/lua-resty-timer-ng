@@ -467,15 +467,15 @@ end
 
 
 function _M:once(name, callback, delay, ...)
+    assert(self.configured, "the timer module is not configured")
+    assert(self.enable, "the timer module is not started")
     assert(type(callback) == "function", "expected `callback` to be a function")
 
     assert(type(delay) == "number", "expected `delay to be a number")
     assert(delay >= 0, "expected `delay` to be greater than or equal to 0")
 
     if delay >= constants.MAX_EXPIRE
-        or (delay ~= 0 and delay < constants.RESOLUTION)
-        or not self.configured
-        or not self.enable then
+        or (delay ~= 0 and delay < constants.RESOLUTION)then
 
         log_notice("fallback to ngx.timer.every [delay = " .. delay .. "]")
         local ok, err = timer_at(delay, callback, ...)
@@ -490,15 +490,15 @@ end
 
 
 function _M:every(name, callback, interval, ...)
+    assert(self.configured, "the timer module is not configured")
+    assert(self.enable, "the timer module is not started")
     assert(type(callback) == "function", "expected `callback` to be a function")
 
     assert(type(interval) == "number", "expected `interval to be a number")
     assert(interval > 0, "expected `interval` to be greater than or equal to 0")
 
     if interval >= constants.MAX_EXPIRE
-        or interval < constants.RESOLUTION
-        or not self.configured
-        or not self.enable then
+        or interval < constants.RESOLUTION then
 
         log_notice("fallback to ngx.timer.every [interval = "
             .. interval .. "]")
