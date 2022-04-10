@@ -3,9 +3,7 @@ local update_time = ngx.update_time
 local now = ngx.now
 local timer_running_count = ngx.timer.running_count
 
--- local TOLERANCE = 0.2
 local THREADS = 32
-local TOLERANCE = 0.2
 
 insulate("other bugs | ", function ()
     local timer
@@ -29,24 +27,12 @@ insulate("other bugs | ", function ()
     end)
 
     it("No.1 create a timer before the method `start()' is called #fast", function ()
-        local flag_for_once = false
-        local ok, _ = timer:once(nil, function(...)
-            flag_for_once = true
-        end, 5)
-        assert.is_true(ok)
-
-        sleep(5 + TOLERANCE)
-        assert.is_true(flag_for_once)
-
-
-        local flag_for_every = false
-        ok, _ = timer:every(nil, function(...)
-            flag_for_every = true
-        end, 5)
-        assert.is_true(ok)
-
-        sleep(5 + TOLERANCE)
-        assert.is_true(flag_for_every)
+        assert.has.errors(function()
+            timer:once(nil, function() end, 10)
+        end)
+        assert.has.errors(function()
+            timer:every(nil, function() end, 10)
+        end)
     end)
 end)
 

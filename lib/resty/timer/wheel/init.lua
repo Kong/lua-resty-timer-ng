@@ -24,6 +24,7 @@ end
 
 
 function _M:cal_pointer(pointer, offset)
+    -- TODO: use C like
     local nelts = self.nelts
     local is_spin_to_start_slot = false
     local p = pointer
