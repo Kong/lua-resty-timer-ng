@@ -293,7 +293,7 @@ local function super_timer_callback(premature, self)
             wheels.closest = huge
 
             log_notice(string_format(
-                "waiting on `semaphore_super` for %d second",
+                "waiting on `semaphore_super` for %f second",
                 closest))
 
             local ok, err = semaphore_super:wait(closest)

@@ -42,6 +42,7 @@ local function job_tostring(job)
         ", offset.hour = ",         tostring(offset.hour),
         ", offset.minute = ",       tostring(offset.minute),
         ", offset.second = ",       tostring(offset.second),
+        ", offset.msec = ",         tostring(offset.msec),
         ", next.hour = ",           tostring(next_pointer.hour),
         ", next.minute = ",         tostring(next_pointer.minute),
         ", next.second = ",         tostring(next_pointer.second),
@@ -117,14 +118,14 @@ local function job_re_cal_next_pointer(job, wheels)
     local next_second_pointer = 0
     local next_msec_pointer = 0
 
-    local is_spin_to_start_slot = false
+    local cycles = 0
 
     if offset_msec ~= 0 then
-        next_msec_pointer, is_spin_to_start_slot =
+        next_msec_pointer, cycles =
             msec_wheel:cal_pointer(cur_msec_pointer, offset_msec)
     end
 
-    if offset_second ~= 0 or is_spin_to_start_slot then
+    if offset_second ~= 0 or cycles ~= 0 then
 
         -- Suppose the current pointer of the `msec_wheel` points to slot 7
         -- and the `msec_wheel` has ten slots.
@@ -132,36 +133,28 @@ local function job_re_cal_next_pointer(job, wheels)
         -- but obviously we need to make
         -- the pointer of the `minute_wheel` spin, like a clock.
         -- Same for `offset_minute` and `offset_hour`.
-        if is_spin_to_start_slot then
-            offset_second = offset_second + 1
-        end
 
-        next_second_pointer, is_spin_to_start_slot =
-            second_wheel:cal_pointer(cur_second_pointer, offset_second)
+        next_second_pointer, cycles =
+            second_wheel:cal_pointer(cur_second_pointer,
+                                       offset_second + cycles)
 
     else
-        is_spin_to_start_slot = false
+        cycles = 0
     end
 
-    if offset_minute ~= 0 or is_spin_to_start_slot then
-        if is_spin_to_start_slot then
-            offset_minute = offset_minute + 1
-        end
-
-        next_minute_pointer, is_spin_to_start_slot =
-            minute_wheel:cal_pointer(cur_minute_pointer, offset_minute)
+    if offset_minute ~= 0 or cycles ~= 0 then
+        next_minute_pointer, cycles =
+            minute_wheel:cal_pointer(cur_minute_pointer,
+                                     offset_minute + cycles)
 
     else
-        is_spin_to_start_slot = false
+        cycles = 0
     end
 
-    if offset_hour ~= 0 or is_spin_to_start_slot then
-        if is_spin_to_start_slot then
-            offset_hour = offset_hour + 1
-        end
-
+    if offset_hour ~= 0 or cycles ~= 0 then
         next_hour_pointer, _ =
-            hour_wheel:cal_pointer(cur_hour_pointer, offset_hour)
+            hour_wheel:cal_pointer(cur_hour_pointer,
+                                   offset_hour + cycles)
     end
 
 

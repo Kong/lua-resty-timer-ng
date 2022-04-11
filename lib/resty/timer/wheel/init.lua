@@ -1,6 +1,7 @@
 local utils = require("resty.timer.utils")
 
 local setmetatable = setmetatable
+local floor = math.floor
 
 local ngx = ngx
 
@@ -19,29 +20,25 @@ local meta_table = {
 
 
 function _M:get_cur_pointer()
-    return self.pointer
+    return self.pointer + 1
 end
 
 
 function _M:cal_pointer(pointer, offset)
-    -- TODO: use C like
+    assert(pointer >= 1)
     local nelts = self.nelts
-    local is_spin_to_start_slot = false
-    local p = pointer
+    local p = pointer - 1
     local old = p
 
-    p = (p + offset) % (nelts + 1)
+    p = (p + offset) % nelts
 
-    if old + offset > nelts then
-        is_spin_to_start_slot = true
+    local cycles = floor(offset / nelts)
 
-        -- example: (3 + 5) % 8 = 0
-        -- but the index of the first slot of the wheel is 1
-        -- so `+ 1`
-        p = p + 1
+    if old + (offset % nelts) >= nelts then
+        cycles = cycles + 1
     end
 
-    return p, is_spin_to_start_slot
+    return p + 1, cycles
 end
 
 
@@ -49,7 +46,7 @@ function _M:insert(pointer, job)
     assert(self.slots)
     assert(pointer > 0)
 
-    local _job = self.slots[pointer][job.name]
+    local _job = self:get_jobs()[job.name]
 
     if not _job
         or (_job:is_cancelled() and not _job:is_enabled()) then
@@ -64,15 +61,20 @@ end
 
 
 function _M:spin_pointer_one_slot()
-    local pointer, is_spin_to_start_slot = self:cal_pointer(self.pointer, 1)
-    self.pointer = pointer
+    local pointer, cycles = self:cal_pointer(self:get_cur_pointer(), 1)
+    self.pointer = pointer - 1
+    local higher_wheel = self.higher_wheel
 
-    return self.slots[self.pointer], is_spin_to_start_slot
+    if higher_wheel then
+        for _ = 1, cycles do
+            higher_wheel:spin_pointer_one_slot()
+        end
+    end
 end
 
 
 function _M:get_jobs()
-    return self.slots[self.pointer]
+    return self.slots[self:get_cur_pointer()]
 end
 
 
@@ -81,11 +83,13 @@ function _M:get_jobs_by_pointer(pointer)
 end
 
 
-function _M.new(nelts)
+function _M.new(nelts, higher_wheel)
     local self = {
-        pointer = 1,
+        pointer = 0,
+
         nelts = nelts,
         slots = utils.table_new(nelts, 0),
+        higher_wheel = higher_wheel,
     }
 
     for i = 1, self.nelts do

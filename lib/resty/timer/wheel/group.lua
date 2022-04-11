@@ -34,7 +34,7 @@ function _M:update_closest()
     -- `constants.MSEC_WHEEL_SLOTS - 1` means
     -- ignore the current slot
     for i = 1, constants.MSEC_WHEEL_SLOTS - 1 do
-        local pointer, is_spin_to_start_slot =
+        local pointer, cycles =
             msec_wheel:cal_pointer(cur_msec_pointer, i)
 
         delay = delay + constants.RESOLUTION
@@ -48,7 +48,7 @@ function _M:update_closest()
         -- some jobs of higher wheels may not be executed in time.
         -- This is because the super timer will only be woken up
         -- when any wheels are modified or when the semaphore timeout.
-        if is_spin_to_start_slot then
+        if cycles ~= 0 then
             break
         end
 
@@ -203,9 +203,6 @@ end
 
 
 function _M:sync_time()
-    local hour_wheel = self.hour_wheel
-    local minute_wheel = self.minute_wheel
-    local second_wheel = self.second_wheel
     local msec_wheel = self.msec_wheel
 
     -- perhaps some jobs have expired but not been fetched
@@ -216,32 +213,7 @@ function _M:sync_time()
 
     -- Until the difference with the real time is less than 100ms
     while utils.float_compare(self.real_time, self.expected_time) == 1 do
-
-        -- if the pointer of a wheel spins to the starting point,
-        -- then the pointer of a higher wheel should spin too.
-
-        local _, is_spin_to_start_slot = msec_wheel:spin_pointer_one_slot()
-
-        if not is_spin_to_start_slot then
-            -- TODO: abuse for `goto` ?
-            goto stop_spining
-        end
-
-        _, is_spin_to_start_slot = second_wheel:spin_pointer_one_slot()
-
-        if not is_spin_to_start_slot then
-            goto stop_spining
-        end
-
-        _, is_spin_to_start_slot = minute_wheel:spin_pointer_one_slot()
-
-        if not is_spin_to_start_slot then
-            goto stop_spining
-        end
-
-        hour_wheel:spin_pointer_one_slot()
-
-        ::stop_spining::
+        msec_wheel:spin_pointer_one_slot()
 
         self:fetch_all_expired_jobs()
 
@@ -312,20 +284,13 @@ function _M.new()
         -- be run by function `worker_timer_callback`
         -- TODO: use `utils.table_new`
         pending_jobs = {},
-
-        -- 100ms per slot
-        msec_wheel = wheel.new(constants.MSEC_WHEEL_SLOTS),
-
-        -- 1 second per slot
-        second_wheel = wheel.new(constants.SECOND_WHEEL_SLOTS),
-
-        -- 1 minute per slot
-        minute_wheel = wheel.new(constants.MINUTE_WHEEL_SLOTS),
-
-        -- 1 hour per slot
-        hour_wheel = wheel.new(constants.HOUR_WHEEL_SLOTS),
     }
 
+    self.hour_wheel = wheel.new(constants.HOUR_WHEEL_SLOTS, nil)
+    self.minute_wheel = wheel.new(constants.MINUTE_WHEEL_SLOTS, self.hour_wheel)
+    self.second_wheel = wheel.new(constants.SECOND_WHEEL_SLOTS,
+                                  self.minute_wheel)
+    self.msec_wheel = wheel.new(constants.MSEC_WHEEL_SLOTS, self.second_wheel)
 
     return setmetatable(self, meta_table)
 end
