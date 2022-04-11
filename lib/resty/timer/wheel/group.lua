@@ -31,14 +31,14 @@ local meta_table = {
 function _M:update_closest()
     local old_closest = self.closest
     local delay = 0
-    local msec_wheel = self.msec_wheel
-    local cur_msec_pointer = msec_wheel:get_cur_pointer()
+    local lowest_wheel = self.lowest_wheel
+    local cur_msec_pointer = lowest_wheel:get_cur_pointer()
 
     -- `constants.MSEC_WHEEL_SLOTS - 1` means
     -- ignore the current slot
     for i = 1, constants.MSEC_WHEEL_SLOTS - 1 do
         local pointer, cycles =
-            msec_wheel:cal_pointer(cur_msec_pointer, i)
+            lowest_wheel:cal_pointer(cur_msec_pointer, i)
 
         delay = delay + constants.RESOLUTION
 
@@ -55,7 +55,7 @@ function _M:update_closest()
             break
         end
 
-        local jobs = msec_wheel:get_jobs_by_pointer(pointer)
+        local jobs = lowest_wheel:get_jobs_by_pointer(pointer)
 
         if not utils.table_is_empty(jobs) then
             break
@@ -87,7 +87,7 @@ end
 
 
 function _M:sync_time()
-    local msec_wheel = self.msec_wheel
+    local lowest_wheel = self.lowest_wheel
 
     -- perhaps some jobs have expired but not been fetched
     self:fetch_all_expired_jobs()
@@ -97,9 +97,8 @@ function _M:sync_time()
 
     local delta = self.real_time - self.expected_time
     delta = math_floor(delta * 10)
-    log(ERR, delta)
 
-    msec_wheel:spin_pointer(delta)
+    lowest_wheel:spin_pointer(delta)
 
     self:fetch_all_expired_jobs()
 
@@ -161,6 +160,7 @@ function _M.new()
     self.msec_wheel:set_higher_wheel(self.second_wheel)
 
     self.highest_wheel = self.hour_wheel
+    self.lowest_wheel = self.msec_wheel
 
     return setmetatable(self, meta_table)
 end

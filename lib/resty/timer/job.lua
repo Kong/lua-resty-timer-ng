@@ -102,65 +102,42 @@ end
 
 
 -- Calculate the position of each pointer when the job expires
-local function job_re_cal_next_pointer(job, wheels)
+local function job_re_cal_next_pointer(job, wheel_group)
     local offset_hour = job.offset.hour
     local offset_minute = job.offset.minute
     local offset_second = job.offset.second
     local offset_msec = job.offset.msec
 
-    local hour_wheel = wheels.hour_wheel
-    local minute_wheel = wheels.minute_wheel
-    local second_wheel = wheels.second_wheel
-    local msec_wheel = wheels.msec_wheel
+    local hour_wheel = wheel_group.hour_wheel
+    local minute_wheel = wheel_group.minute_wheel
+    local second_wheel = wheel_group.second_wheel
+    local msec_wheel = wheel_group.msec_wheel
+    local lowest_wheel = wheel_group.lowest_wheel
 
     local cur_hour_pointer = hour_wheel:get_cur_pointer()
     local cur_minute_pointer = minute_wheel:get_cur_pointer()
     local cur_second_pointer = second_wheel:get_cur_pointer()
     local cur_msec_pointer = msec_wheel:get_cur_pointer()
 
-    local next_hour_pointer = 0
-    local next_minute_pointer = 0
-    local next_second_pointer = 0
-    local next_msec_pointer = 0
+    local cur_pointers = {
+        cur_msec_pointer,
+        cur_second_pointer,
+        cur_minute_pointer,
+        cur_hour_pointer,
+    }
 
-    local cycles = 0
+    local offsets = {
+        offset_msec,
+        offset_second,
+        offset_minute,
+        offset_hour,
+    }
 
-    if offset_msec ~= 0 then
-        next_msec_pointer, cycles =
-            msec_wheel:cal_pointer(cur_msec_pointer, offset_msec)
-    end
-
-    if offset_second ~= 0 or cycles ~= 0 then
-
-        -- Suppose the current pointer of the `msec_wheel` points to slot 7
-        -- and the `msec_wheel` has ten slots.
-        -- `offset_msec = 4`, which results in 1 at this point,
-        -- but obviously we need to make
-        -- the pointer of the `minute_wheel` spin, like a clock.
-        -- Same for `offset_minute` and `offset_hour`.
-
-        next_second_pointer, cycles =
-            second_wheel:cal_pointer(cur_second_pointer,
-                                       offset_second + cycles)
-
-    else
-        cycles = 0
-    end
-
-    if offset_minute ~= 0 or cycles ~= 0 then
-        next_minute_pointer, cycles =
-            minute_wheel:cal_pointer(cur_minute_pointer,
-                                     offset_minute + cycles)
-
-    else
-        cycles = 0
-    end
-
-    if offset_hour ~= 0 or cycles ~= 0 then
-        next_hour_pointer, _ =
-            hour_wheel:cal_pointer(cur_hour_pointer,
-                                   offset_hour + cycles)
-    end
+    local next_msec_pointer,
+          next_second_pointer,
+          next_minute_pointer,
+          next_hour_pointer =
+            lowest_wheel:cal_pointer_cascade(cur_pointers, offsets)
 
 
     -- Suppose a job will expire in one minute
@@ -170,33 +147,28 @@ local function job_re_cal_next_pointer(job, wheels)
     -- they should point to the current position.
 
     if next_hour_pointer ~= 0 then
-        if next_minute_pointer == 0 then
-            next_minute_pointer = cur_minute_pointer
-        end
+        next_minute_pointer = next_minute_pointer == 0
+            and cur_minute_pointer or next_minute_pointer
 
-        if next_second_pointer == 0 then
-            next_second_pointer = cur_second_pointer
-        end
+        next_second_pointer = next_second_pointer == 0
+            and cur_second_pointer or next_second_pointer
 
-        if next_msec_pointer == 0 then
-            next_msec_pointer = cur_msec_pointer
-        end
+        next_msec_pointer = next_msec_pointer == 0
+            and cur_msec_pointer or next_msec_pointer
 
     elseif next_minute_pointer ~= 0 then
-        if next_second_pointer == 0 then
-            next_second_pointer = cur_second_pointer
-        end
+        next_second_pointer = next_second_pointer == 0
+            and cur_second_pointer or next_second_pointer
 
-        if next_msec_pointer == 0 then
-            next_msec_pointer = cur_msec_pointer
-        end
+        next_msec_pointer = next_msec_pointer == 0
+            and cur_msec_pointer or next_msec_pointer
 
     elseif next_second_pointer ~= 0 then
-        if next_msec_pointer == 0 then
-            next_msec_pointer = cur_msec_pointer
-        end
+        next_msec_pointer = next_msec_pointer == 0
+            and cur_msec_pointer or next_msec_pointer
+
     -- else
-        -- nop
+    --     nop
     end
 
 
