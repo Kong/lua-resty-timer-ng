@@ -2,8 +2,9 @@ local utils = require("resty.timer.utils")
 local wheel = require("resty.timer.wheel")
 local constants = require("resty.timer.constants")
 
-local pairs = pairs
 local setmetatable = setmetatable
+
+local math_floor = math.floor
 
 local ngx = ngx
 
@@ -15,7 +16,9 @@ local ERR = ngx.ERR
 local now = ngx.now
 local update_time = ngx.update_time
 
+-- luacheck: push ignore
 local assert = utils.assert
+-- luacheck: pop
 
 local _M = {}
 
@@ -76,129 +79,10 @@ function _M:fetch_all_expired_jobs()
     local second_wheel = self.second_wheel
     local msec_wheel = self.msec_wheel
 
-    -- Start processing jobs
-    -- that expire in the hour_wheel.
-
-    local jobs = hour_wheel:get_jobs()
-
-    if jobs then
-        for name, job in pairs(jobs) do
-            jobs[name] = nil
-
-            if not job:is_runnable() then
-                goto continue
-            end
-
-            local next = job.next_pointer
-
-            -- if `next.minute` is equal 0,
-            -- it means that this job does
-            -- not need to be inserted
-            -- into the `minute_wheel`.
-            -- Same for `next.second` and `next.msec`
-
-            if next.minute ~= 0 then
-                minute_wheel:insert(job.next_pointer.minute, job)
-                goto continue
-            end
-
-            if next.second ~= 0 then
-                second_wheel:insert(job.next_pointer.second, job)
-                goto continue
-            end
-
-            if next.msec ~= 0 then
-                msec_wheel:insert(job.next_pointer.msec, job)
-                goto continue
-            end
-
-            self.ready_jobs[name] = job
-
-            ::continue::
-        end
-    end
-
-
-    -- Start processing jobs
-    -- that expire in the minute_wheel.
-
-    jobs = minute_wheel:get_jobs()
-
-    if jobs then
-        for name, job in pairs(jobs) do
-            jobs[name] = nil
-
-            if not job:is_runnable() then
-                goto continue
-            end
-
-            local next = job.next_pointer
-
-            if next.second ~= 0 then
-                second_wheel:insert(job.next_pointer.second, job)
-                goto continue
-            end
-
-            if next.msec ~= 0 then
-                msec_wheel:insert(job.next_pointer.msec, job)
-                goto continue
-            end
-
-            self.ready_jobs[name] = job
-
-            ::continue::
-        end
-    end
-
-
-    -- Start processing jobs
-    -- that expire in the second_wheel.
-
-    jobs = second_wheel:get_jobs()
-
-    if jobs then
-        for name, job in pairs(jobs) do
-            jobs[name] = nil
-
-            if not job:is_runnable() then
-                goto continue
-            end
-
-            local next = job.next_pointer
-
-            if next.msec ~= 0 then
-                msec_wheel:insert(job.next_pointer.msec, job)
-                goto continue
-            end
-
-            self.ready_jobs[name] = job
-
-            ::continue::
-        end
-    end
-
-
-    -- Start processing jobs
-    -- that expire in the msec_wheel.
-
-    jobs = msec_wheel:get_jobs()
-
-    if jobs then
-        for name, job in pairs(jobs) do
-            jobs[name] = nil
-
-            if not job:is_runnable() then
-                goto continue
-            end
-
-            -- all jobs in the slot
-            -- pointed by the `msec_wheel` pointer
-            -- will be executed
-            self.ready_jobs[name] = job
-
-            ::continue::
-        end
-    end
+    utils.table_append(self.ready_jobs, hour_wheel:fetch_all_expired_jobs())
+    utils.table_append(self.ready_jobs, minute_wheel:fetch_all_expired_jobs())
+    utils.table_append(self.ready_jobs, second_wheel:fetch_all_expired_jobs())
+    utils.table_append(self.ready_jobs, msec_wheel:fetch_all_expired_jobs())
 end
 
 
@@ -211,53 +95,21 @@ function _M:sync_time()
     update_time()
     self.real_time = now()
 
-    -- Until the difference with the real time is less than 100ms
-    while utils.float_compare(self.real_time, self.expected_time) == 1 do
-        msec_wheel:spin_pointer_one_slot()
+    local delta = self.real_time - self.expected_time
+    delta = math_floor(delta * 10)
+    log(ERR, delta)
 
-        self:fetch_all_expired_jobs()
+    msec_wheel:spin_pointer(delta)
 
-        self.expected_time =  self.expected_time + constants.RESOLUTION
-    end
+    self:fetch_all_expired_jobs()
+
+    self.expected_time = self.expected_time + constants.RESOLUTION * delta
 end
 
 
 -- insert a job into the wheel group
 function _M:insert_job(job)
-    local ok, err
-    local hour_wheel = self.hour_wheel
-    local minute_wheel = self.minute_wheel
-    local second_wheel = self.second_wheel
-    local msec_wheel = self.msec_wheel
-
-    -- if `next.minute` is equal 0,
-    -- it means that this job does
-    -- not need to be inserted
-    -- into the `minute_wheel`.
-    -- Same for `next.second`,`next.msec`,
-    -- and `next.hour`
-
-    if job.next_pointer.hour ~= 0 then
-        ok, err = hour_wheel:insert(job.next_pointer.hour, job)
-
-    elseif job.next_pointer.minute ~= 0 then
-        ok, err = minute_wheel:insert(job.next_pointer.minute, job)
-
-    elseif job.next_pointer.second ~= 0 then
-        ok, err = second_wheel:insert(job.next_pointer.second, job)
-
-    elseif job.next_pointer.msec ~= 0 then
-        ok, err = msec_wheel:insert(job.next_pointer.msec, job)
-
-    else
-        assert(false, "unexpected error")
-    end
-
-    if not ok then
-        return false, err
-    end
-
-    return true, nil
+    return self.highest_wheel:insert(job)
 end
 
 
@@ -284,13 +136,31 @@ function _M.new()
         -- be run by function `worker_timer_callback`
         -- TODO: use `utils.table_new`
         pending_jobs = {},
+
+        hour_wheel = wheel.new(constants.HOUR_WHEEL_ID,
+                               constants.HOUR_WHEEL_SLOTS),
+
+        minute_wheel = wheel.new(constants.MINUTE_WHEEL_ID,
+                                 constants.MINUTE_WHEEL_SLOTS),
+
+        second_wheel = wheel.new(constants.SECOND_WHEEL_ID,
+                                 constants.SECOND_WHEEL_SLOTS),
+
+        msec_wheel = wheel.new(constants.MSEC_WHEEL_ID,
+                               constants.MSEC_WHEEL_SLOTS),
     }
 
-    self.hour_wheel = wheel.new(constants.HOUR_WHEEL_SLOTS, nil)
-    self.minute_wheel = wheel.new(constants.MINUTE_WHEEL_SLOTS, self.hour_wheel)
-    self.second_wheel = wheel.new(constants.SECOND_WHEEL_SLOTS,
-                                  self.minute_wheel)
-    self.msec_wheel = wheel.new(constants.MSEC_WHEEL_SLOTS, self.second_wheel)
+    self.hour_wheel:set_lower_wheel(self.minute_wheel)
+
+    self.minute_wheel:set_higher_wheel(self.hour_wheel)
+    self.minute_wheel:set_lower_wheel(self.second_wheel)
+
+    self.second_wheel:set_higher_wheel(self.minute_wheel)
+    self.second_wheel:set_lower_wheel(self.msec_wheel)
+
+    self.msec_wheel:set_higher_wheel(self.second_wheel)
+
+    self.highest_wheel = self.hour_wheel
 
     return setmetatable(self, meta_table)
 end

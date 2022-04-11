@@ -1,4 +1,5 @@
 local utils = require("resty.timer.utils")
+local constants = require("resty.timer.constants")
 
 local unpack = table.unpack
 local concat = table.concat
@@ -43,10 +44,14 @@ local function job_tostring(job)
         ", offset.minute = ",       tostring(offset.minute),
         ", offset.second = ",       tostring(offset.second),
         ", offset.msec = ",         tostring(offset.msec),
-        ", next.hour = ",           tostring(next_pointer.hour),
-        ", next.minute = ",         tostring(next_pointer.minute),
-        ", next.second = ",         tostring(next_pointer.second),
-        ", next.msec = ",           tostring(next_pointer.msec),
+        ", next.hour = ",           tostring(next_pointer
+                                                [constants.HOUR_WHEEL_ID]),
+        ", next.minute = ",         tostring(next_pointer
+                                                [constants.MINUTE_WHEEL_ID]),
+        ", next.second = ",         tostring(next_pointer
+                                                [constants.SECOND_WHEEL_ID]),
+        ", next.msec = ",           tostring(next_pointer
+                                                [constants.MSEC_WHEEL_ID]),
         ", runtime.max = ",         tostring(runtime.max),
         ", runtime.min = ",         tostring(runtime.min),
         ", runtime.avg = ",         tostring(runtime.avg),
@@ -200,10 +205,10 @@ local function job_re_cal_next_pointer(job, wheels)
            next_second_pointer ~= 0 or
            next_msec_pointer ~= 0, "unexpected error")
 
-    job.next_pointer.hour = next_hour_pointer
-    job.next_pointer.minute = next_minute_pointer
-    job.next_pointer.second = next_second_pointer
-    job.next_pointer.msec = next_msec_pointer
+    job.next_pointer[constants.HOUR_WHEEL_ID] = next_hour_pointer
+    job.next_pointer[constants.MINUTE_WHEEL_ID] = next_minute_pointer
+    job.next_pointer[constants.SECOND_WHEEL_ID] = next_second_pointer
+    job.next_pointer[constants.MSEC_WHEEL_ID] = next_msec_pointer
 end
 
 
@@ -254,6 +259,11 @@ function _M:get_metadata()
 end
 
 
+function _M:get_next_pointer(wheel_id)
+    return self.next_pointer[wheel_id]
+end
+
+
 function _M:re_cal_next_pointer(wheels)
     job_re_cal_next_pointer(self, wheels)
 end
@@ -301,12 +311,10 @@ function _M.new(wheels, name, callback, delay, once, args)
             second = offset_second,
             msec = offset_msec,
         },
-        next_pointer = {
-            hour = 0,
-            minute = 0,
-            second = 0,
-            msec = 0,
-        },
+
+        -- map from `wheel_id` to `next_pointer`
+        next_pointer = {},
+
         _once = once,
         args = args,
         stats = {

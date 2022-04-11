@@ -19,6 +19,14 @@ local meta_table = {
 }
 
 
+function _M:set_higher_wheel(wheel)
+    self.higher_wheel = wheel
+end
+
+function _M:set_lower_wheel(wheel)
+    self.lower_wheel = wheel
+end
+
 function _M:get_cur_pointer()
     return self.pointer + 1
 end
@@ -42,34 +50,76 @@ function _M:cal_pointer(pointer, offset)
 end
 
 
-function _M:insert(pointer, job)
+function _M:insert(job)
     assert(self.slots)
-    assert(pointer > 0)
 
-    local _job = self:get_jobs()[job.name]
+    local next_pointer = job:get_next_pointer(self.id)
 
-    if not _job
-        or (_job:is_cancelled() and not _job:is_enabled()) then
-        self.slots[pointer][job.name] = job
+    if next_pointer ~= 0 then
+        local _job = self:get_jobs_by_pointer(next_pointer)[job.name]
 
-    else
-        return false, "already exists job"
+        if not _job
+           or (_job:is_cancelled() and not _job:is_enabled()) then
+
+            self.slots[next_pointer][job.name] = job
+
+        else
+            return false, "already exists job"
+        end
+
+        return true, nil
     end
+
+    local lower_wheel = self.lower_wheel
+
+    if lower_wheel then
+        return lower_wheel:insert(job)
+    end
+
+    self.expired_jobs[job.name] = job
 
     return true, nil
 end
 
 
-function _M:spin_pointer_one_slot()
-    local pointer, cycles = self:cal_pointer(self:get_cur_pointer(), 1)
-    self.pointer = pointer - 1
-    local higher_wheel = self.higher_wheel
+function _M:spin_pointer(offset)
+    assert(offset >= 0)
 
-    if higher_wheel then
-        for _ = 1, cycles do
-            higher_wheel:spin_pointer_one_slot()
-        end
+    if offset == 0 then
+        return
     end
+
+    local final_pointer = self:get_cur_pointer()
+    local cycles
+    local higher_wheel = self.higher_wheel
+    local lower_wheel = self.lower_wheel
+    local expired_jobs = self.expired_jobs
+
+    for _ = 1, offset do
+        final_pointer, cycles = self:cal_pointer(final_pointer, 1)
+
+        if higher_wheel then
+            higher_wheel:spin_pointer(cycles)
+        end
+
+        local jobs = self:get_jobs_by_pointer(final_pointer)
+
+        for name, job in pairs(jobs) do
+            jobs[name] = nil
+
+            if lower_wheel then
+                lower_wheel:insert(job)
+                goto continue
+            end
+
+            expired_jobs[name] = job
+
+            ::continue::
+        end
+
+    end
+
+    self.pointer = final_pointer - 1
 end
 
 
@@ -83,13 +133,27 @@ function _M:get_jobs_by_pointer(pointer)
 end
 
 
-function _M.new(nelts, higher_wheel)
+function _M:fetch_all_expired_jobs()
+    local ret = self.expired_jobs
+    self.expired_jobs = {}
+    return ret
+end
+
+
+function _M.new(id, nelts)
+    assert(id ~= nil)
+
     local self = {
+        id = id,
+
         pointer = 0,
 
         nelts = nelts,
         slots = utils.table_new(nelts, 0),
-        higher_wheel = higher_wheel,
+        higher_wheel = nil,
+        lower_wheel = nil,
+
+        expired_jobs = {},
     }
 
     for i = 1, self.nelts do

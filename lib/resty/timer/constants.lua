@@ -28,6 +28,14 @@ local _M = {
     -- 1 hour per slot
     HOUR_WHEEL_SLOTS = 24,
 
+    MSEC_WHEEL_ID = "msec_wheel",
+
+    SECOND_WHEEL_ID = "second_wheel",
+
+    MINUTE_WHEEL_ID = "minute_wheel",
+
+    HOUR_WHEEL_ID = "hour_wheel",
+
     MSG_FATAL_FAILED_CREATE_NATIVE_TIMER
         = "failed to create a native timer: ",
 }
