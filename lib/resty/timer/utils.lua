@@ -1,16 +1,16 @@
-local pow = math.pow
--- local floor = math.floor
-local pcall = pcall
-
-local std_assert = assert
-local pairs = pairs
+local math_pow = math.pow
 
 local ngx = ngx
 
 -- luacheck: push ignore
-local log = ngx.log
-local ERR = ngx.ERR
+local ngx_log = ngx.log
+local ngx_ERR = ngx.ERR
 -- luacheck: pop
+
+local pcall = pcall
+local pairs = pairs
+
+local std_assert = assert
 
 local table_isempty
 
@@ -100,7 +100,8 @@ end
 
 function _M.get_variance(cur_value, cur_count, old_variance, old_avg)
     -- recurrence formula
-    return (((cur_count - 1) / pow(cur_count, 2)) * pow(cur_value - old_avg, 2))
+    return (((cur_count - 1)
+        / math_pow(cur_count, 2)) * math_pow(cur_value - old_avg, 2))
         + (((cur_count - 1) / cur_count) * old_variance)
 end
 

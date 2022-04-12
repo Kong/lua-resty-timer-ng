@@ -2,19 +2,19 @@ local utils = require("resty.timer.utils")
 local wheel = require("resty.timer.wheel")
 local constants = require("resty.timer.constants")
 
-local setmetatable = setmetatable
-
 local math_floor = math.floor
 
 local ngx = ngx
 
 -- luacheck: push ignore
-local log = ngx.log
-local ERR = ngx.ERR
+local ngx_log = ngx.log
+local ngx_ERR = ngx.ERR
 -- luacheck: pop
 
-local now = ngx.now
-local update_time = ngx.update_time
+local ngx_now = ngx.now
+local ngx_update_time = ngx.update_time
+
+local setmetatable = setmetatable
 
 -- luacheck: push ignore
 local assert = utils.assert
@@ -92,8 +92,8 @@ function _M:sync_time()
     -- perhaps some jobs have expired but not been fetched
     self:fetch_all_expired_jobs()
 
-    update_time()
-    self.real_time = now()
+    ngx_update_time()
+    self.real_time = ngx_now()
 
     local delta = self.real_time - self.expected_time
     delta = math_floor(delta * 10)

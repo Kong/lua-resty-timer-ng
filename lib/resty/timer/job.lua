@@ -1,16 +1,16 @@
 local utils = require("resty.timer.utils")
 local constants = require("resty.timer.constants")
 
-local unpack = table.unpack
-local concat = table.concat
-local debug_getinfo = debug.getinfo
-local setmetatable = setmetatable
+local table_unpack = table.unpack
+local table_concat = table.concat
 
-local max = math.max
-local min = math.min
-local floor = math.floor
-local modf = math.modf
-local huge = math.huge
+local debug_getinfo = debug.getinfo
+
+local math_max = math.max
+local math_min = math.min
+local math_floor = math.floor
+local math_modf = math.modf
+local math_huge = math.huge
 
 local pcall = pcall
 
@@ -21,7 +21,9 @@ local log = ngx.log
 local ERR = ngx.ERR
 -- luacheck: pop
 
-local now = ngx.now
+local ngx_now = ngx.now
+
+local setmetatable = setmetatable
 
 local assert = utils.assert
 
@@ -59,7 +61,7 @@ local function job_tostring(job)
         ", meta.name = ",               tostring(meta.name),
     }
 
-    return concat(tbl)
+    return table_concat(tbl)
 end
 
 
@@ -249,21 +251,21 @@ function _M.new(wheels, name, callback, delay, once, args)
     if delay ~= 0 then
         immediate = false
 
-        delay, offset_msec = modf(delay)
+        delay, offset_msec = math_modf(delay)
         offset_msec = offset_msec * 1000 + 10
-        offset_msec = floor(floor(offset_msec) / 100)
+        offset_msec = math_floor(math_floor(offset_msec) / 100)
 
         -- Arithmetically, the maximum of `offset_msec`
         -- should be `9` now,
         -- but due to floating point errors,
         -- there may be some unexpected cases here.
         -- So here we deal with it.
-        offset_msec = min(offset_msec, 9)
+        offset_msec = math_min(offset_msec, 9)
 
-        offset_hour = modf(delay / 60 / 60)
+        offset_hour = math_modf(delay / 60 / 60)
         delay = delay % (60 * 60)
 
-        offset_minute = modf(delay / 60)
+        offset_minute = math_modf(delay / 60)
         offset_second = delay % 60
     end
 
@@ -293,7 +295,7 @@ function _M.new(wheels, name, callback, delay, once, args)
             elapsed_time = {
                 avg = 0,
                 max = -1,
-                min = huge,
+                min = math_huge,
                 variance = 0,
             },
 
@@ -321,7 +323,7 @@ function _M:execute()
     local stats = self.stats
     local elapsed_time = stats.elapsed_time
     stats.runs = stats.runs + 1
-    local start = now()
+    local start = ngx_now()
 
     if not self:is_runnable() then
         return
@@ -329,7 +331,7 @@ function _M:execute()
 
     self._running = true
 
-    local ok, err = pcall(self.callback, false, unpack(self.args))
+    local ok, err = pcall(self.callback, false, table_unpack(self.args))
 
     local finish = stats.finish
 
@@ -343,10 +345,10 @@ function _M:execute()
     self._running = false
     stats.finish = finish
 
-    local spend = now() - start
+    local spend = ngx_now() - start
 
-    elapsed_time.max = max(elapsed_time.max, spend)
-    elapsed_time.min = min(elapsed_time.min, spend)
+    elapsed_time.max = math_max(elapsed_time.max, spend)
+    elapsed_time.min = math_min(elapsed_time.min, spend)
 
     local old_avg = elapsed_time.avg
     elapsed_time.avg = utils.get_avg(spend, finish, old_avg)

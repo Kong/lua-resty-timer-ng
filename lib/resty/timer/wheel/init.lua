@@ -1,6 +1,5 @@
 local utils = require("resty.timer.utils")
 
-local setmetatable = setmetatable
 local floor = math.floor
 
 local table_insert = table.insert
@@ -9,9 +8,11 @@ local table_unpack = table.unpack
 local ngx = ngx
 
 -- luacheck: push ignore
-local log = ngx.log
-local ERR = ngx.ERR
+local ngx_log = ngx.log
+local ngx_ERR = ngx.ERR
 -- luacheck: pop
+
+local setmetatable = setmetatable
 
 local assert = utils.assert
 

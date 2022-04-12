@@ -9,30 +9,32 @@ local constants = require("resty.timer.constants")
 
 local ngx = ngx
 
-local max = math.max
-local random = math.random
-local modf = math.modf
-local huge = math.huge
-local abs = math.abs
+local math_max = math.max
+local math_random = math.random
+local math_modf = math.modf
+local math_huge = math.huge
+local math_abs = math.abs
+
 local string_format = string.format
+
+-- luacheck: push ignore
+local ngx_log = ngx.log
+local ngx_ERR = ngx.ERR
+local ngx_DEBUG = ngx.DEBUG
+local ngx_NOTICE = ngx.NOTICE
+-- luacheck: pop
+
+local ngx_timer_at = ngx.timer.at
+local ngx_timer_every = ngx.timer.every
+local ngx_sleep = ngx.sleep
+local ngx_worker_exiting = ngx.worker.exiting
+local ngx_now = ngx.now
+local ngx_update_time = ngx.update_time
+
 local pairs = pairs
 local tostring = tostring
 local type = type
 local next = next
-
--- luacheck: push ignore
-local log = ngx.log
-local ERR = ngx.ERR
-local DEBUG = ngx.DEBUG
-local NOTICE = ngx.NOTICE
--- luacheck: pop
-
-local timer_at = ngx.timer.at
-local timer_every = ngx.timer.every
-local sleep = ngx.sleep
-local exiting = ngx.worker.exiting
-local now = ngx.now
-local update_time = ngx.update_time
 
 local assert = utils.assert
 
@@ -40,17 +42,17 @@ local _M = {}
 
 
 local function log_notice(...)
-    log(NOTICE, "[timer] ", ...)
+    ngx_log(ngx_NOTICE, "[timer] ", ...)
 end
 
 
 local function log_error(...)
-    log(ERR, "[timer] ", ...)
+    ngx_log(ngx_ERR, "[timer] ", ...)
 end
 
 
 local function native_timer_at(delay, callback, ...)
-    local ok, err = timer_at(delay, callback, ...)
+    local ok, err = ngx_timer_at(delay, callback, ...)
     assert(ok,
         constants.MSG_FATAL_FAILED_CREATE_NATIVE_TIMER
         -- `err` maybe `nil`
@@ -66,7 +68,7 @@ local function wake_up_super_timer(self)
     local count = semaphore_super:count()
 
     if count <= 0 then
-        semaphore_super:post(abs(count) + 1)
+        semaphore_super:post(math_abs(count) + 1)
     end
 end
 
@@ -79,7 +81,7 @@ local function wake_up_mover_timer(self)
     local count = semaphore_mover:count()
 
     if count <= 0 then
-        semaphore_mover:post(abs(count) + 1)
+        semaphore_mover:post(math_abs(count) + 1)
     end
 end
 
@@ -99,7 +101,7 @@ local function mover_timer_callback(premature, self)
         return
     end
 
-    while not exiting() and not self.destory do
+    while not ngx_worker_exiting() and not self.destory do
         log_notice("waiting on `semaphore_mover` for 1 second")
 
         local ok, err = semaphore_mover:wait(1)
@@ -151,7 +153,7 @@ local function worker_timer_callback(premature, self, thread_index)
     local wheels = self.wheels
     local jobs = self.jobs
 
-    while not exiting() and not self.destory do
+    while not ngx_worker_exiting() and not self.destory do
         log_notice("waiting on `semaphore_worker` for 1 second in thread #"
             .. thread_index)
         local ok, err = semaphore_worker:wait(1)
@@ -275,13 +277,13 @@ local function super_timer_callback(premature, self)
         end
     end
 
-    sleep(constants.RESOLUTION)
+    ngx_sleep(constants.RESOLUTION)
 
-    update_time()
-    wheels.real_time = now()
+    ngx_update_time()
+    wheels.real_time = ngx_now()
     wheels.expected_time = wheels.real_time - constants.RESOLUTION
 
-    while not exiting() and not self.destory do
+    while not ngx_worker_exiting() and not self.destory do
         if self.enable then
             wheels:sync_time()
 
@@ -290,8 +292,8 @@ local function super_timer_callback(premature, self)
             end
 
             wheels:update_closest()
-            local closest = max(wheels.closest, constants.RESOLUTION)
-            wheels.closest = huge
+            local closest = math_max(wheels.closest, constants.RESOLUTION)
+            wheels.closest = math_huge
 
             log_notice(string_format(
                 "waiting on `semaphore_super` for %f second",
@@ -304,7 +306,7 @@ local function super_timer_callback(premature, self)
             end
 
         else
-            sleep(constants.RESOLUTION)
+            ngx_sleep(constants.RESOLUTION)
         end
     end
 end
@@ -314,7 +316,7 @@ local function create(self ,name, callback, delay, once, args)
     local wheels = self.wheels
     local jobs = self.jobs
     if not name then
-        name = tostring(random())
+        name = tostring(math_random())
     end
 
     if jobs[name] then
@@ -365,7 +367,7 @@ function _M.configure(timer_sys, options)
             assert(options.restart_thread_after_runs > 0,
                 "expected `restart_thread_after_runs` to be greater than 0")
 
-            local _, tmp = modf(options.restart_thread_after_runs)
+            local _, tmp = math_modf(options.restart_thread_after_runs)
 
             assert(tmp == 0,
                 "expected `restart_thread_after_runs` to be a integer")
@@ -378,7 +380,7 @@ function _M.configure(timer_sys, options)
             assert(options.threads > 0,
             "expected `threads` to be greater than 0")
 
-            local _, tmp = modf(options.threads)
+            local _, tmp = math_modf(options.threads)
             assert(tmp == 0, "expected `threads` to be a integer")
         end
     end
@@ -457,8 +459,8 @@ function _M.start(timer_sys)
     end
 
     if not timer_sys.enable then
-        update_time()
-        timer_sys.wheels.expected_time = now()
+        ngx_update_time()
+        timer_sys.wheels.expected_time = ngx_now()
     end
 
     timer_sys.enable = true
@@ -492,7 +494,7 @@ function _M:once(name, callback, delay, ...)
         or (delay ~= 0 and delay < constants.RESOLUTION)then
 
         log_notice("fallback to ngx.timer.every [delay = " .. delay .. "]")
-        local ok, err = timer_at(delay, callback, ...)
+        local ok, err = ngx_timer_at(delay, callback, ...)
         return ok ~= nil, err
     end
 
@@ -517,7 +519,7 @@ function _M:every(name, callback, interval, ...)
 
         log_notice("fallback to ngx.timer.every [interval = "
             .. interval .. "]")
-        local ok, err = timer_every(interval, callback, ...)
+        local ok, err = ngx_timer_every(interval, callback, ...)
         return ok ~= nil, err
     end
 
