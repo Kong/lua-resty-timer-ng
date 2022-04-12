@@ -18,6 +18,7 @@ local string_format = string.format
 local pairs = pairs
 local tostring = tostring
 local type = type
+local next = next
 
 -- luacheck: push ignore
 local log = ngx.log
@@ -169,7 +170,7 @@ local function worker_timer_callback(premature, self, thread_index)
                 thread_index, thread.counter.runs
             ))
 
-            local job = utils.table_get_a_item(wheels.pending_jobs)
+            local _, job = next(wheels.pending_jobs)
 
             wheels.pending_jobs[job.name] = nil
 

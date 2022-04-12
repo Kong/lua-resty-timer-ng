@@ -119,20 +119,6 @@ function _M.table_is_empty(tbl)
 end
 
 
-function _M.table_get_a_item(tbl)
-    if not tbl then
-        return nil
-    end
-
-    -- luacheck: ignore
-    for _, v in pairs(tbl) do
-        return v
-    end
-
-    return nil
-end
-
-
 function _M.table_merge(dst, src)
     assert(dst and src)
 
