@@ -352,7 +352,8 @@ function _M:execute()
     elapsed_time.avg = utils.get_avg(spend, finish, old_avg)
 
     local old_variance = elapsed_time.variance
-    elapsed_time.variance = utils.get_variance(spend, finish, old_variance, old_avg)
+    elapsed_time.variance =
+        utils.get_variance(spend, finish, old_variance, old_avg)
 
 end
 
