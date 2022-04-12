@@ -340,7 +340,11 @@ local function create(self ,name, callback, delay, once, args)
 
     wake_up_super_timer(self)
 
-    return ok, err
+    if ok then
+        return name, nil
+    end
+
+    return false, err
 end
 
 
@@ -493,9 +497,10 @@ function _M:once(name, callback, delay, ...)
     end
 
     -- TODO: desc the logic and add related tests
-    local ok, err = create(self, name, callback, delay, true, { ... })
+    local name_or_false, err =
+        create(self, name, callback, delay, true, { ... })
 
-    return ok, err
+    return name_or_false, err
 end
 
 
@@ -516,9 +521,10 @@ function _M:every(name, callback, interval, ...)
         return ok ~= nil, err
     end
 
-    local ok, err = create(self, name, callback, interval, false, { ... })
+    local name_or_false, err =
+        create(self, name, callback, interval, false, { ... })
 
-    return ok, err
+    return name_or_false, err
 end
 
 
@@ -537,8 +543,15 @@ function _M:run(name)
         return false, "running"
     end
 
-    return create(self, old_job.name, old_job.callback,
-        old_job.delay, old_job:is_oneshot(), old_job.args)
+    local name_or_false, err =
+        create(self, old_job.name, old_job.callback,
+               old_job.delay, old_job:is_oneshot(), old_job.args)
+
+    local ok = name_or_false ~= false
+
+    jobs[name].meta = old_job:get_metadata()
+
+    return ok, err
 end
 
 

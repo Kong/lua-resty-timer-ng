@@ -14,7 +14,7 @@ local function helper(strategy, t, tbl, name, callback, delay, sleep_second)
 
     assert.has_no.errors(function ()
         local ok, _ = t:once(name, callback, delay, tbl, sleep_second)
-        assert.is_true(ok)
+        assert.is_truthy(ok)
     end)
 
     local expected = now() + delay

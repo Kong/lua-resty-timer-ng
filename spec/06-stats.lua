@@ -33,7 +33,7 @@ insulate("stats |", function ()
         -- in the file `lib/resty/timer/job.lua`.
 
         local timer_name = "TEST"
-        assert.is_true((timer:once(timer_name, function() end, 60)))
+        assert.is_truthy((timer:once(timer_name, function() end, 60)))
 
         local stats = timer_module.stats(timer)
         local timer_info = stats.timers[timer_name]
@@ -49,7 +49,7 @@ insulate("stats |", function ()
     it("others #fast", function()
         local timer_name = "TEST"
         local record = 1
-        timer:every(timer_name, function ()
+        local ok, _ = timer:every(timer_name, function ()
             if record < 3 then
                 sleep(5)
                 record = record + 1
@@ -59,6 +59,8 @@ insulate("stats |", function ()
                 error("expected error")
             end
         end, 1)
+
+        assert.is_truthy(ok)
 
         for i = 1, 2 do
             sleep(1 + 5 + TOLERANCE)
