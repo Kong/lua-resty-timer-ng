@@ -11,13 +11,14 @@ https://github.com/Kong/kong-madr/pull/28
 ```nginx
 http {
     init_worker_by_lua_block {
-        local timer = require("resty.timer")
+        local timer_module = require("resty.timer")
+        local timer_sys = { }
 
         local options = {
             threads = 10,                           -- restart a timer after a certain number of this timer triggers
             restart_thread_after_runs = 50,
         }
-        timer:configure(options)
+        timer_module.configure(timer_sys, options)
 
         -- ‘premature’ is used to be compatible with existing callback functions and will be removed in the future
         local fuction callback_once(premature, ...)
@@ -31,10 +32,10 @@ http {
         end
 
         -- run after 100 ms
-        timer:once("example-once", callback_once, 0.1)
+        timer_sys:once("example-once", callback_once, 0.1)
 
         -- run every 1s
-        timer:every("example-every", callback_every, 1)
+        timer_sys:every("example-every", callback_every, 1)
     }
 }
 ```
@@ -68,17 +69,21 @@ Versioning is strictly based on [Semantic Versioning](https://semver.org/)
 
 ### configure
 
-**syntax**: *ok, err = timer:configure(options?)*
+**syntax**: *ok, err = timer_module.configure(timer_sys, options?)*
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
 Configure the timer system.
 
+* `timer_module`: `require("resty.timer")`
+* `timer_sys`: A table, which will be initialized.
+
 For example
 
 ```lua
-local timer = require("resty.timer")
-timer:configure({
+local timer_module = require("resty.timer")
+local timer_sys = { }
+timer_module.configure(timer_sys, {
     -- number of threads
     threads = 10,
 
@@ -90,20 +95,26 @@ timer:configure({
 
 ### start
 
-**syntax**: *ok, err = timer:start()*
+**syntax**: *ok, err = timer_module.start(timer_sys)*
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
 Start the timer system.
 
+* `timer_module`: `require("resty.timer")`
+* `timer_sys`: A table initialized by `configure`.
+
 
 ### stop
 
-**syntax**: *timer:stop()*
+**syntax**: *timer_module.stop(timer_sys)*
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
 Suspend the timer system and the expiration of each timer will be frozen.
+
+* `timer_module`: `require("resty.timer")`
+* `timer_sys`: A table initialized by `configure`.
 
 
 ### once
@@ -169,21 +180,27 @@ Cancel a timer.
 
 ### unconfigure
 
-**syntax**: *timer:unconfigure()*
+**syntax**: *timer_module.unconfigure(timer_sys)*
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
 Cancel all timers, after which you will need to call `configure` again to continue using this library.
 
+* `timer_module`: `require("resty.timer")`
+* `timer_sys`: A table initialized by `configure`.
+
 
 ### stats
 
-**syntax**: info, err = timer:stats()
+**syntax**: info, err = timer_module.stats(timer_sys)
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
 
 Get the statistics of the system.
+
+* `timer_module`: `require("resty.timer")`
+* `timer_sys`: A table initialized by `configure`.
 
 For example:
 
@@ -204,7 +221,7 @@ local sys_info = info.sys
 
 for timer_name, timer in pairs(info.jobs) do
     local meta = timer.meta
-    local runtime = timer.runtime
+    local elapsed_time = timer.elapsed_time
     local runs = timer.runs                     -- total number of runs
     local faults = timer.faults                 -- total number of faults (exceptions)
     local last_err_msg = timer.last_err_msg     -- the error message for last execption
@@ -231,11 +248,11 @@ for timer_name, timer in pairs(info.jobs) do
     -- callstack[3] = nil                       nil mean code at C language
 
 
-    -- runtime is a table that stores the 
+    -- elapsed_time is a table that stores the 
     -- maximum, minimum, average and variance 
     -- of the time spent on each run of the timer.
     -- Such as:
-    -- runtime = {
+    -- elapsed_time = {
     --     max = 100
     --     min = 50
     --     avg = 70

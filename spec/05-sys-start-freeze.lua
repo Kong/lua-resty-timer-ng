@@ -1,3 +1,5 @@
+local timer_module = require("resty.timer")
+
 local sleep = ngx.sleep
 local update_time = ngx.update_time
 local now = ngx.now
@@ -9,17 +11,16 @@ local TOLERANCE = 0.2
 local THREADS = 10
 
 
-insulate("system start -> stop -> start #fast | ", function ()
-    local timer
+insulate("system start -> freeze -> start #fast | ", function ()
+    local timer = { }
     local callback
     local tbl
 
     randomize()
 
     lazy_setup(function ()
-        timer = require("resty.timer")
-        timer:configure({ threads = THREADS })
-        timer:start()
+        timer_module.configure(timer, { threads = THREADS })
+        timer_module.start(timer)
 
         tbl = {
             time = 0
@@ -32,8 +33,8 @@ insulate("system start -> stop -> start #fast | ", function ()
     end)
 
     lazy_teardown(function ()
-        timer:stop()
-        timer:unconfigure()
+        timer_module.freeze(timer)
+        timer_module.unconfigure(timer)
         sleep(2)
         assert.same(1, timer_running_count())
     end)
@@ -49,12 +50,12 @@ insulate("system start -> stop -> start #fast | ", function ()
             assert.is_true(ok)
         end)
 
-        timer:stop()
+        timer_module.freeze(timer)
         sleep(1 + TOLERANCE)
         assert.same(0, tbl.time)
 
         update_time()
-        timer:start()
+        timer_module.start(timer)
         local expected = now() + 1
         sleep(1 + TOLERANCE)
         assert.near(expected, tbl.time, TOLERANCE)
@@ -66,11 +67,11 @@ insulate("system start -> stop -> start #fast | ", function ()
             assert.is_true(ok)
         end)
 
-        timer:stop()
+        timer_module.freeze(timer)
         sleep(2 + TOLERANCE)
         assert.same(0, tbl.time)
 
-        local ok, _ = timer:start(TIMER_NAME_EVERY)
+        local ok, _ = timer_module.start(timer)
         assert.is_true(ok)
 
         update_time()

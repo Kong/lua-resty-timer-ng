@@ -32,31 +32,31 @@ local function job_tostring(job)
     local stats = job.stats
     local offset = job.offset
     local next_pointer = job.next_pointer
-    local runtime = stats.runtime
+    local elapsed_time = stats.elapsed_time
     local meta = job.meta
 
     local tbl = {
-        "name = ",                  tostring(job.name),
-        ", enable = ",              tostring(job._enable),
-        ", cancel = ",              tostring(job._cancel),
-        ", once = ",                tostring(job._once),
-        ", offset.hour = ",         tostring(offset.hour),
-        ", offset.minute = ",       tostring(offset.minute),
-        ", offset.second = ",       tostring(offset.second),
-        ", offset.msec = ",         tostring(offset.msec),
-        ", next.hour = ",           tostring(next_pointer
+        "name = ",                      tostring(job.name),
+        ", enable = ",                  tostring(job._enable),
+        ", cancel = ",                  tostring(job._cancel),
+        ", once = ",                    tostring(job._once),
+        ", offset.hour = ",             tostring(offset.hour),
+        ", offset.minute = ",           tostring(offset.minute),
+        ", offset.second = ",           tostring(offset.second),
+        ", offset.msec = ",             tostring(offset.msec),
+        ", next.hour = ",               tostring(next_pointer
                                                 [constants.HOUR_WHEEL_ID]),
-        ", next.minute = ",         tostring(next_pointer
+        ", next.minute = ",             tostring(next_pointer
                                                 [constants.MINUTE_WHEEL_ID]),
-        ", next.second = ",         tostring(next_pointer
+        ", next.second = ",             tostring(next_pointer
                                                 [constants.SECOND_WHEEL_ID]),
-        ", next.msec = ",           tostring(next_pointer
+        ", next.msec = ",               tostring(next_pointer
                                                 [constants.MSEC_WHEEL_ID]),
-        ", runtime.max = ",         tostring(runtime.max),
-        ", runtime.min = ",         tostring(runtime.min),
-        ", runtime.avg = ",         tostring(runtime.avg),
-        ", runtime.variance = ",    tostring(runtime.variance),
-        ", meta.name = ",           tostring(meta.name),
+        ", elapsed_time.max = ",        tostring(elapsed_time.max),
+        ", elapsed_time.min = ",        tostring(elapsed_time.min),
+        ", elapsed_time.avg = ",        tostring(elapsed_time.avg),
+        ", elapsed_time.variance = ",   tostring(elapsed_time.variance),
+        ", meta.name = ",               tostring(meta.name),
     }
 
     return concat(tbl)
@@ -206,7 +206,7 @@ function _M:is_enabled()
 end
 
 
-function _M:is_once()
+function _M:is_oneshot()
     return self._once
 end
 
@@ -290,7 +290,7 @@ function _M.new(wheels, name, callback, delay, once, args)
         _once = once,
         args = args,
         stats = {
-            runtime = {
+            elapsed_time = {
                 avg = 0,
                 max = -1,
                 min = huge,
@@ -319,7 +319,7 @@ end
 
 function _M:execute()
     local stats = self.stats
-    local runtime = stats.runtime
+    local elapsed_time = stats.elapsed_time
     stats.runs = stats.runs + 1
     local start = now()
 
@@ -345,14 +345,14 @@ function _M:execute()
 
     local spend = now() - start
 
-    runtime.max = max(runtime.max, spend)
-    runtime.min = min(runtime.min, spend)
+    elapsed_time.max = max(elapsed_time.max, spend)
+    elapsed_time.min = min(elapsed_time.min, spend)
 
-    local old_avg = runtime.avg
-    runtime.avg = utils.get_avg(spend, finish, old_avg)
+    local old_avg = elapsed_time.avg
+    elapsed_time.avg = utils.get_avg(spend, finish, old_avg)
 
-    local old_variance = runtime.variance
-    runtime.variance = utils.get_variance(spend, finish, old_variance, old_avg)
+    local old_variance = elapsed_time.variance
+    elapsed_time.variance = utils.get_variance(spend, finish, old_variance, old_avg)
 
 end
 

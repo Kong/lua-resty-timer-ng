@@ -79,10 +79,10 @@ function _M:fetch_all_expired_jobs()
     local second_wheel = self.second_wheel
     local msec_wheel = self.msec_wheel
 
-    utils.table_append(self.ready_jobs, hour_wheel:fetch_all_expired_jobs())
-    utils.table_append(self.ready_jobs, minute_wheel:fetch_all_expired_jobs())
-    utils.table_append(self.ready_jobs, second_wheel:fetch_all_expired_jobs())
-    utils.table_append(self.ready_jobs, msec_wheel:fetch_all_expired_jobs())
+    utils.table_merge(self.ready_jobs, hour_wheel:fetch_all_expired_jobs())
+    utils.table_merge(self.ready_jobs, minute_wheel:fetch_all_expired_jobs())
+    utils.table_merge(self.ready_jobs, second_wheel:fetch_all_expired_jobs())
+    utils.table_merge(self.ready_jobs, msec_wheel:fetch_all_expired_jobs())
 end
 
 

@@ -133,7 +133,7 @@ function _M.table_get_a_item(tbl)
 end
 
 
-function _M.table_append(dst, src)
+function _M.table_merge(dst, src)
     assert(dst and src)
 
     for k, v in pairs(src) do
@@ -244,9 +244,9 @@ function _M.print_wheel(wheels)
 end
 
 
-function _M:round(value, digits)
+--[[ function _M.round(value, digits)
     local x = 10 * digits
     return floor(value * x + 0.5) / x
-end
+end ]]
 
 return _M

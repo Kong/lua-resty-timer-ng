@@ -1,3 +1,5 @@
+local timer_module = require("resty.timer")
+
 local sleep = ngx.sleep
 local update_time = ngx.update_time
 local now = ngx.now
@@ -30,22 +32,21 @@ end
 
 
 insulate("create a once timer with invalid arguments #fast | ", function ()
-    local timer
+    local timer = { }
     local empty_callback
 
     randomize()
 
     lazy_setup(function ()
-        timer = require("resty.timer")
-        timer:configure({ threads = THREADS })
-        timer:start()
+        timer_module.configure(timer, { threads = THREADS })
+        timer_module.start(timer)
 
         empty_callback = function (_, ...) end
     end)
 
     lazy_teardown(function ()
-        timer:stop()
-        timer:unconfigure()
+        timer_module.freeze(timer)
+        timer_module.unconfigure(timer)
         sleep(2)
         assert.same(1, timer_running_count())
     end)
@@ -88,22 +89,21 @@ local strategies = {
 
 for strategy, callback in pairs(strategies) do
     insulate("create a once timer #" .. strategy .. " | ", function ()
-        local timer
+        local timer = { }
         local tbl
 
         randomize()
 
         lazy_setup(function ()
-            timer = require("resty.timer")
-            timer:configure()
-            timer:start()
+            timer_module.configure(timer)
+            timer_module.start(timer)
 
             tbl = { time = 0 }
         end)
 
         lazy_teardown(function ()
-            timer:stop()
-            timer:unconfigure()
+            timer_module.freeze(timer)
+            timer_module.unconfigure(timer)
             sleep(10)
             assert.same(1, timer_running_count())
         end)

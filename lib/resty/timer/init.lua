@@ -193,7 +193,7 @@ local function worker_timer_callback(premature, self, thread_index)
             ))
             job:execute()
 
-            if job:is_once() then
+            if job:is_oneshot() then
                 log_notice(string_format(
                     "timer %s need to be executed only once",
                     job.name
@@ -343,8 +343,10 @@ local function create(self ,name, callback, delay, once, args)
 end
 
 
-function _M:configure(options)
-    if self.configured then
+function _M.configure(timer_sys, options)
+    assert(type(timer_sys) == "table")
+
+    if timer_sys.configured then
         return false, "already configured"
     end
 
@@ -393,32 +395,32 @@ function _M:configure(options)
             or constants.DEFAULT_FORCE_UPDATE_TIME,
     }
 
-    self.opt = opt
+    timer_sys.opt = opt
 
     -- enable/diable entire timing system
-    self.enable = false
+    timer_sys.enable = false
 
-    self.threads = utils.table_new(opt.threads, 0)
-    self.jobs = {}
+    timer_sys.threads = utils.table_new(opt.threads, 0)
+    timer_sys.jobs = {}
 
     -- has the super timer already been created?
-    self.super_timer = false
+    timer_sys.super_timer = false
 
     -- has the mover timer already been created?
-    self.mover_timer = false
+    timer_sys.mover_timer = false
 
-    self.destory = false
+    timer_sys.destory = false
 
-    self.semaphore_super = semaphore.new()
+    timer_sys.semaphore_super = semaphore.new()
 
-    self.semaphore_worker = semaphore.new()
+    timer_sys.semaphore_worker = semaphore.new()
 
-    self.semaphore_mover = semaphore.new()
+    timer_sys.semaphore_mover = semaphore.new()
 
-    self.wheels = wheel_group.new()
+    timer_sys.wheels = wheel_group.new()
 
-    for i = 1, self.opt.threads do
-        self.threads[i] = {
+    for i = 1, timer_sys.opt.threads do
+        timer_sys.threads[i] = {
             index = i,
             alive = false,
             counter = {
@@ -428,40 +430,47 @@ function _M:configure(options)
         }
     end
 
-    self.configured = true
+    timer_sys.configured = true
+
+    timer_sys.once = _M.once
+    timer_sys.every = _M.every
+    timer_sys.run = _M.run
+    timer_sys.pause = _M.pause
+    timer_sys.cancel = _M.cancel
+
     return true, nil
 end
 
 
-function _M:start()
+function _M.start(timer_sys)
     local ok, err = true, nil
 
-    if not self.super_timer then
-        native_timer_at(0, super_timer_callback, self)
-        native_timer_at(0, mover_timer_callback, self)
-        self.super_timer = true
+    if not timer_sys.super_timer then
+        native_timer_at(0, super_timer_callback, timer_sys)
+        native_timer_at(0, mover_timer_callback, timer_sys)
+        timer_sys.super_timer = true
     end
 
-    if not self.enable then
+    if not timer_sys.enable then
         update_time()
-        self.wheels.expected_time = now()
+        timer_sys.wheels.expected_time = now()
     end
 
-    self.enable = true
+    timer_sys.enable = true
 
     return ok, err
 end
 
 
-function _M:stop()
-    self.enable = false
+function _M.freeze(timer_sys)
+    timer_sys.enable = false
 end
 
 
 -- TODO: rename this method
-function _M:unconfigure()
-    self.destory = true
-    self.configured = false
+function _M.unconfigure(timer_sys)
+    timer_sys.destory = true
+    timer_sys.configured = false
 end
 
 
@@ -528,7 +537,7 @@ function _M:run(name)
     end
 
     return create(self, old_job.name, old_job.callback,
-        old_job.delay, old_job:is_once(), old_job.args)
+        old_job.delay, old_job:is_oneshot(), old_job.args)
 end
 
 
@@ -565,9 +574,9 @@ function _M:cancel(name)
 end
 
 
-function _M:stats()
-    local pending_jobs = self.wheels.pending_jobs
-    local ready_jobs = self.wheels.ready_jobs
+function _M.stats(timer_sys)
+    local pending_jobs = timer_sys.wheels.pending_jobs
+    local ready_jobs = timer_sys.wheels.ready_jobs
 
     local sys = {
         running = 0,
@@ -578,7 +587,7 @@ function _M:stats()
     -- TODO: use `utils.table_new`
     local jobs = {}
 
-    for name, job in pairs(self.jobs) do
+    for name, job in pairs(timer_sys.jobs) do
         if job.running then
             sys.running = sys.running + 1
 
@@ -593,7 +602,7 @@ function _M:stats()
         jobs[name] = {
             name = name,
             meta = job:get_metadata(),
-            runtime = utils.table_deepcopy(job.stats.runtime),
+            elapsed_time = utils.table_deepcopy(job.stats.elapsed_time),
             runs = stats.runs,
             faults = stats.runs - stats.finish,
             last_err_msg = stats.last_err_msg,

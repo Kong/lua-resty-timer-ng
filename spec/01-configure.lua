@@ -1,16 +1,18 @@
+local timer_module = require("resty.timer")
+
 insulate("configure without options #fast", function()
-    local timer = require("resty.timer")
+    local timer = { }
     it("", function()
-        local ok, _ = timer:configure()
+        local ok, _ = timer_module.configure(timer)
         assert.is_true(ok)
     end)
 end)
 
 
 insulate("configure with empty options #fast", function()
-    local timer = require("resty.timer")
+    local timer = { }
     it("", function ()
-        local ok, _ = timer:configure({})
+        local ok, _ = timer_module.configure(timer, {})
         assert.is_true(ok)
     end)
 end)
@@ -18,10 +20,10 @@ end)
 
 insulate("configure with invalid options #fast | ", function ()
     insulate("not a table", function ()
-        local timer = require("resty.timer")
+        local timer = { }
         it("", function ()
             assert.has.errors(function ()
-                timer:configure(1)
+                timer_module.configure(timer, 1)
             end)
         end)
     end)
@@ -29,10 +31,10 @@ insulate("configure with invalid options #fast | ", function ()
 
     insulate("invalid `restart_thread_after_runs` | ", function ()
         insulate("not a number", function ()
-            local timer = require("resty.timer")
+            local timer = { }
             it("", function ()
                 assert.has.errors(function ()
-                    timer:configure({
+                    timer_module.configure(timer, {
                         restart_thread_after_runs = ""
                     })
                 end)
@@ -40,16 +42,16 @@ insulate("configure with invalid options #fast | ", function ()
         end)
 
         insulate("not greater than 0", function ()
-            local timer = require("resty.timer")
+            local timer = { }
             it("", function ()
                 assert.has.errors(function ()
-                    timer:configure({
+                    timer_module.configure(timer, {
                         restart_thread_after_runs = -1
                     })
                 end)
 
                 assert.has.errors(function ()
-                    timer:configure({
+                    timer_module.configure(timer, {
                         restart_thread_after_runs = 0
                     })
                 end)
@@ -57,10 +59,10 @@ insulate("configure with invalid options #fast | ", function ()
         end)
 
         insulate("not an integer", function ()
-            local timer = require("resty.timer")
+            local timer = { }
             it("", function ()
                 assert.has.errors(function ()
-                    timer:configure({
+                    timer_module.configure(timer, {
                         restart_thread_after_runs = 0.1
                     })
                 end)
@@ -71,10 +73,10 @@ insulate("configure with invalid options #fast | ", function ()
 
     insulate("invalid `threads` | ", function ()
         insulate("not a number", function ()
-            local timer = require("resty.timer")
+            local timer = { }
             it("", function ()
                 assert.has.errors(function ()
-                    timer:configure({
+                    timer_module.configure(timer, {
                         threads = ""
                     })
                 end)
@@ -82,16 +84,16 @@ insulate("configure with invalid options #fast | ", function ()
         end)
 
         insulate("not greater than 0", function ()
-            local timer = require("resty.timer")
+            local timer = { }
             it("", function ()
                 assert.has.errors(function ()
-                    timer:configure({
+                    timer_module.configure(timer, {
                         threads = -1
                     })
                 end)
 
                 assert.has.errors(function ()
-                    timer:configure({
+                    timer_module.configure(timer, {
                         threads = 0
                     })
                 end)
@@ -99,10 +101,10 @@ insulate("configure with invalid options #fast | ", function ()
         end)
 
         insulate("not an integer", function ()
-            local timer = require("resty.timer")
+            local timer = { }
             it("", function ()
                 assert.has.errors(function ()
-                    timer:configure({
+                    timer_module.configure(timer, {
                         threads = 0.1
                     })
                 end)
