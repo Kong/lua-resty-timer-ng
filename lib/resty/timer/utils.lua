@@ -9,6 +9,7 @@ local ngx_ERR = ngx.ERR
 
 local pcall = pcall
 local pairs = pairs
+local next = next
 
 local std_assert = assert
 
@@ -22,12 +23,7 @@ do
 
     else
         table_isempty = function(tbl)
-            -- luacheck: ignore
-            for _, _ in pairs(tbl) do
-                return false
-            end
-
-            return true
+            return next(tbl) == nil
         end
     end
 end
@@ -121,7 +117,11 @@ end
 
 
 function _M.table_merge(dst, src)
-    assert(dst and src)
+    assert(dst)
+
+    if not src then
+        return
+    end
 
     for k, v in pairs(src) do
         assert(not dst[k])

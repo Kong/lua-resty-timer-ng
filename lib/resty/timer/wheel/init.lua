@@ -1,6 +1,6 @@
 local utils = require("resty.timer.utils")
 
-local floor = math.floor
+local math_floor = math.floor
 
 local table_insert = table.insert
 local table_unpack = table.unpack
@@ -13,6 +13,7 @@ local ngx_ERR = ngx.ERR
 -- luacheck: pop
 
 local setmetatable = setmetatable
+local next = next
 
 local assert = utils.assert
 
@@ -44,7 +45,7 @@ function _M:cal_pointer(pointer, offset)
 
     p = (p + offset) % nelts
 
-    local cycles = floor(offset / nelts)
+    local cycles = math_floor(offset / nelts)
 
     if old + (offset % nelts) >= nelts then
         cycles = cycles + 1
@@ -165,8 +166,15 @@ end
 
 
 function _M:fetch_all_expired_jobs()
+    if utils.table_is_empty(self.expired_jobs) then
+        return nil
+    end
+
     local ret = self.expired_jobs
+
+    -- TODO: GC pressure
     self.expired_jobs = {}
+
     return ret
 end
 

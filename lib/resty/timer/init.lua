@@ -122,10 +122,10 @@ local function mover_timer_callback(premature, self)
         end
 
         if not is_no_ready_jobs then
+            local temp = wheels.pending_jobs
             wheels.pending_jobs = wheels.ready_jobs
+            wheels.ready_jobs = temp
 
-            -- TODO; use `utils.table_new`
-            wheels.ready_jobs = {}
             semaphore_worker:post(opt_threads)
         end
 
