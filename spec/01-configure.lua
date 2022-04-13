@@ -1,114 +1,101 @@
 local timer_module = require("resty.timer")
 
-insulate("configure without options #fast", function()
-    local timer = { }
-    it("", function()
-        local ok, _ = timer_module.configure(timer)
+describe("configure with #fast | ", function ()
+    it("empty options", function ()
+        local ok, _ = timer_module.configure({})
+        assert.is_true(ok)
+
+        ok, _ = timer_module.configure({}, {})
         assert.is_true(ok)
     end)
-end)
 
-
-insulate("configure with empty options #fast", function()
-    local timer = { }
-    it("", function ()
-        local ok, _ = timer_module.configure(timer, {})
-        assert.is_true(ok)
+    it("nil first argument ", function ()
+        assert.has.errors(function ()
+            timer_module.configure(nil, {})
+        end)
     end)
-end)
 
-
-insulate("configure with invalid options #fast | ", function ()
-    insulate("not a table", function ()
-        local timer = { }
-        it("", function ()
+    describe("invalid options | ", function ()
+        it("not a table", function ()
             assert.has.errors(function ()
-                timer_module.configure(timer, 1)
-            end)
-        end)
-    end)
-
-
-    insulate("invalid `restart_thread_after_runs` | ", function ()
-        insulate("not a number", function ()
-            local timer = { }
-            it("", function ()
-                assert.has.errors(function ()
-                    timer_module.configure(timer, {
-                        restart_thread_after_runs = ""
-                    })
-                end)
+                timer_module.configure({}, 1)
             end)
         end)
 
-        insulate("not greater than 0", function ()
-            local timer = { }
-            it("", function ()
-                assert.has.errors(function ()
-                    timer_module.configure(timer, {
-                        restart_thread_after_runs = -1
-                    })
-                end)
+        it("invalid `restart_thread_after_runs`", function ()
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    restart_thread_after_runs = {},
+                })
+            end)
 
-                assert.has.errors(function ()
-                    timer_module.configure(timer, {
-                        restart_thread_after_runs = 0
-                    })
-                end)
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    restart_thread_after_runs = true,
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    restart_thread_after_runs = "",
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    restart_thread_after_runs = -1,
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    restart_thread_after_runs = 0,
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    restart_thread_after_runs = 1.5,
+                })
             end)
         end)
 
-        insulate("not an integer", function ()
-            local timer = { }
-            it("", function ()
-                assert.has.errors(function ()
-                    timer_module.configure(timer, {
-                        restart_thread_after_runs = 0.1
-                    })
-                end)
+        it("invalid `threads", function()
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    threads = {},
+                })
             end)
-        end)
-    end)
 
-
-    insulate("invalid `threads` | ", function ()
-        insulate("not a number", function ()
-            local timer = { }
-            it("", function ()
-                assert.has.errors(function ()
-                    timer_module.configure(timer, {
-                        threads = ""
-                    })
-                end)
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    threads = true,
+                })
             end)
-        end)
 
-        insulate("not greater than 0", function ()
-            local timer = { }
-            it("", function ()
-                assert.has.errors(function ()
-                    timer_module.configure(timer, {
-                        threads = -1
-                    })
-                end)
-
-                assert.has.errors(function ()
-                    timer_module.configure(timer, {
-                        threads = 0
-                    })
-                end)
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    threads = "",
+                })
             end)
-        end)
 
-        insulate("not an integer", function ()
-            local timer = { }
-            it("", function ()
-                assert.has.errors(function ()
-                    timer_module.configure(timer, {
-                        threads = 0.1
-                    })
-                end)
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    threads = -1
+                })
             end)
-        end)
-    end)
-end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    threads = 0
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    threads = 1.5
+                })
+            end)
+        end) -- end it
+    end) -- end the second describe
+end) -- end the top describe
