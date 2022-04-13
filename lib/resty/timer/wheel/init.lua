@@ -13,7 +13,6 @@ local ngx_ERR = ngx.ERR
 -- luacheck: pop
 
 local setmetatable = setmetatable
-local next = next
 
 local assert = utils.assert
 
