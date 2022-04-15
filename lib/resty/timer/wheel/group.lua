@@ -1,6 +1,8 @@
 local utils = require("resty.timer.utils")
 local wheel = require("resty.timer.wheel")
 
+local math_floor = math.floor
+
 local table_insert = table.insert
 
 local string_format = string.format
@@ -94,9 +96,10 @@ function _M:sync_time()
     self.real_time = ngx_now()
 
     local delta = self.real_time - self.expected_time
-    delta = utils.convert_second_to_step(delta, resolution)
+    local steps = utils.convert_second_to_step(delta, resolution)
+    delta = math_floor(delta * 10)
 
-    lowest_wheel:spin_pointer(delta)
+    lowest_wheel:spin_pointer(steps)
 
     self:fetch_all_expired_jobs()
 
