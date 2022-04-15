@@ -15,7 +15,12 @@ http {
         local timer_sys = { }
 
         local options = {
-            threads = 10,                           -- restart a timer after a certain number of this timer triggers
+            wheel_setting = {
+                level = 4,
+                slots = { 10, 60, 60, 24 },
+            },
+            resolution = 0.1,
+            threads = 10,
             restart_thread_after_runs = 50,
         }
         timer_module.configure(timer_sys, options)

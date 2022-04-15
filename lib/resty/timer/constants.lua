@@ -1,5 +1,9 @@
 local utils = require("resty.timer.utils")
 
+local math_modf = math.modf
+
+local string_format = string.format
+
 local assert = utils.assert
 
 local _M = {
@@ -10,54 +14,66 @@ local _M = {
 
     DEFAULT_FORCE_UPDATE_TIME = true,
 
-    -- 23 hour 59 minute 00 second
-    MAX_EXPIRE = 23 * 60 * 60 + 59 * 60,
-
     -- 100ms
-    RESOLUTION = 0.1,
+    DEFAULT_RESOLUTION = 0.1,
 
-    -- 100ms per slot
-    MSEC_WHEEL_SLOTS = 10,
-
-    -- 1 second per slot
-    SECOND_WHEEL_SLOTS = 60,
-
-    -- 1 minute per slot
-    MINUTE_WHEEL_SLOTS = 60,
-
-    -- 1 hour per slot
-    HOUR_WHEEL_SLOTS = 24,
-
-    MSEC_WHEEL_ID = "msec_wheel",
-
-    SECOND_WHEEL_ID = "second_wheel",
-
-    MINUTE_WHEEL_ID = "minute_wheel",
-
-    HOUR_WHEEL_ID = "hour_wheel",
+    DEFAULT_WHEEL_SETTING = {
+        level = 4,
+        slots = {10, 60, 60, 24},
+    },
 
     MSG_FATAL_FAILED_CREATE_NATIVE_TIMER
         = "failed to create a native timer: ",
 }
 
-
--- 100ms * 10 = 1 second
-assert(_M.RESOLUTION * _M.MSEC_WHEEL_SLOTS == 1,
-    "perhaps you need to update the constants " ..
-    "`RESOLUTION` and `MSEC_WHEEL_SLOTS`")
+-- We don't need a high accuracy.
+assert(_M.DEFAULT_RESOLUTION,
+    "`DEFAULT_RESOLUTION` must be greater than or equal to 0.1")
 
 
--- `-10` means don't touch the boundary, i.e. 23 hour 59 minute 00 second
--- you can also change it to `-2` (min)
-local _max_expire = _M.RESOLUTION
-    * _M.MSEC_WHEEL_SLOTS
-    * _M.SECOND_WHEEL_SLOTS
-    * _M.MINUTE_WHEEL_SLOTS
-    * _M.HOUR_WHEEL_SLOTS
-    - 10
+do
+    local wheel_setting = _M.DEFAULT_WHEEL_SETTING
+
+    assert(type(wheel_setting) == "table",
+        "`DEFAULT_WHEEL_SETTING` must be a table")
+
+    local level = wheel_setting.level
+    local slots = wheel_setting.slots
+
+    assert(type(level) == "number",
+        "`DEFAULT_WHEEL_SETTING.level` muse be a number")
+
+    assert(level >= 1,
+        "`DEFAULT_WHEEL_SETTING.level` muse be greater than or equal to 1")
+
+    local _, tmp = math_modf(level)
+
+    assert(tmp == 0,
+        "`DEFAULT_WHEEL_SETTING.level` muse be an integer")
+
+    assert(type(slots) == "table",
+        "`DEFAULT_WHEEL_SETTING.slots` muse be a table")
+
+    local slots_length = #slots
+
+    assert(level == slots_length,
+        "`DEFAULT_WHEEL_SETTING.level`"
+     .. " must be equal to "
+     .. "the length of `DEFAULT_WHEEL_SETTING.slots`")
 
 
-assert(_M.MAX_EXPIRE < _max_expire,
-    "`MAX_EXPIRE` should not exceed the maximum supported range of the wheels")
+    for i, v in ipairs(slots) do
+        assert(type(v) == "number",string_format(
+            "`DEFAULT_WHEEL_SETTING.slots[%d]` must be a number", i))
+
+        assert(v >= 1, string_format(
+            "`DEFAULT_WHEEL_SETTING.slots[%d]` must be greater than 1", i))
+
+        _, tmp = math_modf(v)
+
+        assert(tmp == 0, string_format(
+            "`DEFAULT_WHEEL_SETTING.slots[%d]` must be an integer", i))
+    end
+end
 
 return _M

@@ -2,9 +2,6 @@ local utils = require("resty.timer.utils")
 
 local math_floor = math.floor
 
-local table_insert = table.insert
-local table_unpack = table.unpack
-
 local ngx = ngx
 
 -- luacheck: push ignore
@@ -54,30 +51,30 @@ function _M:cal_pointer(pointer, offset)
 end
 
 
-function _M:cal_pointer_cascade(pointers, offsets)
-    local _pointers = {}
-    local wheel = self
-    local cycles = 0
-    for i = 1, #pointers do
-        assert(offsets[i] ~= nil, "unexpected error")
-        assert(wheel ~= nil, "unexpected error")
+function _M:cal_pointer_cascade(steps)
+    local next_pointers = { }
+    local cur_wheel = self
 
-        local p
+    local steps_for_cur_wheel = steps
+    local steps_for_next_wheel
 
-        if offsets[i] == 0 and cycles == 0 then
-            p = 0
-            cycles = 0
+    while cur_wheel do
+        local pointer = 0
+        steps_for_next_wheel = 0
 
-        else
-            p, cycles = wheel:cal_pointer(pointers[i], offsets[i] + cycles)
+        if steps_for_cur_wheel ~= 0 then
+            pointer, steps_for_next_wheel =
+            cur_wheel:cal_pointer(cur_wheel:get_cur_pointer(),
+                                  steps_for_cur_wheel)
         end
 
-        table_insert(_pointers, p)
+        next_pointers[cur_wheel.id] = pointer
 
-        wheel = wheel.higher_wheel
+        steps_for_cur_wheel = steps_for_next_wheel
+        cur_wheel = cur_wheel.higher_wheel
     end
 
-    return table_unpack(_pointers)
+    return next_pointers
 end
 
 

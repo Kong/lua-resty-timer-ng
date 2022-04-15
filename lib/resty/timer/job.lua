@@ -1,15 +1,13 @@
 local utils = require("resty.timer.utils")
-local constants = require("resty.timer.constants")
 
 local table_unpack = table.unpack
 local table_concat = table.concat
+local table_insert = table.insert
 
 local debug_getinfo = debug.getinfo
 
 local math_max = math.max
 local math_min = math.min
-local math_floor = math.floor
-local math_modf = math.modf
 local math_huge = math.huge
 
 local pcall = pcall
@@ -24,16 +22,20 @@ local ERR = ngx.ERR
 local ngx_now = ngx.now
 
 local setmetatable = setmetatable
+local tostring = tostring
+local pairs = pairs
 
+local string_format = string.format
+
+-- luacheck: push ignore
 local assert = utils.assert
+-- luacheck: pop
 
 local _M = {}
 
 
 local function job_tostring(job)
     local stats = job.stats
-    local offset = job.offset
-    local next_pointer = job.next_pointer
     local elapsed_time = stats.elapsed_time
     local meta = job.meta
 
@@ -42,24 +44,23 @@ local function job_tostring(job)
         ", enable = ",                  tostring(job._enable),
         ", cancel = ",                  tostring(job._cancel),
         ", once = ",                    tostring(job._once),
-        ", offset.hour = ",             tostring(offset.hour),
-        ", offset.minute = ",           tostring(offset.minute),
-        ", offset.second = ",           tostring(offset.second),
-        ", offset.msec = ",             tostring(offset.msec),
-        ", next.hour = ",               tostring(next_pointer
-                                                [constants.HOUR_WHEEL_ID]),
-        ", next.minute = ",             tostring(next_pointer
-                                                [constants.MINUTE_WHEEL_ID]),
-        ", next.second = ",             tostring(next_pointer
-                                                [constants.SECOND_WHEEL_ID]),
-        ", next.msec = ",               tostring(next_pointer
-                                                [constants.MSEC_WHEEL_ID]),
-        ", elapsed_time.max = ",        tostring(elapsed_time.max),
-        ", elapsed_time.min = ",        tostring(elapsed_time.min),
-        ", elapsed_time.avg = ",        tostring(elapsed_time.avg),
-        ", elapsed_time.variance = ",   tostring(elapsed_time.variance),
+        ", steps = ",                   tostring(job.steps),
         ", meta.name = ",               tostring(meta.name),
     }
+
+    for wheel_id, pointer in pairs(job.next_pointers) do
+        local str = string_format(", next_pointer.%s = %s",
+                                  tostring(wheel_id),
+                                  tostring(pointer))
+        table_insert(tbl, str)
+    end
+
+    for k, v in pairs(elapsed_time) do
+        local str = string_format(", elapsed_time.%s = %s",
+                                  tostring(k),
+                                  tostring(v))
+        table_insert(tbl, str)
+    end
 
     return table_concat(tbl)
 end
@@ -105,84 +106,9 @@ end
 
 -- Calculate the position of each pointer when the job expires
 local function job_re_cal_next_pointer(job, wheel_group)
-    local offset_hour = job.offset.hour
-    local offset_minute = job.offset.minute
-    local offset_second = job.offset.second
-    local offset_msec = job.offset.msec
-
-    local hour_wheel = wheel_group.hour_wheel
-    local minute_wheel = wheel_group.minute_wheel
-    local second_wheel = wheel_group.second_wheel
-    local msec_wheel = wheel_group.msec_wheel
     local lowest_wheel = wheel_group.lowest_wheel
 
-    local cur_hour_pointer = hour_wheel:get_cur_pointer()
-    local cur_minute_pointer = minute_wheel:get_cur_pointer()
-    local cur_second_pointer = second_wheel:get_cur_pointer()
-    local cur_msec_pointer = msec_wheel:get_cur_pointer()
-
-    local cur_pointers = {
-        cur_msec_pointer,
-        cur_second_pointer,
-        cur_minute_pointer,
-        cur_hour_pointer,
-    }
-
-    local offsets = {
-        offset_msec,
-        offset_second,
-        offset_minute,
-        offset_hour,
-    }
-
-    local next_msec_pointer,
-          next_second_pointer,
-          next_minute_pointer,
-          next_hour_pointer =
-            lowest_wheel:cal_pointer_cascade(cur_pointers, offsets)
-
-
-    -- Suppose a job will expire in one minute
-    -- and we need to spin the pointer of the `minute_wheel`,
-    -- but obviously we should not make the
-    -- second and msec pointer pointing to zero,
-    -- they should point to the current position.
-
-    if next_hour_pointer ~= 0 then
-        next_minute_pointer = next_minute_pointer == 0
-            and cur_minute_pointer or next_minute_pointer
-
-        next_second_pointer = next_second_pointer == 0
-            and cur_second_pointer or next_second_pointer
-
-        next_msec_pointer = next_msec_pointer == 0
-            and cur_msec_pointer or next_msec_pointer
-
-    elseif next_minute_pointer ~= 0 then
-        next_second_pointer = next_second_pointer == 0
-            and cur_second_pointer or next_second_pointer
-
-        next_msec_pointer = next_msec_pointer == 0
-            and cur_msec_pointer or next_msec_pointer
-
-    elseif next_second_pointer ~= 0 then
-        next_msec_pointer = next_msec_pointer == 0
-            and cur_msec_pointer or next_msec_pointer
-
-    -- else
-    --     nop
-    end
-
-
-    assert(next_hour_pointer ~= 0 or
-           next_minute_pointer ~= 0 or
-           next_second_pointer ~= 0 or
-           next_msec_pointer ~= 0, "unexpected error")
-
-    job.next_pointer[constants.HOUR_WHEEL_ID] = next_hour_pointer
-    job.next_pointer[constants.MINUTE_WHEEL_ID] = next_minute_pointer
-    job.next_pointer[constants.SECOND_WHEEL_ID] = next_second_pointer
-    job.next_pointer[constants.MSEC_WHEEL_ID] = next_msec_pointer
+    job.next_pointers = lowest_wheel:cal_pointer_cascade(job.steps)
 end
 
 
@@ -234,7 +160,7 @@ end
 
 
 function _M:get_next_pointer(wheel_id)
-    return self.next_pointer[wheel_id]
+    return self.next_pointers[wheel_id]
 end
 
 
@@ -245,31 +171,11 @@ end
 
 function _M.new(wheels, name, callback, delay, once, args)
     local delay_origin = delay
-    local offset_hour, offset_minute, offset_second, offset_msec
-    local immediate = true
+    local immediate = false
 
-    if delay ~= 0 then
-        immediate = false
-
-        delay, offset_msec = math_modf(delay)
-        offset_msec = offset_msec * 1000 + 10
-        offset_msec = math_floor(math_floor(offset_msec) / 100)
-
-        -- Arithmetically, the maximum of `offset_msec`
-        -- should be `9` now,
-        -- but due to floating point errors,
-        -- there may be some unexpected cases here.
-        -- So here we deal with it.
-        offset_msec = math_min(offset_msec, 9)
-
-        offset_hour = math_modf(delay / 60 / 60)
-        delay = delay % (60 * 60)
-
-        offset_minute = math_modf(delay / 60)
-        offset_second = delay % 60
+    if delay == 0 then
+        immediate = true
     end
-
-
 
     local self = {
         _enable = true,
@@ -279,15 +185,10 @@ function _M.new(wheels, name, callback, delay, once, args)
         name = name,
         callback = callback,
         delay = delay_origin,
-        offset = {
-            hour = offset_hour,
-            minute = offset_minute,
-            second = offset_second,
-            msec = offset_msec,
-        },
+        steps = utils.convert_second_to_step(delay, wheels.resolution),
 
         -- map from `wheel_id` to `next_pointer`
-        next_pointer = {},
+        next_pointers = {},
 
         _once = once,
         args = args,

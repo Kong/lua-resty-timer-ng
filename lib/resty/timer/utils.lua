@@ -1,4 +1,5 @@
 local math_pow = math.pow
+local math_floor = math.floor
 
 local ngx = ngx
 
@@ -148,6 +149,12 @@ function _M.float_compare(left, right)
     return 0
 end
 
+
+function _M.convert_second_to_step(second, resolution)
+    return math_floor(_M.round(second / resolution, 2))
+end
+
+
 function _M.print_queue(self)
     local pending_jobs = self.wheels.pending_jobs
     local ready_jobs = self.wheels.ready_jobs
@@ -231,9 +238,9 @@ function _M.print_wheel(wheels)
 end
 
 
---[[ function _M.round(value, digits)
-    local x = 10 * digits
-    return floor(value * x + 0.5) / x
-end ]]
+function _M.round(value, digits)
+    local x = 10 ^ digits
+    return math_floor(value * x + 0.5) / x
+end
 
 return _M

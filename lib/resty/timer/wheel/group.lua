@@ -1,8 +1,9 @@
 local utils = require("resty.timer.utils")
 local wheel = require("resty.timer.wheel")
-local constants = require("resty.timer.constants")
 
-local math_floor = math.floor
+local table_insert = table.insert
+
+local string_format = string.format
 
 local ngx = ngx
 
@@ -14,6 +15,7 @@ local ngx_ERR = ngx.ERR
 local ngx_now = ngx.now
 local ngx_update_time = ngx.update_time
 
+local ipairs = ipairs
 local setmetatable = setmetatable
 
 -- luacheck: push ignore
@@ -32,15 +34,16 @@ function _M:update_closest()
     local old_closest = self.closest
     local delay = 0
     local lowest_wheel = self.lowest_wheel
+    local resolution = self.resolution
     local cur_msec_pointer = lowest_wheel:get_cur_pointer()
 
-    -- `constants.MSEC_WHEEL_SLOTS - 1` means
+    -- `lowest_wheel.nelts - 1` means
     -- ignore the current slot
-    for i = 1, constants.MSEC_WHEEL_SLOTS - 1 do
+    for i = 1, lowest_wheel.nelts do
         local pointer, cycles =
             lowest_wheel:cal_pointer(cur_msec_pointer, i)
 
-        delay = delay + constants.RESOLUTION
+        delay = delay + resolution
 
         -- Scan only to the end point, not the whole wheel.
         -- why?
@@ -74,20 +77,15 @@ end
 -- * add all expired jobs from wheels to `wheels.ready_jobs`
 -- * move some jobs from higher wheel to lower wheel
 function _M:fetch_all_expired_jobs()
-    local hour_wheel = self.hour_wheel
-    local minute_wheel = self.minute_wheel
-    local second_wheel = self.second_wheel
-    local msec_wheel = self.msec_wheel
-
-    utils.table_merge(self.ready_jobs, hour_wheel:fetch_all_expired_jobs())
-    utils.table_merge(self.ready_jobs, minute_wheel:fetch_all_expired_jobs())
-    utils.table_merge(self.ready_jobs, second_wheel:fetch_all_expired_jobs())
-    utils.table_merge(self.ready_jobs, msec_wheel:fetch_all_expired_jobs())
+    for _, _wheel in ipairs(self.wheels) do
+        utils.table_merge(self.ready_jobs, _wheel:fetch_all_expired_jobs())
+    end
 end
 
 
 function _M:sync_time()
     local lowest_wheel = self.lowest_wheel
+    local resolution = self.resolution
 
     -- perhaps some jobs have expired but not been fetched
     self:fetch_all_expired_jobs()
@@ -96,13 +94,13 @@ function _M:sync_time()
     self.real_time = ngx_now()
 
     local delta = self.real_time - self.expected_time
-    delta = math_floor(delta * 10)
+    delta = utils.convert_second_to_step(delta, resolution)
 
     lowest_wheel:spin_pointer(delta)
 
     self:fetch_all_expired_jobs()
 
-    self.expected_time = self.expected_time + constants.RESOLUTION * delta
+    self.expected_time = self.expected_time + resolution * delta
 end
 
 
@@ -112,8 +110,11 @@ function _M:insert_job(job)
 end
 
 
-function _M.new()
+function _M.new(wheel_setting, resolution)
     local self = {
+        setting = wheel_setting,
+        resolution = resolution,
+
         real_time = 0,
         expected_time = 0,
 
@@ -136,31 +137,52 @@ function _M.new()
         -- TODO: use `utils.table_new`
         pending_jobs = {},
 
-        hour_wheel = wheel.new(constants.HOUR_WHEEL_ID,
-                               constants.HOUR_WHEEL_SLOTS),
+        wheels = utils.table_new(wheel_setting.level, 0),
 
-        minute_wheel = wheel.new(constants.MINUTE_WHEEL_ID,
-                                 constants.MINUTE_WHEEL_SLOTS),
+        -- hour_wheel = wheel.new(constants.HOUR_WHEEL_ID,
+        --                        constants.HOUR_WHEEL_SLOTS),
 
-        second_wheel = wheel.new(constants.SECOND_WHEEL_ID,
-                                 constants.SECOND_WHEEL_SLOTS),
+        -- minute_wheel = wheel.new(constants.MINUTE_WHEEL_ID,
+        --                          constants.MINUTE_WHEEL_SLOTS),
 
-        msec_wheel = wheel.new(constants.MSEC_WHEEL_ID,
-                               constants.MSEC_WHEEL_SLOTS),
+        -- second_wheel = wheel.new(constants.SECOND_WHEEL_ID,
+        --                          constants.SECOND_WHEEL_SLOTS),
+
+        -- msec_wheel = wheel.new(constants.MSEC_WHEEL_ID,
+        --                        constants.MSEC_WHEEL_SLOTS),
     }
 
-    self.hour_wheel:set_lower_wheel(self.minute_wheel)
+    local prev_wheel = nil
+    local cur_wheel
 
-    self.minute_wheel:set_higher_wheel(self.hour_wheel)
-    self.minute_wheel:set_lower_wheel(self.second_wheel)
+    for index, slots in ipairs(wheel_setting.slots) do
+        local wheel_id = string_format("wheel#%d", index)
+        cur_wheel = wheel.new(wheel_id, slots)
 
-    self.second_wheel:set_higher_wheel(self.minute_wheel)
-    self.second_wheel:set_lower_wheel(self.msec_wheel)
+        if prev_wheel then
+            cur_wheel:set_lower_wheel(prev_wheel)
+            prev_wheel:set_higher_wheel(cur_wheel)
+        end
 
-    self.msec_wheel:set_higher_wheel(self.second_wheel)
+        table_insert(self.wheels, cur_wheel)
+        prev_wheel = cur_wheel
+    end
 
-    self.highest_wheel = self.hour_wheel
-    self.lowest_wheel = self.msec_wheel
+    self.highest_wheel = self.wheels[#self.wheels]
+    self.lowest_wheel = self.wheels[1]
+
+    -- self.hour_wheel:set_lower_wheel(self.minute_wheel)
+
+    -- self.minute_wheel:set_higher_wheel(self.hour_wheel)
+    -- self.minute_wheel:set_lower_wheel(self.second_wheel)
+
+    -- self.second_wheel:set_higher_wheel(self.minute_wheel)
+    -- self.second_wheel:set_lower_wheel(self.msec_wheel)
+
+    -- self.msec_wheel:set_higher_wheel(self.second_wheel)
+
+    -- self.highest_wheel = self.hour_wheel
+    -- self.lowest_wheel = self.msec_wheel
 
     return setmetatable(self, meta_table)
 end
