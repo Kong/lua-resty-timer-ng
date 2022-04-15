@@ -95,7 +95,7 @@ function _M:sync_time()
     ngx_update_time()
     self.real_time = ngx_now()
 
-    local delta = self.real_time - self.expected_time
+    local delta = utils.round(self.real_time - self.expected_time, 3)
     local steps = utils.convert_second_to_step(delta, resolution)
     delta = math_floor(delta * 10)
 

@@ -151,7 +151,7 @@ end
 
 
 function _M.convert_second_to_step(second, resolution)
-    return math_floor(_M.round(second / resolution, 2))
+    return math_floor(_M.round(second / resolution, 3))
 end
 
 
@@ -237,10 +237,9 @@ function _M.print_wheel(wheels)
     ngx.log(ngx.ERR, str)
 end
 
-
 function _M.round(value, digits)
     local x = 10 ^ digits
-    return math_floor(value * x + 0.5) / x
+    return math_floor(value * x + 0.1) / x
 end
 
 return _M
