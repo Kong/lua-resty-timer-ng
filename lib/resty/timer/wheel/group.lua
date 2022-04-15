@@ -95,6 +95,12 @@ function _M:sync_time()
     ngx_update_time()
     self.real_time = ngx_now()
 
+    if utils.float_compare(self.real_time, self.expected_time) <= 0 then
+        -- This could be caused by a floating-point error
+        -- or by NTP changing the time to an earlier time.
+        return
+    end
+
     local delta = utils.round(self.real_time - self.expected_time, 3)
     local steps = utils.convert_second_to_step(delta, resolution)
     delta = math_floor(delta * 10)
@@ -103,6 +109,9 @@ function _M:sync_time()
 
     self:fetch_all_expired_jobs()
 
+    -- The floating-point error may cause
+    -- `expected_time` to be larger than `real_time`
+    -- after this line is run.
     self.expected_time = self.expected_time + resolution * delta
 end
 
