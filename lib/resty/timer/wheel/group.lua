@@ -1,8 +1,6 @@
 local utils = require("resty.timer.utils")
 local wheel = require("resty.timer.wheel")
 
-local math_floor = math.floor
-
 local table_insert = table.insert
 
 local string_format = string.format
@@ -101,9 +99,8 @@ function _M:sync_time()
         return
     end
 
-    local delta = utils.round(self.real_time - self.expected_time, 3)
+    local delta = self.real_time - self.expected_time
     local steps = utils.convert_second_to_step(delta, resolution)
-    delta = math_floor(delta * 10)
 
     lowest_wheel:spin_pointer(steps)
 
@@ -112,7 +109,7 @@ function _M:sync_time()
     -- The floating-point error may cause
     -- `expected_time` to be larger than `real_time`
     -- after this line is run.
-    self.expected_time = self.expected_time + resolution * delta
+    self.expected_time = self.expected_time + resolution * steps
 end
 
 
