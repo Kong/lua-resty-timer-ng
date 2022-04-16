@@ -183,56 +183,26 @@ end
 
 
 function _M.print_wheel(wheels)
-    local wheel
-
     ngx.update_time()
 
-    local str = "\n======== BEGIN MSEC ========" .. ngx.now() .. "\n"
-    wheel = wheels.msec_wheel
-    str = str .. "pointer = " .. wheel.pointer + 1 .. "\n"
-    str = str .. "nelts = " .. wheel.nelts .. "\n"
-    for i, v in ipairs(wheel.slots) do
-        for _, value in pairs(v) do
-            str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
+    local str = ""
+
+    for level, wheel in ipairs(wheels.wheels) do
+        str = str .. "\n======== BEGIN #" .. tostring(level)
+            .. " ========" .. ngx.now() .. "\n"
+
+        str = str .. "pointer = " .. wheel.pointer + 1 .. "\n"
+        str = str .. "nelts = " .. wheel.nelts .. "\n"
+
+        for i, v in ipairs(wheel.slots) do
+            for _, value in pairs(v) do
+                str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
+            end
         end
+
+        str = str .. "\n======== END #" .. tostring(level)
+            .. " ========\n"
     end
-    str = str .. "========= END MSEC ========="
-
-
-    str = str .. "\n======== BEGIN SECOND ========\n"
-    wheel = wheels.second_wheel
-    str = str .. "pointer = " .. wheel.pointer + 1 .. "\n"
-    str = str .. "nelts = " .. wheel.nelts .. "\n"
-    for i, v in ipairs(wheel.slots) do
-        for _, value in pairs(v) do
-            str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
-        end
-    end
-    str = str .. "========= END SECOND ========="
-
-
-    str = str .. "\n======== BEGIN MINUTE ========\n"
-    wheel = wheels.minute_wheel
-    str = str .. "pointer = " .. wheel.pointer + 1 .. "\n"
-    str = str .. "nelts = " .. wheel.nelts .. "\n"
-    for i, v in ipairs(wheel.slots) do
-        for _, value in pairs(v) do
-            str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
-        end
-    end
-    str = str .. "========= END MINUTE ========="
-
-
-    str = str .. "\n======== BEGIN HOUR ========\n"
-    wheel = wheels.hour_wheel
-    str = str .. "pointer = " .. wheel.pointer + 1 .. "\n"
-    str = str .. "nelts = " .. wheel.nelts .. "\n"
-    for i, v in ipairs(wheel.slots) do
-        for _, value in pairs(v) do
-            str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
-        end
-    end
-    str = str .. "========= END HOUR ========="
 
     ngx.log(ngx.ERR, str)
 end
