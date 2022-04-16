@@ -96,6 +96,147 @@ describe("configure with #fast | ", function ()
                     threads = 1.5
                 })
             end)
+        end)
+
+
+        it("invalid `wheel_setting`", function ()
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = true,
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = "",
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = 0,
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = {},
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = {
+                        level = {}
+                    },
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = {
+                        level = false
+                    },
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = {
+                        level = ""
+                    },
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = {
+                        level = -1
+                    },
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = {
+                        level = 0
+                    },
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = {
+                        level = 1.5
+                    },
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = {
+                        level = 2,
+                        slots = { 1 }
+                    },
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = {
+                        level = 2,
+                        slots = { 1.5, 1 }
+                    },
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = {
+                        level = 2,
+                        slots = { -1, 1 }
+                    },
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = {
+                        level = 2,
+                        slots = { {}, 1 }
+                    },
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = {
+                        level = 2,
+                        slots = { "", 1 }
+                    },
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = {
+                        level = 2,
+                        slots = { false, 1 }
+                    },
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.configure({}, {
+                    wheel_setting = {
+                        level = 2,
+                        slots = { nil, 1 }
+                    },
+                })
+            end)
+
         end) -- end it
+
     end) -- end the second describe
+
 end) -- end the top describe
