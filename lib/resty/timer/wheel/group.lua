@@ -147,25 +147,13 @@ function _M.new(wheel_setting, resolution)
         pending_jobs = {},
 
         wheels = utils.table_new(wheel_setting.level, 0),
-
-        -- hour_wheel = wheel.new(constants.HOUR_WHEEL_ID,
-        --                        constants.HOUR_WHEEL_SLOTS),
-
-        -- minute_wheel = wheel.new(constants.MINUTE_WHEEL_ID,
-        --                          constants.MINUTE_WHEEL_SLOTS),
-
-        -- second_wheel = wheel.new(constants.SECOND_WHEEL_ID,
-        --                          constants.SECOND_WHEEL_SLOTS),
-
-        -- msec_wheel = wheel.new(constants.MSEC_WHEEL_ID,
-        --                        constants.MSEC_WHEEL_SLOTS),
     }
 
     local prev_wheel = nil
     local cur_wheel
 
-    for index, slots in ipairs(wheel_setting.slots) do
-        local wheel_id = string_format("wheel#%d", index)
+    for level, slots in ipairs(wheel_setting.slots_for_each_level) do
+        local wheel_id = string_format("wheel#%d", level)
         cur_wheel = wheel.new(wheel_id, slots)
 
         if prev_wheel then

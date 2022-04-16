@@ -411,28 +411,30 @@ function _M.configure(timer_sys, options)
             assert(type(wheel_setting.level) == "number",
                 "expected `wheel_setting.level` to be a number")
 
-            assert(type(wheel_setting.slots) == "table",
-                "expected `wheel_setting.slots` to be a table")
+            assert(type(wheel_setting.slots_for_each_level) == "table",
+                "expected `wheel_setting.slots_for_each_level` to be a table")
 
-            local slots_length = #wheel_setting.slots
+            local slots_for_each_level_length = #wheel_setting.slots_for_each_level
 
-            assert(level == slots_length,
+            assert(level == slots_for_each_level_length,
                 "expected `wheel_setting.level`"
              .. " is equal to "
-             .. "the length of `wheel_setting.slots`")
+             .. "the length of `wheel_setting.slots_for_each_level`")
 
-            for i, v in ipairs(wheel_setting.slots) do
+            for i, v in ipairs(wheel_setting.slots_for_each_level) do
                 assert(type(v) == "number",string_format(
-                    "expected `wheel_setting.slots[%d]` to be a number", i))
+                    "expected `wheel_setting.slots_for_each_level[%d]`"
+                 .. " to be a number", i))
 
                 assert(v >= 1, string_format(
-                    "expected `wheel_setting.slots[%d]`"
-                 .. "to be greater than 1", i))
+                    "expected `wheel_setting.slots_for_each_level[%d]`"
+                 .. " to be greater than 1", i))
 
                 local _, tmp = math_modf(v)
 
                 assert(tmp == 0, string_format(
-                    "expected `wheel_setting.slots[%d]` to be an integer", i))
+                    "expected `wheel_setting.slots_for_each_level[%d]`"
+                 .. " to be an integer", i))
             end
 
         end
@@ -466,7 +468,7 @@ function _M.configure(timer_sys, options)
     timer_sys.opt = opt
 
     timer_sys.max_expire = opt.resolution
-    for _, v in ipairs(opt.wheel_setting.slots) do
+    for _, v in ipairs(opt.wheel_setting.slots_for_each_level) do
         timer_sys.max_expire = timer_sys.max_expire * v
     end
     timer_sys.max_expire = timer_sys.max_expire - 2

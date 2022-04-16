@@ -19,7 +19,7 @@ local _M = {
 
     DEFAULT_WHEEL_SETTING = {
         level = 4,
-        slots = {10, 60, 60, 24},
+        slots_for_each_level = {10, 60, 60, 24},
     },
 
     MSG_FATAL_FAILED_CREATE_NATIVE_TIMER
@@ -38,7 +38,7 @@ do
         "`DEFAULT_WHEEL_SETTING` must be a table")
 
     local level = wheel_setting.level
-    local slots = wheel_setting.slots
+    local slots_for_each_level = wheel_setting.slots_for_each_level
 
     assert(type(level) == "number",
         "`DEFAULT_WHEEL_SETTING.level` muse be a number")
@@ -51,28 +51,28 @@ do
     assert(tmp == 0,
         "`DEFAULT_WHEEL_SETTING.level` muse be an integer")
 
-    assert(type(slots) == "table",
-        "`DEFAULT_WHEEL_SETTING.slots` muse be a table")
+    assert(type(slots_for_each_level) == "table",
+        "`DEFAULT_WHEEL_SETTING.slots_for_each_level` muse be a table")
 
-    local slots_length = #slots
+    local slots_for_each_level_length = #slots_for_each_level
 
-    assert(level == slots_length,
+    assert(level == slots_for_each_level_length,
         "`DEFAULT_WHEEL_SETTING.level`"
      .. " must be equal to "
-     .. "the length of `DEFAULT_WHEEL_SETTING.slots`")
+     .. "the length of `DEFAULT_WHEEL_SETTING.slots_for_each_level`")
 
 
-    for i, v in ipairs(slots) do
+    for i, v in ipairs(slots_for_each_level) do
         assert(type(v) == "number",string_format(
-            "`DEFAULT_WHEEL_SETTING.slots[%d]` must be a number", i))
+            "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]` must be a number", i))
 
         assert(v >= 1, string_format(
-            "`DEFAULT_WHEEL_SETTING.slots[%d]` must be greater than 1", i))
+            "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]` must be greater than 1", i))
 
         _, tmp = math_modf(v)
 
         assert(tmp == 0, string_format(
-            "`DEFAULT_WHEEL_SETTING.slots[%d]` must be an integer", i))
+            "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]` must be an integer", i))
     end
 end
 
