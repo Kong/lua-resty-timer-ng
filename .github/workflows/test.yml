@@ -47,17 +47,9 @@ jobs:
     strategy:
       matrix:
         busted_args:
-        - "-t fast spec/01*.lua spec/04*.lua spec/05*.lua spec/06*.lua spec/07*.lua"
-        - "-t fast spec/02*.lua"
-        - "-t fast spec/03*.lua"
-        - "-t slow_1 spec/02*.lua"
-        - "-t slow_2 spec/02*.lua"
-        - "-t slow_3 spec/02*.lua"
-        - "-t slow_1 spec/03*.lua"
-        - "-t slow_2 spec/03*.lua"
-        - "-t slow_3 spec/03*.lua"
-        - "-t slow_4 spec/03*.lua"
-        - "-t slow_5 spec/03*.lua"
+        - "spec/01*.lua spec/04*.lua spec/05*.lua spec/06*.lua spec/07*.lua"
+        - "spec/02*.lua"
+        - "spec/03*.lua"
 
   
     steps:
@@ -99,6 +91,8 @@ jobs:
         run: |
           sudo luarocks install busted
           sudo luarocks install busted-htest
+          sudo luarocks install luacov
+          sudo luarocks install luacov-console
 
       - name: Checkout source code
         uses: actions/checkout@v2
@@ -106,7 +100,12 @@ jobs:
       - name: Tests
         run: |
           eval $(luarocks path)
-          resty -I lib spec/runner.lua --verbose -o htest --shuffle-files --shuffle-tests ${{ matrix.busted_args }}
+          resty -I lib -I spec spec/runner.lua --verbose -o htest --shuffle-tests ${{ matrix.busted_args }}
 
-
-    
+      - name: Show coverage
+        run: |
+          eval $(luarocks path)
+          luacov lib/resty/timer
+          luacov-console lib/resty/timer
+          luacov-console -s
+          luacov-console -l lib/resty/timer/*

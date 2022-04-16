@@ -1,4 +1,5 @@
 local timer_module = require("resty.timer")
+local helper = require("helper")
 
 local sleep = ngx.sleep
 local update_time = ngx.update_time
@@ -11,7 +12,7 @@ local TOLERANCE = 0.2
 local THREADS = 10
 
 
-insulate("timer #fast | ", function ()
+insulate("system start -> freeze -> start | ", function ()
     local timer = { }
     local callback
     local tbl
@@ -35,8 +36,12 @@ insulate("timer #fast | ", function ()
     lazy_teardown(function ()
         timer_module.freeze(timer)
         timer_module.unconfigure(timer)
-        sleep(2)
-        assert.same(1, timer_running_count())
+
+        helper.wait_until(function ()
+            assert.same(1, timer_running_count())
+            return true
+        end)
+
     end)
 
     before_each(function ()
@@ -44,34 +49,21 @@ insulate("timer #fast | ", function ()
         tbl.time = 0
     end)
 
-    it("once create -> pause -> run", function ()
+    it("once timer", function ()
         assert.has_no.errors(function ()
             local ok, _ = timer:once(TIMER_NAME_ONCE, callback, 1, tbl)
             assert.is_truthy(ok)
         end)
 
-        timer:pause(TIMER_NAME_ONCE)
+        timer_module.freeze(timer)
         sleep(1 + TOLERANCE)
         assert.same(0, tbl.time)
 
-        local ok, _ = timer:run(TIMER_NAME_ONCE)
-        assert.is_true(ok)
-
         update_time()
+        timer_module.start(timer)
         local expected = now() + 1
         sleep(1 + TOLERANCE)
         assert.near(expected, tbl.time, TOLERANCE)
-    end)
-
-    it("once create -> cancel", function ()
-        assert.has_no.errors(function ()
-            local ok, _ = timer:once(TIMER_NAME_ONCE, callback, 1, tbl)
-            assert.is_truthy(ok)
-        end)
-
-        timer:cancel(TIMER_NAME_ONCE)
-        sleep(1 + TOLERANCE)
-        assert.same(0, tbl.time)
     end)
 
     it("every create -> pause -> run -> cancel", function ()
@@ -80,11 +72,11 @@ insulate("timer #fast | ", function ()
             assert.is_truthy(ok)
         end)
 
-        timer:pause(TIMER_NAME_EVERY)
+        timer_module.freeze(timer)
         sleep(2 + TOLERANCE)
         assert.same(0, tbl.time)
 
-        local ok, _ = timer:run(TIMER_NAME_EVERY)
+        local ok, _ = timer_module.start(timer)
         assert.is_true(ok)
 
         update_time()

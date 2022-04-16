@@ -1,4 +1,5 @@
 local timer_module = require("resty.timer")
+local helper = require("helper")
 
 local sleep = ngx.sleep
 local update_time = ngx.update_time
@@ -19,15 +20,19 @@ insulate("other bugs | ", function ()
     lazy_teardown(function ()
         timer_module.freeze(timer)
         timer_module.unconfigure(timer)
-        sleep(2)
-        assert.same(1, timer_running_count())
+
+        helper.wait_until(function ()
+            assert.same(1, timer_running_count())
+            return true
+        end)
+
     end)
 
     before_each(function ()
         update_time()
     end)
 
-    it("No.1 create a timer before the method `start()' is called #fast", function ()
+    it("No.1 create a timer before the method `start()' is called", function ()
         assert.has.errors(function()
             timer:once(nil, function() end, 10)
         end)
@@ -59,7 +64,7 @@ insulate("bugs of every timer | ", function ()
         update_time()
     end)
 
-    it("No.1 overlap #fast", function ()
+    it("No.1 overlap", function ()
         local flag = false
         local record = 0
         timer:every(nil, function (...)

@@ -1,6 +1,6 @@
 local timer_module = require("resty.timer")
 
-describe("configure with #fast | ", function ()
+describe("configure with | ", function ()
     it("empty options", function ()
         local ok, _ = timer_module.configure({})
         assert.is_true(ok)

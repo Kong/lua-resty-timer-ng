@@ -1,4 +1,5 @@
 local timer_module = require("resty.timer")
+local helper = require("helper")
 
 local sleep = ngx.sleep
 local timer_running_count = ngx.timer.running_count
@@ -21,12 +22,16 @@ insulate("stats |", function ()
     lazy_teardown(function ()
         timer_module.freeze(timer)
         timer_module.unconfigure(timer)
-        sleep(2)
-        assert.same(1, timer_running_count())
+
+        helper.wait_until(function ()
+            assert.same(1, timer_running_count())
+            return true
+        end)
+
     end)
 
 
-    it("metadata #fast", function ()
+    it("metadata", function ()
         -- If this test fails,
         -- perhaps you need to update
         -- the function `job_create_meta`
@@ -40,13 +45,13 @@ insulate("stats |", function ()
         assert.is_truthy(timer_info)
 
         local callstack = timer_info.meta.callstack
-        assert.same("spec/06-stats.lua", callstack[1].source)
+        assert.same("spec/06-stats_spec.lua", callstack[1].source)
 
         assert.is_true((timer:cancel(timer_name)))
     end)
 
 
-    it("others #fast", function()
+    it("others", function()
         local timer_name = "TEST"
         local record = 1
         local ok, _ = timer:every(timer_name, function ()
