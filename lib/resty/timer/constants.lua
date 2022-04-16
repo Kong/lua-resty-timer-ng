@@ -64,15 +64,18 @@ do
 
     for i, v in ipairs(slots_for_each_level) do
         assert(type(v) == "number",string_format(
-            "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]` must be a number", i))
+            "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]`"
+         .. " must be a number", i))
 
         assert(v >= 1, string_format(
-            "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]` must be greater than 1", i))
+            "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]`"
+         .. "must be greater than 1", i))
 
         _, tmp = math_modf(v)
 
         assert(tmp == 0, string_format(
-            "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]` must be an integer", i))
+            "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]`"
+         .. "must be an integer", i))
     end
 end
 

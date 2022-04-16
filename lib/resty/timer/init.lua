@@ -414,7 +414,8 @@ function _M.configure(timer_sys, options)
             assert(type(wheel_setting.slots_for_each_level) == "table",
                 "expected `wheel_setting.slots_for_each_level` to be a table")
 
-            local slots_for_each_level_length = #wheel_setting.slots_for_each_level
+            local slots_for_each_level_length =
+                #wheel_setting.slots_for_each_level
 
             assert(level == slots_for_each_level_length,
                 "expected `wheel_setting.level`"
