@@ -12,7 +12,7 @@ jobs:
     name: Build OpenResty
     runs-on: ubuntu-20.04
     if: |
-      (github.event_name == 'push' && contains('/coverage', github.event.commits[0].message)) ||
+      (github.event_name == 'push' && contains(github.event.commits[0].message, '/coverage')) ||
       (github.event_name == 'issue_comment' && github.event.action == 'created' &&
         github.event.issue.pull_request &&
         contains('["OWNER", "COLLABORATOR", "MEMBER"]', github.event.comment.author_association) &&
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-20.04
     needs: build
     if: |
-      (github.event_name == 'push' && contains('/coverage', github.event.commits[0].message)) ||
+      (github.event_name == 'push' && contains(github.event.commits[0].message, '/coverage')) ||
       (github.event_name == 'issue_comment' && github.event.action == 'created' &&
         github.event.issue.pull_request &&
         contains('["OWNER", "COLLABORATOR", "MEMBER"]', github.event.comment.author_association) &&
