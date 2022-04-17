@@ -20,8 +20,8 @@ insulate("system start -> freeze -> start | ", function ()
     randomize()
 
     lazy_setup(function ()
-        timer_module.configure(timer, { threads = THREADS })
-        timer_module.start(timer)
+        timer = timer_module.new()
+        timer:start()
 
         tbl = {
             time = 0
@@ -34,8 +34,8 @@ insulate("system start -> freeze -> start | ", function ()
     end)
 
     lazy_teardown(function ()
-        timer_module.freeze(timer)
-        timer_module.unconfigure(timer)
+        timer:freeze()
+        timer:destroy()
 
         helper.wait_until(function ()
             assert.same(1, timer_running_count())
@@ -55,12 +55,12 @@ insulate("system start -> freeze -> start | ", function ()
             assert.is_truthy(ok)
         end)
 
-        timer_module.freeze(timer)
+        timer:freeze()
         sleep(1 + TOLERANCE)
         assert.same(0, tbl.time)
 
         update_time()
-        timer_module.start(timer)
+        timer:start()
         local expected = now() + 1
         sleep(1 + TOLERANCE)
         assert.near(expected, tbl.time, TOLERANCE)
@@ -76,7 +76,7 @@ insulate("system start -> freeze -> start | ", function ()
         sleep(2 + TOLERANCE)
         assert.same(0, tbl.time)
 
-        local ok, _ = timer_module.start(timer)
+        local ok, _ = timer:start()
         assert.is_true(ok)
 
         update_time()

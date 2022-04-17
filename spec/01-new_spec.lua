@@ -1,60 +1,53 @@
 local timer_module = require("resty.timer")
 
-describe("configure with | ", function ()
+describe("new with | ", function ()
     it("empty options", function ()
-        local ok, _ = timer_module.configure({})
-        assert.is_true(ok)
-
-        ok, _ = timer_module.configure({}, {})
-        assert.is_true(ok)
-    end)
-
-    it("nil first argument ", function ()
-        assert.has.errors(function ()
-            timer_module.configure(nil, {})
+        assert.has_no.errors(function ()
+            timer_module.new()
+            timer_module.new({})
         end)
     end)
 
     describe("invalid options | ", function ()
         it("not a table", function ()
             assert.has.errors(function ()
-                timer_module.configure({}, 1)
+                timer_module.new(1)
             end)
         end)
 
         it("invalid `restart_thread_after_runs`", function ()
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     restart_thread_after_runs = {},
                 })
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     restart_thread_after_runs = true,
                 })
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     restart_thread_after_runs = "",
                 })
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     restart_thread_after_runs = -1,
                 })
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     restart_thread_after_runs = 0,
                 })
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     restart_thread_after_runs = 1.5,
                 })
             end)
@@ -62,37 +55,37 @@ describe("configure with | ", function ()
 
         it("invalid `threads", function()
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     threads = {},
                 })
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     threads = true,
                 })
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     threads = "",
                 })
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     threads = -1
                 })
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     threads = 0
                 })
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     threads = 1.5
                 })
             end)
@@ -101,31 +94,31 @@ describe("configure with | ", function ()
 
         it("invalid `wheel_setting`", function ()
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = true,
                 })
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = "",
                 })
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = 0,
                 })
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = {},
                 })
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = {
                         level = {}
                     },
@@ -133,7 +126,7 @@ describe("configure with | ", function ()
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = {
                         level = false
                     },
@@ -141,7 +134,7 @@ describe("configure with | ", function ()
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = {
                         level = ""
                     },
@@ -149,7 +142,7 @@ describe("configure with | ", function ()
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = {
                         level = -1
                     },
@@ -157,7 +150,7 @@ describe("configure with | ", function ()
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = {
                         level = 0
                     },
@@ -165,7 +158,7 @@ describe("configure with | ", function ()
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = {
                         level = 1.5
                     },
@@ -173,7 +166,7 @@ describe("configure with | ", function ()
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = {
                         level = 2,
                         slots = { 1 }
@@ -182,7 +175,7 @@ describe("configure with | ", function ()
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = {
                         level = 2,
                         slots = { 1.5, 1 }
@@ -191,7 +184,7 @@ describe("configure with | ", function ()
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = {
                         level = 2,
                         slots = { -1, 1 }
@@ -200,7 +193,7 @@ describe("configure with | ", function ()
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = {
                         level = 2,
                         slots = { {}, 1 }
@@ -209,7 +202,7 @@ describe("configure with | ", function ()
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = {
                         level = 2,
                         slots = { "", 1 }
@@ -218,7 +211,7 @@ describe("configure with | ", function ()
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = {
                         level = 2,
                         slots = { false, 1 }
@@ -227,7 +220,7 @@ describe("configure with | ", function ()
             end)
 
             assert.has.errors(function ()
-                timer_module.configure({}, {
+                timer_module.new({
                     wheel_setting = {
                         level = 2,
                         slots = { nil, 1 }

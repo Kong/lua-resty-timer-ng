@@ -36,15 +36,15 @@ insulate("create a every timer with invalid arguments | ", function ()
     randomize()
 
     lazy_setup(function ()
-        timer_module.configure(timer)
-        timer_module.start(timer)
+        timer = timer_module.new()
+        timer:start()
 
         empty_callback = function (_, ...) end
     end)
 
     lazy_teardown(function ()
-        timer_module.freeze(timer)
-        timer_module.unconfigure(timer)
+        timer:freeze()
+        timer:destroy()
 
         helper.wait_until(function ()
             assert.same(1, timer_running_count())
@@ -89,18 +89,18 @@ insulate("create a every timer #" .. strategy .. " | ", function ()
     randomize()
 
     lazy_setup(function ()
-        timer_module.configure(timer, {
+        timer = timer_module.new({
             resolution = helper.RESOLUTION,
             wheel_setting = helper.WHEEL_SETTING,
         })
-        timer_module.start(timer)
+        timer:start()
 
         tbl = { time = 0 }
     end)
 
     lazy_teardown(function ()
-        timer_module.freeze(timer)
-        timer_module.unconfigure(timer)
+        timer:freeze()
+        timer:destroy()
 
         helper.wait_until(function ()
             assert.same(1, timer_running_count())

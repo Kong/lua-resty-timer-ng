@@ -20,8 +20,8 @@ insulate("timer | ", function ()
     randomize()
 
     lazy_setup(function ()
-        timer_module.configure(timer, { threads = THREADS })
-        timer_module.start(timer)
+        timer = timer_module.new()
+        timer:start()
 
         tbl = {
             time = 0
@@ -34,8 +34,8 @@ insulate("timer | ", function ()
     end)
 
     lazy_teardown(function ()
-        timer_module.freeze(timer)
-        timer_module.unconfigure(timer)
+        timer:freeze()
+        timer:destroy()
 
         helper.wait_until(function ()
             assert.same(1, timer_running_count())

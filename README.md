@@ -72,23 +72,21 @@ Versioning is strictly based on [Semantic Versioning](https://semver.org/)
 
 ## Methods
 
-### configure
+### new
 
-**syntax**: *ok, err = timer_module.configure(timer_sys, options?)*
+**syntax**: *timer, err = timer_module.new(options?)*
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
-Configure the timer system.
+**TODO**
 
 * `timer_module`: `require("resty.timer")`
-* `timer_sys`: A table, which will be initialized.
 
 For example
 
 ```lua
 local timer_module = require("resty.timer")
-local timer_sys = { }
-timer_module.configure(timer_sys, {
+local timer_sys = timer_module.configure(timer_sys, {
     -- number of threads
     threads = 10,
 
@@ -100,27 +98,19 @@ timer_module.configure(timer_sys, {
 
 ### start
 
-**syntax**: *ok, err = timer_module.start(timer_sys)*
+**syntax**: *ok, err = timer:start()*
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
 Start the timer system.
 
-* `timer_module`: `require("resty.timer")`
-* `timer_sys`: A table initialized by `configure`.
-
-
 ### freeze
 
-**syntax**: *timer_module.freeze(timer_sys)*
+**syntax**: *timer:freeze()*
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
 Suspend the timer system and the expiration of each timer will be frozen.
-
-* `timer_module`: `require("resty.timer")`
-* `timer_sys`: A table initialized by `configure`.
-
 
 ### once
 
@@ -183,21 +173,17 @@ Cancel a timer.
 * name: The name of this timer.
 
 
-### unconfigure
+### destroy
 
-**syntax**: *timer_module.unconfigure(timer_sys)*
+**syntax**: *timer:destroy()*
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
-Cancel all timers, after which you will need to call `configure` again to continue using this library.
-
-* `timer_module`: `require("resty.timer")`
-* `timer_sys`: A table initialized by `configure`.
-
+**TODO**
 
 ### stats
 
-**syntax**: info, err = timer_module.stats(timer_sys)
+**syntax**: info, err = timer:stats()
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 

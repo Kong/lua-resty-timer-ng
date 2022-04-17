@@ -101,7 +101,7 @@ local function mover_timer_callback(premature, self)
         return
     end
 
-    while not ngx_worker_exiting() and not self.destory do
+    while not ngx_worker_exiting() and not self._destroy do
         log_notice("waiting on `semaphore_mover` for 1 second")
 
         local ok, err = semaphore_mover:wait(1)
@@ -153,7 +153,7 @@ local function worker_timer_callback(premature, self, thread_index)
     local wheels = self.wheels
     local jobs = self.jobs
 
-    while not ngx_worker_exiting() and not self.destory do
+    while not ngx_worker_exiting() and not self._destroy do
         log_notice("waiting on `semaphore_worker` for 1 second in thread #"
             .. thread_index)
         local ok, err = semaphore_worker:wait(1)
@@ -284,7 +284,7 @@ local function super_timer_callback(premature, self)
     wheels.real_time = ngx_now()
     wheels.expected_time = wheels.real_time - opt_resolution
 
-    while not ngx_worker_exiting() and not self.destory do
+    while not ngx_worker_exiting() and not self._destroy do
         if self.enable then
             wheels:sync_time()
 
@@ -359,8 +359,8 @@ local function create(self ,name, callback, delay, once, args)
 end
 
 
-function _M.configure(timer_sys, options)
-    assert(type(timer_sys) == "table")
+function _M.new(options)
+    local timer_sys = {}
 
     if timer_sys.configured then
         return false, "already configured"
@@ -487,7 +487,7 @@ function _M.configure(timer_sys, options)
     -- has the mover timer already been created?
     timer_sys.mover_timer = false
 
-    timer_sys.destory = false
+    timer_sys._destroy = false
 
     timer_sys.semaphore_super = semaphore.new()
 
@@ -508,53 +508,43 @@ function _M.configure(timer_sys, options)
         }
     end
 
-    timer_sys.configured = true
-
-    timer_sys.once = _M.once
-    timer_sys.every = _M.every
-    timer_sys.run = _M.run
-    timer_sys.pause = _M.pause
-    timer_sys.cancel = _M.cancel
-
-    return true, nil
+    return setmetatable(timer_sys, { __index = _M })
 end
 
 
-function _M.start(timer_sys)
+function _M:start()
     local ok, err = true, nil
 
-    if not timer_sys.super_timer then
-        native_timer_at(0, super_timer_callback, timer_sys)
-        native_timer_at(0, mover_timer_callback, timer_sys)
-        timer_sys.super_timer = true
+    if not self.super_timer then
+        native_timer_at(0, super_timer_callback, self)
+        native_timer_at(0, mover_timer_callback, self)
+        self.super_timer = true
     end
 
-    if not timer_sys.enable then
+    if not self.enable then
         ngx_update_time()
-        timer_sys.wheels.expected_time = ngx_now()
+        self.wheels.expected_time = ngx_now()
     end
 
-    timer_sys.enable = true
+    self.enable = true
 
     return ok, err
 end
 
 
-function _M.freeze(timer_sys)
-    timer_sys.enable = false
+function _M:freeze()
+    self.enable = false
 end
 
 
 -- TODO: rename this method
-function _M.unconfigure(timer_sys)
-    timer_sys.destory = true
-    timer_sys.configured = false
+function _M:destroy()
+    self._destroy = true
 end
 
 
 
 function _M:once(name, callback, delay, ...)
-    assert(self.configured, "the timer module is not configured")
     assert(self.enable, "the timer module is not started")
     assert(type(callback) == "function", "expected `callback` to be a function")
 
@@ -578,7 +568,6 @@ end
 
 
 function _M:every(name, callback, interval, ...)
-    assert(self.configured, "the timer module is not configured")
     assert(self.enable, "the timer module is not started")
     assert(type(callback) == "function", "expected `callback` to be a function")
 
@@ -661,9 +650,9 @@ function _M:cancel(name)
 end
 
 
-function _M.stats(timer_sys)
-    local pending_jobs = timer_sys.wheels.pending_jobs
-    local ready_jobs = timer_sys.wheels.ready_jobs
+function _M:stats()
+    local pending_jobs = self.wheels.pending_jobs
+    local ready_jobs = self.wheels.ready_jobs
 
     local sys = {
         running = 0,
@@ -674,7 +663,7 @@ function _M.stats(timer_sys)
     -- TODO: use `utils.table_new`
     local jobs = {}
 
-    for name, job in pairs(timer_sys.jobs) do
+    for name, job in pairs(self.jobs) do
         if job.running then
             sys.running = sys.running + 1
 

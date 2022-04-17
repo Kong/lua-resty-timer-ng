@@ -15,13 +15,13 @@ insulate("stats |", function ()
     randomize()
 
     lazy_setup(function ()
-        timer_module.configure(timer, { threads = THREADS })
-        timer_module.start(timer)
+        timer = timer_module.new()
+        timer:start()
     end)
 
     lazy_teardown(function ()
-        timer_module.freeze(timer)
-        timer_module.unconfigure(timer)
+        timer:freeze()
+        timer:destroy()
 
         helper.wait_until(function ()
             assert.same(1, timer_running_count())
@@ -70,7 +70,7 @@ insulate("stats |", function ()
         for i = 1, 2 do
             sleep(1 + 5 + TOLERANCE)
 
-            local stats = timer_module.stats(timer)
+            local stats = timer:stats()
             local timer_info = stats.timers[timer_name]
             assert.is_truthy(timer_info)
 
@@ -84,7 +84,7 @@ insulate("stats |", function ()
 
         sleep(1 + 5 + TOLERANCE)
 
-        local stats = timer_module.stats(timer)
+        local stats = timer:stats()
         local timer_info = stats.timers[timer_name]
         assert.is_truthy(timer_info)
 

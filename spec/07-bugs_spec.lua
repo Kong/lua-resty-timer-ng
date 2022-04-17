@@ -14,12 +14,12 @@ insulate("other bugs | ", function ()
     randomize()
 
     lazy_setup(function ()
-        timer_module.configure(timer, { threads = THREADS })
+        timer = timer_module.new()
     end)
 
     lazy_teardown(function ()
-        timer_module.freeze(timer)
-        timer_module.unconfigure(timer)
+        timer:freeze()
+        timer:destroy()
 
         helper.wait_until(function ()
             assert.same(1, timer_running_count())
@@ -49,15 +49,19 @@ insulate("bugs of every timer | ", function ()
     randomize()
 
     lazy_setup(function ()
-        timer_module.configure(timer, { threads = THREADS })
-        timer_module.start(timer)
+        timer = timer_module.new()
+        timer:start()
     end)
 
     lazy_teardown(function ()
-        timer_module.freeze(timer)
-        timer_module.unconfigure(timer)
-        sleep(2)
-        assert.same(1, timer_running_count())
+        timer:freeze()
+        timer:destroy()
+
+        helper.wait_until(function ()
+            assert.same(1, timer_running_count())
+            return true
+        end)
+
     end)
 
     before_each(function ()
