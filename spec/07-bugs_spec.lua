@@ -6,7 +6,6 @@ local update_time = ngx.update_time
 local now = ngx.now
 local timer_running_count = ngx.timer.running_count
 
-local THREADS = 32
 
 insulate("other bugs | ", function ()
     local timer = { }

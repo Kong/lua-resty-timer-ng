@@ -9,7 +9,6 @@ local timer_running_count = ngx.timer.running_count
 local TIMER_NAME_ONCE = "TEST-TIMER-ONCE"
 local TIMER_NAME_EVERY = "TEST-TIMER-EVERY"
 local TOLERANCE = 0.2
-local THREADS = 10
 
 
 insulate("system start -> freeze -> start | ", function ()
