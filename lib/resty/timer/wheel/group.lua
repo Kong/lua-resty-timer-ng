@@ -168,19 +168,6 @@ function _M.new(wheel_setting, resolution)
     self.highest_wheel = self.wheels[#self.wheels]
     self.lowest_wheel = self.wheels[1]
 
-    -- self.hour_wheel:set_lower_wheel(self.minute_wheel)
-
-    -- self.minute_wheel:set_higher_wheel(self.hour_wheel)
-    -- self.minute_wheel:set_lower_wheel(self.second_wheel)
-
-    -- self.second_wheel:set_higher_wheel(self.minute_wheel)
-    -- self.second_wheel:set_lower_wheel(self.msec_wheel)
-
-    -- self.msec_wheel:set_higher_wheel(self.second_wheel)
-
-    -- self.highest_wheel = self.hour_wheel
-    -- self.lowest_wheel = self.msec_wheel
-
     return setmetatable(self, meta_table)
 end
 

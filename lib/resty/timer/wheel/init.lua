@@ -58,21 +58,18 @@ function _M:cal_pointer_cascade(steps)
     local steps_for_cur_wheel = steps
     local steps_for_next_wheel
 
-    while cur_wheel do
+    repeat
         local pointer = 0
-        steps_for_next_wheel = 0
 
-        if steps_for_cur_wheel ~= 0 then
-            pointer, steps_for_next_wheel =
-            cur_wheel:cal_pointer(cur_wheel:get_cur_pointer(),
-                                  steps_for_cur_wheel)
-        end
+        pointer, steps_for_next_wheel =
+        cur_wheel:cal_pointer(cur_wheel:get_cur_pointer(),
+                              steps_for_cur_wheel)
 
         next_pointers[cur_wheel.id] = pointer
 
         steps_for_cur_wheel = steps_for_next_wheel
         cur_wheel = cur_wheel.higher_wheel
-    end
+    until not cur_wheel or steps_for_cur_wheel == 0
 
     return next_pointers
 end
@@ -83,7 +80,7 @@ function _M:insert(job)
 
     local next_pointer = job:get_next_pointer(self.id)
 
-    if next_pointer ~= 0 then
+    if next_pointer then
         local _job = self:get_jobs_by_pointer(next_pointer)[job.name]
 
         if not _job
