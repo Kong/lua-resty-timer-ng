@@ -59,7 +59,7 @@ function _M:cal_pointer_cascade(steps)
     local steps_for_next_wheel
 
     repeat
-        local pointer = 0
+        local pointer
 
         pointer, steps_for_next_wheel =
         cur_wheel:cal_pointer(cur_wheel:get_cur_pointer(),
