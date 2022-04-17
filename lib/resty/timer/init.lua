@@ -51,6 +51,10 @@ local function log_error(...)
 end
 
 
+---call the native `ngx.timer.at`
+---@param delay number
+---@param callback function
+---@param ... any
 local function native_timer_at(delay, callback, ...)
     local ok, err = ngx_timer_at(delay, callback, ...)
     assert(ok,
@@ -60,8 +64,8 @@ local function native_timer_at(delay, callback, ...)
 end
 
 
--- post some resources until `self.semaphore_super:count() == 1`
--- TODO: rename the first argument ?
+---post some resources until `self.semaphore_super:count() == 1`
+---@TODO: rename the first argument ?
 local function wake_up_super_timer(self)
     local semaphore_super = self.semaphore_super
 
@@ -73,8 +77,8 @@ local function wake_up_super_timer(self)
 end
 
 
--- post some resources until `self.semaphore_mover:count() == 1`
--- TODO: rename the first argument ?
+---post some resources until `self.semaphore_mover:count() == 1`
+---@TODO: rename the first argument ?
 local function wake_up_mover_timer(self)
     local semaphore_mover = self.semaphore_mover
 
@@ -86,8 +90,8 @@ local function wake_up_mover_timer(self)
 end
 
 
--- move all jobs from `self.wheels.ready_jobs` to `self.wheels.pending_jobs`
--- wake up the worker timer
+---move all jobs from `self.wheels.ready_jobs` to `self.wheels.pending_jobs`
+---and wake up all worker timers
 local function mover_timer_callback(premature, self)
     log_notice("mover timer has been started")
 
@@ -104,6 +108,7 @@ local function mover_timer_callback(premature, self)
     while not ngx_worker_exiting() and not self._destroy do
         log_notice("waiting on `semaphore_mover` for 1 second")
 
+        -- one second is for the graceful exit of nginx
         local ok, err = semaphore_mover:wait(1)
 
         if not ok and err ~= "timeout" then
@@ -122,6 +127,8 @@ local function mover_timer_callback(premature, self)
         end
 
         if not is_no_ready_jobs then
+            -- just swap two lists
+            -- `wheels.ready_jobs = {}` will bring work to GC
             local temp = wheels.pending_jobs
             wheels.pending_jobs = wheels.ready_jobs
             wheels.ready_jobs = temp
@@ -156,6 +163,8 @@ local function worker_timer_callback(premature, self, thread_index)
     while not ngx_worker_exiting() and not self._destroy do
         log_notice("waiting on `semaphore_worker` for 1 second in thread #"
             .. thread_index)
+
+        -- one second is for the graceful exit of nginx
         local ok, err = semaphore_worker:wait(1)
 
         if not ok and err ~= "timeout" then
@@ -286,6 +295,8 @@ local function super_timer_callback(premature, self)
 
     while not ngx_worker_exiting() and not self._destroy do
         if self.enable then
+
+            -- update the status of the wheel group
             wheels:sync_time()
 
             if not utils.table_is_empty(wheels.ready_jobs) then
@@ -301,6 +312,7 @@ local function super_timer_callback(premature, self)
             end
 
             if closest > 1 then
+                -- one second is for the graceful exit of nginx
                 closest = 1
             end
 

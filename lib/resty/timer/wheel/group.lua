@@ -121,10 +121,16 @@ end
 
 function _M.new(wheel_setting, resolution)
     local self = {
+        -- see `constants.DEFAULT_WHEEL_SETTING`
         setting = wheel_setting,
+
+        -- see `constants.DEFAULT_RESOLUTION`
         resolution = resolution,
 
+        -- get it by `ngx.now()`
         real_time = 0,
+
+        -- time of last update of wheel-group status
         expected_time = 0,
 
         closest = 0,
@@ -146,12 +152,15 @@ function _M.new(wheel_setting, resolution)
         -- TODO: use `utils.table_new`
         pending_jobs = {},
 
+        -- store wheels for each level
+        -- map from wheel_level to wheel
         wheels = utils.table_new(wheel_setting.level, 0),
     }
 
     local prev_wheel = nil
     local cur_wheel
 
+    -- connect all the wheels to make a group, like a clock.
     for level, slots in ipairs(wheel_setting.slots_for_each_level) do
         local wheel_id = string_format("wheel#%d", level)
         cur_wheel = wheel.new(wheel_id, slots)
@@ -165,7 +174,10 @@ function _M.new(wheel_setting, resolution)
         prev_wheel = cur_wheel
     end
 
+    -- the highest wheels was used to insert jobs
     self.highest_wheel = self.wheels[#self.wheels]
+
+    -- the lowest wheel was used to reschedule jobs
     self.lowest_wheel = self.wheels[1]
 
     return setmetatable(self, meta_table)

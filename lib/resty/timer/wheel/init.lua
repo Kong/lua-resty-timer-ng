@@ -33,12 +33,22 @@ function _M:get_cur_pointer()
 end
 
 
+---return the position of the pointer after offset
+---@param pointer integer starting position
+---@param offset integer number of spins
+---@return integer new_pointer position after spinning
+---@return integer cycles number of passes through the starting position
 function _M:cal_pointer(pointer, offset)
     assert(pointer >= 1)
+
     local nelts = self.nelts
+
+    -- using C-style index for calculations
     local p = pointer - 1
+
     local old = p
 
+    -- CircularQueue-like calculation
     p = (p + offset) % nelts
 
     local cycles = math_floor(offset / nelts)
@@ -47,10 +57,14 @@ function _M:cal_pointer(pointer, offset)
         cycles = cycles + 1
     end
 
+    -- plus 1 for Lua-style index
     return p + 1, cycles
 end
 
 
+---calculating the pointer after wheel spinning at each level
+---@param steps integer number of spins
+---@return table next_pointers map from `wheel_id` to `next_pointer`
 function _M:cal_pointer_cascade(steps)
     local next_pointers = { }
     local cur_wheel = self
@@ -65,6 +79,9 @@ function _M:cal_pointer_cascade(steps)
         cur_wheel:cal_pointer(cur_wheel:get_cur_pointer(),
                               steps_for_cur_wheel)
 
+        assert(next_pointers[cur_wheel.id] == nil,
+            "the `wheel.id` must be unique")
+
         next_pointers[cur_wheel.id] = pointer
 
         steps_for_cur_wheel = steps_for_next_wheel
@@ -75,6 +92,10 @@ function _M:cal_pointer_cascade(steps)
 end
 
 
+---inserting a job into this wheel or lower wheel
+---@param job table a table that was returned by `job.new()`
+---@return boolean ok ok?
+---@return string err error message
 function _M:insert(job)
     assert(self.slots)
 
@@ -107,6 +128,8 @@ function _M:insert(job)
 end
 
 
+---spin the pointer, store expired jobs, move some jobs into lower wheel
+---@param offset integer number of spins
 function _M:spin_pointer(offset)
     assert(offset >= 0)
 
@@ -124,6 +147,7 @@ function _M:spin_pointer(offset)
         final_pointer, cycles = self:cal_pointer(final_pointer, 1)
 
         if higher_wheel then
+            -- spin the higher wheel to move some jobs to this wheel
             higher_wheel:spin_pointer(cycles)
         end
 
@@ -158,6 +182,8 @@ function _M:get_jobs_by_pointer(pointer)
 end
 
 
+---return all expired jobs, or return nil.
+---@return table jobs_or_nil
 function _M:fetch_all_expired_jobs()
     if utils.table_is_empty(self.expired_jobs) then
         return nil
@@ -171,7 +197,10 @@ function _M:fetch_all_expired_jobs()
     return ret
 end
 
-
+---new a wheel
+---@param id string id of this wheel
+---@param nelts integer slots of this wheel
+---@return table wheel a wheel
 function _M.new(id, nelts)
     assert(id ~= nil)
 
