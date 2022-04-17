@@ -29,7 +29,7 @@ function _M:set_lower_wheel(wheel)
 end
 
 function _M:get_cur_pointer()
-    return self.pointer + 1
+    return self.pointer
 end
 
 
@@ -144,7 +144,7 @@ function _M:spin_pointer(offset)
 
     end
 
-    self.pointer = final_pointer - 1
+    self.pointer = final_pointer
 end
 
 
@@ -178,7 +178,7 @@ function _M.new(id, nelts)
     local self = {
         id = id,
 
-        pointer = 0,
+        pointer = 1,
 
         nelts = nelts,
         slots = utils.table_new(nelts, 0),
