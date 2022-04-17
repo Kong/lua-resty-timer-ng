@@ -29,13 +29,16 @@ local _M = {
         slots_for_each_level = {10, 60, 60, 24},
     },
 
+    MIN_RESOLUTION = 0.1,
+
     MSG_FATAL_FAILED_CREATE_NATIVE_TIMER
         = "failed to create a native timer: ",
 }
 
 -- We don't need a high accuracy.
-assert(_M.DEFAULT_RESOLUTION,
-    "`DEFAULT_RESOLUTION` must be greater than or equal to 0.1")
+assert(_M.DEFAULT_RESOLUTION < _M.MIN_RESOLUTION,
+    "`DEFAULT_RESOLUTION` must be greater than "
+ .. "or equal to `MIN_RESOLUTION`")
 
 
 do

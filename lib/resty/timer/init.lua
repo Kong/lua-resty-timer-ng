@@ -307,8 +307,8 @@ local function super_timer_callback(premature, self)
             local closest = wheels.closest
             wheels.closest = math_huge
 
-            if closest < 0.1 then
-                closest = 0.1
+            if closest < constants.MIN_RESOLUTION then
+                closest = constants.MIN_RESOLUTION
             end
 
             if closest > 1 then
@@ -327,7 +327,7 @@ local function super_timer_callback(premature, self)
             end
 
         else
-            ngx_sleep(0.1)
+            ngx_sleep(constants.MIN_RESOLUTION)
         end
     end
 end
