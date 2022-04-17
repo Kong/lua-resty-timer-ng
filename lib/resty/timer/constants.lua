@@ -36,7 +36,7 @@ local _M = {
 }
 
 -- We don't need a high accuracy.
-assert(_M.DEFAULT_RESOLUTION < _M.MIN_RESOLUTION,
+assert(_M.DEFAULT_RESOLUTION >= _M.MIN_RESOLUTION,
     "`DEFAULT_RESOLUTION` must be greater than "
  .. "or equal to `MIN_RESOLUTION`")
 
