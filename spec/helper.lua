@@ -6,7 +6,7 @@ local table_insert = table.insert
 local math_max = math.max
 
 local _M = {
-    ROUND = tonumber(os.getenv("TIMER_TEST_ROUND")) or 6,
+    ROUND = tonumber(os.getenv("TIMER_SPEC_TEST_ROUND")) or 6,
 
     RESOLUTION = 0.1,
 
