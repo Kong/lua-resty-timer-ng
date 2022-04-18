@@ -18,10 +18,10 @@ local _M = {
     THREADS = 16,
 
     WHEEL_SETTING = {
-        level = 4,
+        level = 3,
         slots_for_each_level = {
-            3, 3, 3, 5,
-        }
+            3, 3, 5,
+        },
     }
 }
 
