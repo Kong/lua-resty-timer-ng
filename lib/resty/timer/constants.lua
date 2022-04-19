@@ -31,6 +31,9 @@ local _M = {
 
     MIN_RESOLUTION = 0.1,
 
+    -- for Nginx's graceful shutdown
+    TOLERANCE_OF_GRACEFUL_SHUTDOWN = 1,
+
     MSG_FATAL_FAILED_CREATE_NATIVE_TIMER
         = "failed to create a native timer: ",
 }

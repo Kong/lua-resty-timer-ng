@@ -114,9 +114,8 @@ local function mover_timer_callback(premature, self)
     end
 
     while not ngx_worker_exiting() and not self._destroy do
-
-        -- one second is for the graceful exit of nginx
-        local ok, err = semaphore_mover:wait(1)
+        local ok, err =
+            semaphore_mover:wait(constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN)
 
         if not ok and err ~= "timeout" then
             log_error("failed to wait on `semaphore_mover`: " .. err)
@@ -168,8 +167,8 @@ local function worker_timer_callback(premature, self, thread_index)
     local jobs = self.jobs
 
     while not ngx_worker_exiting() and not self._destroy do
-        -- one second is for the graceful exit of nginx
-        local ok, err = semaphore_worker:wait(1)
+        local ok, err =
+            semaphore_worker:wait(constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN)
 
         if not ok and err ~= "timeout" then
             log_error(string_format(
@@ -280,8 +279,7 @@ local function super_timer_callback(premature, self)
             wheels.closest = math_huge
 
             closest = math_max(closest, opt_resolution)
-            -- one second is for the graceful exit of nginx
-            closest = math_min(closest, 1)
+            closest = math_min(closest, constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN)
 
             local ok, err = semaphore_super:wait(closest)
 
