@@ -462,15 +462,15 @@ function _M.new(options)
 
     timer_sys.semaphore_super, err = semaphore.new()
     assert(timer_sys.semaphore_super,
-        "failed to create a semaphore: " .. err)
+        "failed to create a semaphore: " .. tostring(err))
 
     timer_sys.semaphore_worker, err = semaphore.new()
     assert(timer_sys.semaphore_worker,
-        "failed to create a semaphore: " .. err)
+        "failed to create a semaphore: " .. tostring(err))
 
     timer_sys.semaphore_mover, err = semaphore.new()
     assert(timer_sys.semaphore_mover,
-        "failed to create a semaphore: " .. err)
+        "failed to create a semaphore: " .. tostring(err))
 
     timer_sys.wheels = wheel_group.new(opt.wheel_setting, opt.resolution)
 
