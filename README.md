@@ -26,7 +26,7 @@ http {
         timer_module.configure(timer_sys, options)
 
         -- ‘premature’ is used to be compatible with existing callback functions and will be removed in the future
-        local fuction callback_once(premature, ...)
+        local function callback_once(premature, ...)
             -- do something
             ngx.log(ngx.ERR, "in timer example-once")
         end
@@ -48,7 +48,7 @@ http {
 ## Description
 
 This library is implemented using the timer wheel algorithm, 
-which uses the small number of timers created by Openresty API `ngx.timer.at` to manage a large number of tasks.
+which uses the small number of timers created by OpenResty API `ngx.timer.at` to manage a large number of tasks.
 
 * Efficiently, create, pause, start and cancel a timer takes O(1) time.
 * Concurrency control, you can limit the number of threads.
