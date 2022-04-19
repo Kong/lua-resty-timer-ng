@@ -341,10 +341,7 @@ end
 
 function _M.new(options)
     local timer_sys = {}
-
-    if timer_sys.configured then
-        return false, "already configured"
-    end
+    local err
 
     if options then
         assert(type(options) == "table", "expected `options` to be a table")
@@ -469,11 +466,17 @@ function _M.new(options)
 
     timer_sys._destroy = false
 
-    timer_sys.semaphore_super = semaphore.new()
+    timer_sys.semaphore_super, err = semaphore.new()
+    assert(timer_sys.semaphore_super, 
+        "failed to create a semaphore: " .. err)
 
-    timer_sys.semaphore_worker = semaphore.new()
+    timer_sys.semaphore_worker, err = semaphore.new()
+    assert(timer_sys.semaphore_worker, 
+        "failed to create a semaphore: " .. err)
 
-    timer_sys.semaphore_mover = semaphore.new()
+    timer_sys.semaphore_mover, err = semaphore.new()
+    assert(timer_sys.semaphore_mover, 
+        "failed to create a semaphore: " .. err)
 
     timer_sys.wheels = wheel_group.new(opt.wheel_setting, opt.resolution)
 
