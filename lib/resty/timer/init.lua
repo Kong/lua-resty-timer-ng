@@ -13,6 +13,8 @@ local math_random = math.random
 local math_modf = math.modf
 local math_huge = math.huge
 local math_abs = math.abs
+local math_min = math.min
+local math_max = math.max
 
 local string_format = string.format
 
@@ -166,7 +168,6 @@ local function worker_timer_callback(premature, self, thread_index)
     local jobs = self.jobs
 
     while not ngx_worker_exiting() and not self._destroy do
-
         -- one second is for the graceful exit of nginx
         local ok, err = semaphore_worker:wait(1)
 
@@ -267,7 +268,6 @@ local function super_timer_callback(premature, self)
 
     while not ngx_worker_exiting() and not self._destroy do
         if self.enable then
-
             -- update the status of the wheel group
             wheels:sync_time()
 
@@ -279,14 +279,9 @@ local function super_timer_callback(premature, self)
             local closest = wheels.closest
             wheels.closest = math_huge
 
-            if closest < constants.MIN_RESOLUTION then
-                closest = constants.MIN_RESOLUTION
-            end
-
-            if closest > 1 then
-                -- one second is for the graceful exit of nginx
-                closest = 1
-            end
+            closest = math_max(closest, opt_resolution)
+            -- one second is for the graceful exit of nginx
+            closest = math_min(closest, 1)
 
             local ok, err = semaphore_super:wait(closest)
 
