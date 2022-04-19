@@ -9,7 +9,7 @@ local constants = require("resty.timer.constants")
 
 local ngx = ngx
 
-local math_random = math.random
+local math_floor = math.floor
 local math_modf = math.modf
 local math_huge = math.huge
 local math_abs = math.abs
@@ -301,7 +301,10 @@ local function create(self ,name, callback, delay, once, args)
     local wheels = self.wheels
     local jobs = self.jobs
     if not name then
-        name = tostring(math_random())
+        name = string_format("unix_timestamp=%f;counter=%d",
+                             math_floor(ngx_now() * 1000),
+                             self.id_counter)
+        self.id_counter = self.id_counter + 1
     end
 
     if jobs[name] then
@@ -438,6 +441,9 @@ function _M.new(options)
     }
 
     timer_sys.opt = opt
+
+    -- to generate some IDs
+    timer_sys.id_counter = 0
 
     timer_sys.max_expire = opt.resolution
     for _, v in ipairs(opt.wheel_setting.slots_for_each_level) do
