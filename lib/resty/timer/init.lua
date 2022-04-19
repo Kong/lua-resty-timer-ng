@@ -279,7 +279,8 @@ local function super_timer_callback(premature, self)
             wheels.closest = math_huge
 
             closest = math_max(closest, opt_resolution)
-            closest = math_min(closest, constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN)
+            closest = math_min(closest,
+                               constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN)
 
             local ok, err = semaphore_super:wait(closest)
 
@@ -460,15 +461,15 @@ function _M.new(options)
     timer_sys._destroy = false
 
     timer_sys.semaphore_super, err = semaphore.new()
-    assert(timer_sys.semaphore_super, 
+    assert(timer_sys.semaphore_super,
         "failed to create a semaphore: " .. err)
 
     timer_sys.semaphore_worker, err = semaphore.new()
-    assert(timer_sys.semaphore_worker, 
+    assert(timer_sys.semaphore_worker,
         "failed to create a semaphore: " .. err)
 
     timer_sys.semaphore_mover, err = semaphore.new()
-    assert(timer_sys.semaphore_mover, 
+    assert(timer_sys.semaphore_mover,
         "failed to create a semaphore: " .. err)
 
     timer_sys.wheels = wheel_group.new(opt.wheel_setting, opt.resolution)
