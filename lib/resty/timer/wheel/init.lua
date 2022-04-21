@@ -105,7 +105,8 @@ function _M:insert(job)
         local _job = self:get_jobs_by_pointer(next_pointer)[job.name]
 
         if not _job
-           or (_job:is_cancelled() and not _job:is_enabled()) then
+           or (_job:is_cancelled() and not _job:is_enabled())
+        then
 
             self.slots[next_pointer][job.name] = job
 
