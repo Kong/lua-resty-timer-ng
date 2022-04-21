@@ -159,12 +159,9 @@ function _M:spin_pointer(offset)
 
             if lower_wheel then
                 lower_wheel:insert(job)
-                goto continue
+            else
+                expired_jobs[name] = job
             end
-
-            expired_jobs[name] = job
-
-            ::continue::
         end
 
     end
