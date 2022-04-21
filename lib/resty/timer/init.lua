@@ -391,8 +391,12 @@ function _M.new(options)
              .. "the length of `wheel_setting.slots_for_each_level`")
 
             for i, v in ipairs(wheel_setting.slots_for_each_level) do
-                if type(v) ~= "number" then 
-                    error(string_format("expected `wheel_setting.slots_for_each_level[%d]` to be a number", i))
+                if type(v) ~= "number" then
+                    error(string_format(
+                        "expected"
+                     .. " `wheel_setting.slots_for_each_level[%d]` "
+                     .. "to be a number",
+                        i))
                 end
 
                 assert(v >= 1, string_format(
