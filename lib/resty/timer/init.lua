@@ -8,7 +8,6 @@ local ngx = ngx
 
 local math_floor = math.floor
 local math_modf = math.modf
-local math_huge = math.huge
 local math_abs = math.abs
 local math_min = math.min
 local math_max = math.max
