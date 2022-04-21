@@ -532,7 +532,8 @@ function _M:once(name, callback, delay, ...)
     assert(delay >= 0, "expected `delay` to be greater than or equal to 0")
 
     if delay >= self.max_expire
-        or (delay ~= 0 and delay < self.opt.resolution)then
+        or (delay ~= 0 and delay < self.opt.resolution)
+    then
 
         log_notice("fallback to ngx.timer.every [delay = " .. delay .. "]")
         local ok, err = ngx_timer_at(delay, callback, ...)
