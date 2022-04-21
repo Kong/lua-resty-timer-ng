@@ -581,11 +581,12 @@ function _M:run(name)
 
     local jobs = self.jobs
     local old_job = jobs[name]
-    jobs[name] = nil
 
     if not old_job then
         return false, "timer not found"
     end
+
+    jobs[name] = nil
 
     if old_job:is_runnable() then
         return false, "running"
