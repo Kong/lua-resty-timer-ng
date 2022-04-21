@@ -4,9 +4,6 @@ local utils = require("resty.timer.utils")
 local wheel_group = require("resty.timer.wheel.group")
 local constants = require("resty.timer.constants")
 
--- TODO: use it to readuce overhead
--- local new_tab = require "table.new"
-
 local ngx = ngx
 
 local math_floor = math.floor
@@ -297,7 +294,7 @@ local function super_timer_callback(premature, self)
 end
 
 
-local function create(self ,name, callback, delay, once, args)
+local function create(self, name, callback, delay, once, args)
     local wheels = self.wheels
     local jobs = self.jobs
     if not name then

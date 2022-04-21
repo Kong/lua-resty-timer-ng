@@ -48,7 +48,7 @@ function _M:update_closest()
         -- Scan only to the end point, not the whole wheel.
         -- why?
         -- Because there might be some jobs falling from the higher wheel
-        -- when the pointer of the `msec_wheel` spins to the starting point.
+        -- when the pointer of the `lowest_wheel` spins to the starting point.
         -- If the whole wheel is scanned
         -- and the result obtained is used as the sleep time of the super timer,
         -- some jobs of higher wheels may not be executed in time.
@@ -75,7 +75,6 @@ end
 
 -- do the following things
 -- * add all expired jobs from wheels to `wheels.ready_jobs`
--- * move some jobs from higher wheel to lower wheel
 function _M:fetch_all_expired_jobs()
     for _, _wheel in ipairs(self.wheels) do
         utils.table_merge(self.ready_jobs, _wheel:fetch_all_expired_jobs())
