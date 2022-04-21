@@ -377,7 +377,7 @@ function _M.new(options)
             local level = wheel_setting.level
 
             assert(type(wheel_setting) == "table",
-                "expected `wheel_setting` to be a number")
+                "expected `wheel_setting` to be a table")
 
             assert(type(wheel_setting.level) == "number",
                 "expected `wheel_setting.level` to be a number")
