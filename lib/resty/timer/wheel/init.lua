@@ -216,8 +216,12 @@ function _M.new(id, nelts)
         expired_jobs = {},
     }
 
+    local meta_table_for_each_slot = {
+        __mode = "v",
+    }
+
     for i = 1, self.nelts do
-        self.slots[i] = setmetatable({ }, { __mode = "v" })
+        self.slots[i] = setmetatable({ }, meta_table_for_each_slot)
     end
 
     return setmetatable(self, meta_table)
