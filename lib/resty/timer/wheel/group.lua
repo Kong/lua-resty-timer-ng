@@ -30,8 +30,7 @@ local meta_table = {
 
 
 -- calculate how long until the next timer expires
-function _M:update_closest()
-    local old_closest = self.closest
+function _M:get_closest()
     local delay = 0
     local lowest_wheel = self.lowest_wheel
     local resolution = self.resolution
@@ -65,11 +64,7 @@ function _M:update_closest()
         end
     end
 
-    -- TODO: to calculate this value, a baseline is needed,
-    --  i.e. the time when the super timer was last woken up.
-    self.closest = delay
-
-    return delay < old_closest
+    return delay
 end
 
 
@@ -131,8 +126,6 @@ function _M.new(wheel_setting, resolution)
 
         -- time of last update of wheel-group status
         expected_time = 0,
-
-        closest = 0,
 
         -- Why use two queues?
         -- Because a zero-delay timer may create another zero-delay timer,

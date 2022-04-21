@@ -271,9 +271,7 @@ local function super_timer_callback(premature, self)
                 wake_up_mover_timer(self)
             end
 
-            wheels:update_closest()
-            local closest = wheels.closest
-            wheels.closest = math_huge
+            local closest = wheels:get_closest()
 
             closest = math_max(closest, opt_resolution)
             closest = math_min(closest,
