@@ -12,7 +12,6 @@ local pcall = pcall
 local pairs = pairs
 local next = next
 
-local std_assert = assert
 
 local table_isempty
 
@@ -81,7 +80,9 @@ function _M.assert(v, message)
         message = "assertion failed!"
     end
 
-    std_assert(v, debug.traceback(message))
+    if not v then
+        error(debug.traceback(message), 2)
+    end
 end
 
 
