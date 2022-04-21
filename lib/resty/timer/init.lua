@@ -399,15 +399,19 @@ function _M.new(options)
                         i))
                 end
 
-                assert(v >= 1, string_format(
-                    "expected `wheel_setting.slots_for_each_level[%d]`"
-                 .. " to be greater than 1", i))
+                if v < 1 then
+                    error(string_format(
+                        "expected"
+                     .. " `wheel_setting.slots_for_each_level[%d]` "
+                     .. "to be greater than 1",
+                        i))
+                end
 
-                local _, tmp = math_modf(v)
-
-                assert(tmp == 0, string_format(
-                    "expected `wheel_setting.slots_for_each_level[%d]`"
-                 .. " to be an integer", i))
+                if v ~= math_floor(v) then
+                    error(string_format(
+                        "expected `wheel_setting.slots_for_each_level[%d]`"
+                     .. " to be an integer", i))
+                end
             end
 
         end

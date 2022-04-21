@@ -1,6 +1,7 @@
 local utils = require("resty.timer.utils")
 
 local math_modf = math.modf
+local math_floor = math.floor
 
 local string_format = string.format
 
@@ -76,19 +77,23 @@ do
 
 
     for i, v in ipairs(slots_for_each_level) do
-        assert(type(v) == "number",string_format(
-            "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]`"
-         .. " must be a number", i))
+        if type(v) ~= "number" then
+            error(string_format(
+                "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]`"
+             .. " must be a number", i))
+        end
 
-        assert(v >= 1, string_format(
-            "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]`"
-         .. "must be greater than 1", i))
+        if v < 1 then
+            error(string_format(
+                "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]`"
+             .. "must be greater than 1", i))
+        end
 
-        _, tmp = math_modf(v)
-
-        assert(tmp == 0, string_format(
-            "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]`"
-         .. "must be an integer", i))
+        if v ~= math_floor(v) then
+            error(string_format(
+                "`DEFAULT_WHEEL_SETTING.slots_for_each_level[%d]`"
+             .. "must be an integer", i))
+        end
     end
 end
 
