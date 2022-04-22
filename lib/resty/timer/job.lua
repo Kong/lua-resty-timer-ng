@@ -169,7 +169,7 @@ function _M:re_cal_next_pointer(wheels)
 end
 
 
-function _M.new(wheels, name, callback, delay, once, args)
+function _M.new(wheels, name, callback, delay, once, argc, argv)
     local delay_origin = delay
     local immediate = false
 
@@ -191,7 +191,8 @@ function _M.new(wheels, name, callback, delay, once, args)
         next_pointers = {},
 
         _once = once,
-        args = args,
+        argc = argc,
+        argv = argv,
         stats = {
             elapsed_time = {
                 avg = 0,
@@ -232,7 +233,8 @@ function _M:execute()
 
     self._running = true
 
-    local ok, err = pcall(self.callback, false, table_unpack(self.args))
+    local ok, err = pcall(self.callback, false,
+                          table_unpack(self.argv, 1, self.argc))
 
     local finish = stats.finish
 

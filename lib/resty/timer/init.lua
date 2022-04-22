@@ -34,6 +34,7 @@ local ipairs = ipairs
 local tostring = tostring
 local type = type
 local next = next
+local select = select
 
 local assert = utils.assert
 
@@ -291,7 +292,7 @@ local function super_timer_callback(premature, self)
 end
 
 
-local function create(self, name, callback, delay, once, args)
+local function create(self, name, callback, delay, once, argc, argv)
     local wheels = self.wheels
     local jobs = self.jobs
     if not name then
@@ -307,7 +308,9 @@ local function create(self, name, callback, delay, once, args)
 
     wheels:sync_time()
 
-    local job = job_module.new(wheels, name, callback, delay, once, args)
+    local job = job_module.new(wheels, name,
+                               callback, delay,
+                               once, argc, argv)
     job:enable()
     jobs[name] = job
 
@@ -547,7 +550,8 @@ function _M:once(name, callback, delay, ...)
 
     -- TODO: desc the logic and add related tests
     local name_or_false, err =
-        create(self, name, callback, delay, true, { ... })
+        create(self, name, callback, delay,
+               true, select("#", ...), { ... })
 
     return name_or_false, err
 end
@@ -570,7 +574,8 @@ function _M:every(name, callback, interval, ...)
     end
 
     local name_or_false, err =
-        create(self, name, callback, interval, false, { ... })
+        create(self, name, callback, interval,
+               false, select("#", ...), { ... })
 
     return name_or_false, err
 end
