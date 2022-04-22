@@ -49,7 +49,8 @@ insulate("bugs of every timer | ", function ()
 
     lazy_setup(function ()
         timer = timer_module.new()
-        timer:start()
+        local ok, _ = timer:start()
+        assert.is_true(ok)
     end)
 
     lazy_teardown(function ()

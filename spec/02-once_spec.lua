@@ -37,7 +37,8 @@ insulate("create a once timer with invalid arguments | ", function ()
 
     lazy_setup(function ()
         timer = timer_module.new()
-        timer:start()
+        local ok, _ = timer:start()
+        assert.is_true(ok)
 
         empty_callback = function (_, ...) end
     end)
@@ -82,7 +83,8 @@ insulate("create a once timer #" .. strategy .. " | ", function ()
             resolution = helper.RESOLUTION,
             wheel_setting = helper.WHEEL_SETTING,
         })
-        timer:start()
+        local ok, _ = timer:start()
+        assert.is_true(ok)
 
         tbl = { time = 0 }
     end)

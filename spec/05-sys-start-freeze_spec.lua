@@ -20,7 +20,8 @@ insulate("system start -> freeze -> start | ", function ()
 
     lazy_setup(function ()
         timer = timer_module.new()
-        timer:start()
+        local ok, _ = timer:start()
+        assert.is_true(ok)
 
         tbl = {
             time = 0

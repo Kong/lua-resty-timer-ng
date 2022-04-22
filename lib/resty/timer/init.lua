@@ -61,11 +61,7 @@ end
 ---@param callback function
 ---@param ... any
 local function native_timer_at(delay, callback, ...)
-    local ok, err = ngx_timer_at(delay, callback, ...)
-    assert(ok,
-        constants.MSG_FATAL_FAILED_CREATE_NATIVE_TIMER
-        -- `err` maybe `nil`
-        .. tostring(err))
+    return ngx_timer_at(delay, callback, ...)
 end
 
 
@@ -239,22 +235,8 @@ local function super_timer_callback(premature, self)
     end
 
     local semaphore_super = self.semaphore_super
-    local threads = self.threads
-    local opt_threads = self.opt.threads
     local opt_resolution = self.opt.resolution
     local wheels = self.wheels
-
-    self.super_timer = true
-
-    for i = 1, opt_threads do
-        if not threads[i].alive then
-            log_notice(string_format(
-                "creating thread #%d of %d",
-                i, opt_threads
-            ))
-            native_timer_at(0, worker_timer_callback, self, i)
-        end
-    end
 
     ngx_sleep(opt_resolution)
 
@@ -463,11 +445,7 @@ function _M.new(options)
 
     timer_sys.jobs = {}
 
-    -- has the super timer already been created?
-    timer_sys.super_timer = false
-
-    -- has the mover timer already been created?
-    timer_sys.mover_timer = false
+    timer_sys.is_first_start = true
 
     timer_sys._destroy = false
 
@@ -501,12 +479,34 @@ end
 
 
 function _M:start()
-    local ok, err = true, nil
+    if self.is_first_start then
+        self._destroy = false
 
-    if not self.super_timer then
-        native_timer_at(0, super_timer_callback, self)
-        native_timer_at(0, mover_timer_callback, self)
-        self.super_timer = true
+        local ok, err = native_timer_at(0, super_timer_callback, self)
+
+        if not ok then
+            self:destroy()
+            return false, "failed to start: " .. err
+        end
+
+        ok, err = native_timer_at(0, mover_timer_callback, self)
+
+        if not ok then
+            self:destroy()
+            return false, "failed to start: " .. err
+        end
+
+        for thread_index = 1, #self.threads do
+            ok, err = native_timer_at(0, worker_timer_callback,
+                                      self, thread_index)
+
+            if not ok then
+                self:destroy()
+                return false, "failed to start: " .. err
+            end
+        end
+
+        self.is_first_start = false
     end
 
     if not self.enable then
@@ -516,7 +516,7 @@ function _M:start()
 
     self.enable = true
 
-    return ok, err
+    return true, nil
 end
 
 
@@ -528,6 +528,8 @@ end
 -- TODO: rename this method
 function _M:destroy()
     self._destroy = true
+    -- waiting for timers to exit automatically
+    ngx_sleep(1)
 end
 
 
