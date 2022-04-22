@@ -209,7 +209,7 @@ function _M.new(id, nelts)
         pointer = 1,
 
         nelts = nelts,
-        slots = utils.table_new(nelts, 0),
+        slots = {},
         higher_wheel = nil,
         lower_wheel = nil,
 
