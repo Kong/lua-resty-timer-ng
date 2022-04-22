@@ -124,7 +124,6 @@ local function kill_all_threads(self, timeout)
             return false, "failed to kill thread: " .. err
         end
 
-        ngx_log(ngx_ERR, i)
     end
 
     return true, nil
