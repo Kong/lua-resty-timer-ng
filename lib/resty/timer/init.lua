@@ -599,7 +599,8 @@ function _M:run(name)
 
     local name_or_false, err =
         create(self, old_job.name, old_job.callback,
-               old_job.delay, old_job:is_oneshot(), old_job.args)
+               old_job.delay, old_job:is_oneshot(),
+               old_job.argc, old_job.argv)
 
     local ok = name_or_false ~= false
 
