@@ -13,6 +13,7 @@ local ngx_ERR = ngx.ERR
 -- luacheck: pop
 
 local ngx_now = ngx.now
+local ngx_update_time = ngx.update_time
 
 local ipairs = ipairs
 local setmetatable = setmetatable
@@ -83,22 +84,7 @@ function _M:sync_time()
     -- perhaps some jobs have expired but not been fetched
     self:fetch_all_expired_jobs()
 
-    -- This function will cause a system call
-    -- and is not called for performance reasons.
-    -- In theory, doing so would cause a potential bug.
-    -- For example:
-        -- timer:once(...)
-        -- performing time-consuming arithmetic operations
-        -- timer:once(...)
-    -- We know that the time cache of Nginx
-    -- is updated every time we sleep or yield.
-    -- But if this arithmetic operation takes a long time,
-    -- for example, three seconds,
-    -- then the time we obtained is not correct.
-    -- However, this practice is not recommended,
-    -- so it is not handled.
-    -- ngx.update_time()
-
+    ngx_update_time()
     self.real_time = ngx_now()
 
     if utils.float_compare(self.real_time, self.expected_time) <= 0 then

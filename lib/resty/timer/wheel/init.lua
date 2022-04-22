@@ -195,7 +195,6 @@ function _M:fetch_all_expired_jobs()
     return ret
 end
 
-
 ---new a wheel
 ---@param id string id of this wheel
 ---@param nelts integer slots of this wheel
