@@ -78,8 +78,6 @@ end
 
 
 function _M:sync_time()
-    assert(self.expected_time ~= nil)
-
     local lowest_wheel = self.lowest_wheel
     local resolution = self.resolution
 
@@ -127,7 +125,7 @@ function _M.new(wheel_setting, resolution)
         real_time = 0,
 
         -- time of last update of wheel-group status
-        expected_time = nil,
+        expected_time = 0,
 
         -- Why use two queues?
         -- Because a zero-delay timer may create another zero-delay timer,

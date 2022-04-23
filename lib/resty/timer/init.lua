@@ -3,7 +3,6 @@ local job_module = require("resty.timer.job")
 local utils = require("resty.timer.utils")
 local wheel_group = require("resty.timer.wheel.group")
 local constants = require("resty.timer.constants")
-local thread = require("resty.timer.thread")
 
 local ngx = ngx
 
@@ -26,7 +25,9 @@ local ngx_NOTICE = ngx.NOTICE
 local ngx_timer_at = ngx.timer.at
 local ngx_timer_every = ngx.timer.every
 local ngx_sleep = ngx.sleep
+local ngx_worker_exiting = ngx.worker.exiting
 local ngx_now = ngx.now
+local ngx_update_time = ngx.update_time
 
 local pairs = pairs
 local ipairs = ipairs
@@ -40,92 +41,27 @@ local assert = utils.assert
 local _M = {}
 
 
-local function create_all_threads_atomic(self, timeout)
-    local super_thread = self.super_thread
-    local mover_thread = self.mover_thread
-    local worker_threads = self.worker_threads
-
-    local ok, err = super_thread:spawn()
-
-    if not ok then
-        return false, "failed to create thread: " .. err
-    end
-
-    ok, err = mover_thread:spawn()
-
-    if not ok then
-        local okk, errr = super_thread:kill(timeout)
-
-        if okk then
-            return false, "failed to create thread: " .. err
-        end
-
-        err = string_format("failed to create thread: %s"
-                         .. ", falied to destroy previous: %s",
-                            err, errr)
-
-        return false, err
-    end
-
-    local worker_thread_index = 1
-
-    while worker_thread_index <= #worker_threads do
-        ok, err = worker_threads[worker_thread_index]:spawn()
-
-        if not ok then
-            break
-        end
-
-        worker_thread_index = worker_thread_index + 1
-    end
-
-    if ok then
-        return true, nil
-    end
-
-    for i = 1, worker_thread_index do
-        local okk, errr = worker_threads[i]:kill(timeout)
-
-        if not okk then
-            err = string_format("failed to create thread: %s"
-            .. ", falied to destroy previous: %s",
-               err, errr)
-
-            return false, err
-        end
-    end
-
-    return false, "failed to create thread: " .. err
+local function log_notice(...)
+    ngx_log(ngx_NOTICE, "[timer] ", ...)
 end
 
 
-local function kill_all_threads(self, timeout)
-    local super_thread = self.super_thread
-    local mover_thread = self.mover_thread
-    local worker_threads = self.worker_threads
+local function log_warn(...)
+    ngx_log(ngx_WARN, "[timer] ", ...)
+end
 
-    local ok, err = super_thread:kill(timeout)
 
-    if not ok then
-        return false, "failed to kill thread: " .. err
-    end
+local function log_error(...)
+    ngx_log(ngx_ERR, "[timer] ", ...)
+end
 
-    ok, err = mover_thread:kill(timeout)
 
-    if not ok then
-        return false, "failed to kill thread: " .. err
-    end
-
-    for i = 1, #worker_threads do
-        ok, err = worker_threads[i]:kill(timeout)
-
-        if not ok then
-            return false, "failed to kill thread: " .. err
-        end
-
-    end
-
-    return true, nil
+---call the native `ngx.timer.at`
+---@param delay number
+---@param callback function
+---@param ... any
+local function native_timer_at(delay, callback, ...)
+    return ngx_timer_at(delay, callback, ...)
 end
 
 
@@ -157,39 +93,52 @@ end
 
 ---move all jobs from `self.wheels.ready_jobs` to `self.wheels.pending_jobs`
 ---and wake up all worker timers
-local function mover_timer_callback(self)
+local function mover_timer_callback(premature, self)
+    log_notice("mover timer has been started")
+
     local semaphore_worker = self.semaphore_worker
     local semaphore_mover = self.semaphore_mover
     local opt_threads = self.opt.threads
     local wheels = self.wheels
 
-    local ok, err =
-        semaphore_mover:wait(constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN)
-
-    if not ok and err ~= "timeout" then
-        ngx_log(ngx_ERR, "failed to wait on `semaphore_mover`: " .. err)
-    end
-
-    local is_no_pending_jobs =
-        utils.table_is_empty(wheels.pending_jobs)
-
-    local is_no_ready_jobs =
-        utils.table_is_empty(wheels.ready_jobs)
-
-    if not is_no_pending_jobs then
-        semaphore_worker:post(opt_threads)
+    if premature then
+        log_warn("exit mover timer due to `premature`")
         return
     end
 
-    if not is_no_ready_jobs then
-        -- just swap two lists
-        -- `wheels.ready_jobs = {}` will bring work to GC
-        local temp = wheels.pending_jobs
-        wheels.pending_jobs = wheels.ready_jobs
-        wheels.ready_jobs = temp
+    while not ngx_worker_exiting() and not self._destroy do
+        local ok, err =
+            semaphore_mover:wait(constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN)
 
-        semaphore_worker:post(opt_threads)
+        if not ok and err ~= "timeout" then
+            log_error("failed to wait on `semaphore_mover`: " .. err)
+        end
+
+        local is_no_pending_jobs =
+            utils.table_is_empty(wheels.pending_jobs)
+
+        local is_no_ready_jobs =
+            utils.table_is_empty(wheels.ready_jobs)
+
+        if not is_no_pending_jobs then
+            semaphore_worker:post(opt_threads)
+            goto continue
+        end
+
+        if not is_no_ready_jobs then
+            -- just swap two lists
+            -- `wheels.ready_jobs = {}` will bring work to GC
+            local temp = wheels.pending_jobs
+            wheels.pending_jobs = wheels.ready_jobs
+            wheels.ready_jobs = temp
+
+            semaphore_worker:post(opt_threads)
+        end
+
+        ::continue::
     end
+
+    log_notice("exit mover timer")
 end
 
 
@@ -197,50 +146,78 @@ end
 -- re-insert the recurrent job
 -- delete once job from `self.jobs`
 -- wake up the super timer
-local function worker_timer_callback(self, thread_index)
+local function worker_timer_callback(premature, self, thread_index)
+    log_notice("thread #", thread_index, " has been started")
+
+    if premature then
+        log_warn("exit thread #", thread_index, " due to `premature`")
+        return
+    end
+
     local semaphore_worker = self.semaphore_worker
+    local thread = self.threads[thread_index]
     local wheels = self.wheels
     local jobs = self.jobs
 
-    local ok, err =
-        semaphore_worker:wait(constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN)
+    while not ngx_worker_exiting() and not self._destroy do
+        local ok, err =
+            semaphore_worker:wait(constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN)
 
-    if not ok and err ~= "timeout" then
-        ngx_log(ngx_ERR, string_format(
-            "failed to wait on `semaphore_worker` in thread #%d: %s",
-            thread_index, err))
-    end
+        if not ok and err ~= "timeout" then
+            log_error(string_format(
+                "failed to wait on `semaphore_worker` in thread #%d: %s",
+                thread_index, err))
+        end
 
-    local _, job = next(wheels.pending_jobs)
+        while not utils.table_is_empty(wheels.pending_jobs) do
+            thread.counter.runs = thread.counter.runs + 1
 
-    if not job then
+            local _, job = next(wheels.pending_jobs)
+
+            wheels.pending_jobs[job.name] = nil
+
+            if not job:is_runnable() then
+                goto continue
+            end
+
+            job:execute()
+
+            if job:is_oneshot() then
+                jobs[job.name] = nil
+                goto continue
+            end
+
+            if job:is_runnable() then
+                wheels:sync_time()
+                job:re_cal_next_pointer(wheels)
+                wheels:insert_job(job)
+                wake_up_super_timer(self)
+            end
+
+            ::continue::
+        end
+
         if not utils.table_is_empty(wheels.ready_jobs) then
             wake_up_mover_timer(self)
         end
 
-        return
-    end
+        if thread.counter.runs > self.opt.restart_thread_after_runs then
+            thread.counter.runs = 0
 
-    wheels.pending_jobs[job.name] = nil
+            -- Since the native timer only releases resources
+            -- when it is destroyed,
+            -- including resources created by `job:execute()`
+            -- it needs to be destroyed and recreated periodically.
+            native_timer_at(0, worker_timer_callback, self, thread_index)
+            break
+        end
 
-    if not job:is_runnable() then
-        return
-    end
+    end -- the top while
 
-    job:execute()
-
-    if job:is_oneshot() then
-        jobs[job.name] = nil
-        return
-    end
-
-    if job:is_runnable() then
-        wheels:sync_time()
-        job:re_cal_next_pointer(wheels)
-        wheels:insert_job(job)
-        wake_up_super_timer(self)
-    end
-
+    log_notice(string_format(
+        "exit thread #%d",
+        thread_index
+    ))
 end
 
 
@@ -249,34 +226,51 @@ end
 -- * wake up mover timer
 -- * update the status of all wheels
 -- * calculate wait time for `semaphore_super`
-local function super_timer_callback(self)
+local function super_timer_callback(premature, self)
+    log_notice("super timer has been started")
+
+    if premature then
+        log_warn("exit super timer due to `premature`")
+        return
+    end
+
     local semaphore_super = self.semaphore_super
     local opt_resolution = self.opt.resolution
     local wheels = self.wheels
 
-    if self.enable then
-        -- update the status of the wheel group
-        wheels:sync_time()
+    ngx_sleep(opt_resolution)
 
-        if not utils.table_is_empty(wheels.ready_jobs) then
-            wake_up_mover_timer(self)
+    ngx_update_time()
+    wheels.real_time = ngx_now()
+    wheels.expected_time = wheels.real_time - opt_resolution
+
+    while not ngx_worker_exiting() and not self._destroy do
+        if self.enable then
+            -- update the status of the wheel group
+            wheels:sync_time()
+
+            if not utils.table_is_empty(wheels.ready_jobs) then
+                wake_up_mover_timer(self)
+            end
+
+            local closest = wheels:get_closest()
+
+            closest = math_max(closest, opt_resolution)
+            closest = math_min(closest,
+                               constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN)
+
+            local ok, err = semaphore_super:wait(closest)
+
+            if not ok and err ~= "timeout" then
+                log_error("failed to wait on `semaphore_super`: " .. err)
+            end
+
+        else
+            ngx_sleep(constants.MIN_RESOLUTION)
         end
-
-        local closest = wheels:get_closest()
-
-        closest = math_max(closest, opt_resolution)
-        closest = math_min(closest,
-                            constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN)
-
-        local ok, err = semaphore_super:wait(closest)
-
-        if not ok and err ~= "timeout" then
-            ngx_log(ngx_ERR, "failed to wait on `semaphore_super`: " .. err)
-        end
-
-    else
-        ngx_sleep(constants.MIN_RESOLUTION)
     end
+
+    log_notice("exit super timer")
 end
 
 
@@ -447,21 +441,13 @@ function _M.new(options)
     -- enable/diable entire timing system
     timer_sys.enable = false
 
-    timer_sys.super_thread = thread.new("super",
-                                        opt.restart_thread_after_runs * 100,
-                                        super_timer_callback,
-                                        timer_sys)
-
-    timer_sys.mover_thread = thread.new("mover",
-                                        opt.restart_thread_after_runs * 100,
-                                        mover_timer_callback,
-                                        timer_sys)
-
-    timer_sys.worker_threads = {}
+    timer_sys.threads = utils.table_new(opt.threads, 0)
 
     timer_sys.jobs = {}
 
-    timer_sys.is_all_threads_created = false
+    timer_sys.is_first_start = true
+
+    timer_sys._destroy = false
 
     timer_sys.semaphore_super, err = semaphore.new()
     assert(timer_sys.semaphore_super,
@@ -478,13 +464,14 @@ function _M.new(options)
     timer_sys.wheels = wheel_group.new(opt.wheel_setting, opt.resolution)
 
     for i = 1, timer_sys.opt.threads do
-        timer_sys.worker_threads[i] = thread.new(
-            string_format("worker#%d", i),
-            opt.restart_thread_after_runs,
-            worker_timer_callback,
-            timer_sys,
-            i
-        )
+        timer_sys.threads[i] = {
+            index = i,
+            alive = false,
+            counter = {
+                -- number of runs
+                runs = 0,
+            },
+        }
     end
 
     return setmetatable(timer_sys, { __index = _M })
@@ -492,17 +479,39 @@ end
 
 
 function _M:start()
-    ngx.update_time()
-    self.wheels.expected_time = ngx_now()
+    if self.is_first_start then
+        self._destroy = false
 
-    if not self.is_all_threads_created then
-        local ok, err = create_all_threads_atomic(self, 5)
+        local ok, err = native_timer_at(0, super_timer_callback, self)
 
         if not ok then
-            return err, "falied to start: " .. err
+            self:destroy()
+            return false, "failed to start: " .. err
         end
 
-        self.is_all_threads_created = true
+        ok, err = native_timer_at(0, mover_timer_callback, self)
+
+        if not ok then
+            self:destroy()
+            return false, "failed to start: " .. err
+        end
+
+        for thread_index = 1, #self.threads do
+            ok, err = native_timer_at(0, worker_timer_callback,
+                                      self, thread_index)
+
+            if not ok then
+                self:destroy()
+                return false, "failed to start: " .. err
+            end
+        end
+
+        self.is_first_start = false
+    end
+
+    if not self.enable then
+        ngx_update_time()
+        self.wheels.expected_time = ngx_now()
     end
 
     self.enable = true
@@ -518,17 +527,9 @@ end
 
 -- TODO: rename this method
 function _M:destroy()
-    if not self.is_all_threads_created then
-        return true, nil
-    end
-
-    local ok, err = kill_all_threads(self, 5)
-
-    if not ok then
-        return false, "failed to destroy: " .. err
-    end
-
-    return true, nil
+    self._destroy = true
+    -- waiting for timers to exit automatically
+    ngx_sleep(1)
 end
 
 
@@ -544,10 +545,7 @@ function _M:once(name, callback, delay, ...)
         or (delay ~= 0 and delay < self.opt.resolution)
     then
 
-        ngx_log(ngx_NOTICE,
-                "fallback to ngx.timer.every [delay = "
-                .. delay .. "]")
-
+        log_notice("fallback to ngx.timer.every [delay = " .. delay .. "]")
         local ok, err = ngx_timer_at(delay, callback, ...)
         return ok ~= nil, err
     end
@@ -571,10 +569,8 @@ function _M:every(name, callback, interval, ...)
     if interval >= self.max_expire
         or interval < self.opt.resolution then
 
-        ngx_log(ngx_NOTICE,
-                "fallback to ngx.timer.every [interval = "
-                .. interval .. "]")
-
+        log_notice("fallback to ngx.timer.every [interval = "
+            .. interval .. "]")
         local ok, err = ngx_timer_every(interval, callback, ...)
         return ok ~= nil, err
     end
