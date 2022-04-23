@@ -492,10 +492,11 @@ end
 
 
 function _M:start()
-    local ok, err
+    ngx.update_time()
+    self.wheels.expected_time = ngx_now()
 
     if not self.is_all_threads_created then
-        ok, err = create_all_threads_atomic(self, 5)
+        local ok, err = create_all_threads_atomic(self, 5)
 
         if not ok then
             return err, "falied to start: " .. err
@@ -504,7 +505,6 @@ function _M:start()
         self.is_all_threads_created = true
     end
 
-    self.wheels.expected_time = nil
     self.enable = true
 
     return true, nil

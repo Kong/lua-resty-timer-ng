@@ -78,6 +78,8 @@ end
 
 
 function _M:sync_time()
+    assert(self.expected_time ~= nil)
+
     local lowest_wheel = self.lowest_wheel
     local resolution = self.resolution
 
@@ -86,11 +88,6 @@ function _M:sync_time()
 
     ngx_update_time()
     self.real_time = ngx_now()
-
-    if not self.expected_time then
-        self.expected_time = self.real_time
-        return
-    end
 
     if utils.float_compare(self.real_time, self.expected_time) <= 0 then
         -- This could be caused by a floating-point error
