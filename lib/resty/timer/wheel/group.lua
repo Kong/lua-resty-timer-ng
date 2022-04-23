@@ -87,6 +87,11 @@ function _M:sync_time()
     ngx_update_time()
     self.real_time = ngx_now()
 
+    if not self.expected_time then
+        self.expected_time = self.real_time
+        return
+    end
+
     if utils.float_compare(self.real_time, self.expected_time) <= 0 then
         -- This could be caused by a floating-point error
         -- or by NTP changing the time to an earlier time.
@@ -125,7 +130,7 @@ function _M.new(wheel_setting, resolution)
         real_time = 0,
 
         -- time of last update of wheel-group status
-        expected_time = 0,
+        expected_time = nil,
 
         -- Why use two queues?
         -- Because a zero-delay timer may create another zero-delay timer,

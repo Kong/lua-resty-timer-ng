@@ -28,7 +28,7 @@ local meta_table = {
 }
 
 
-local function callback_wraper(premature, self)
+local function callback_wrapper(premature, self)
     ngx_log(ngx_NOTICE, string_format("thread %s has been started",
                                       self.id))
 
@@ -64,20 +64,27 @@ local function callback_wraper(premature, self)
         self_callback(table_unpack(argv, 1, argc))
 
         if self.counter.runs > restart_thread_after_runs then
+            self.counter.runs = 0
+
             -- Since the native timer only releases resources
             -- when it is destroyed,
             -- including resources created by `job:execute()`
             -- it needs to be destroyed and recreated periodically.
-            ok, err = ngx_timer_at(0, callback_wraper, self)
+            ok, err = ngx_timer_at(0, callback_wrapper, self)
 
-            if not ok then
+            if ok then
+                ngx_log(ngx_NOTICE, string_format(
+                    "already created the new thread %s, "
+                 .. "waiting for the old thread to exit",
+                    self.id
+                ))
+                break
+
+            else
                 ngx_log(ngx_ERR, string_format(
                     "failed to restart thread %s: %s",
                     self.id, err
                 ))
-
-            else
-                break
             end
 
         end
@@ -93,7 +100,7 @@ end
 
 
 function _M:spawn()
-    local ok, err = ngx_timer_at(0, callback_wraper, self)
+    local ok, err = ngx_timer_at(0, callback_wrapper, self)
     return ok ~= nil and ok ~= false, err
 end
 
