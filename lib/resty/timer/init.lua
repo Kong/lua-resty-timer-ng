@@ -27,7 +27,6 @@ local ngx_timer_at = ngx.timer.at
 local ngx_timer_every = ngx.timer.every
 local ngx_sleep = ngx.sleep
 local ngx_now = ngx.now
-local ngx_update_time = ngx.update_time
 
 local pairs = pairs
 local ipairs = ipairs
@@ -505,10 +504,7 @@ function _M:start()
         self.is_all_threads_created = true
     end
 
-    ngx_update_time()
-    self.wheels.real_time = ngx_now()
-    self.wheels.expected_time = self.wheels.real_time
-
+    self.wheels.expected_time = nil
     self.enable = true
 
     return true, nil
