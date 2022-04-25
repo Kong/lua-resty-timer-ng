@@ -1,13 +1,6 @@
 local math_pow = math.pow
 local math_floor = math.floor
 
-local ngx = ngx
-
--- luacheck: push ignore
-local ngx_log = ngx.log
-local ngx_ERR = ngx.ERR
--- luacheck: pop
-
 local pcall = pcall
 local pairs = pairs
 local next = next
@@ -86,7 +79,9 @@ function _M.assert(v, message)
 end
 
 
+-- luacheck: push ignore
 local assert = _M.assert
+-- luacheck: pop
 
 
 -- get average

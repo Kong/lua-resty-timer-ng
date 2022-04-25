@@ -1,26 +1,32 @@
 local utils = require("resty.timer.utils")
 local wheel = require("resty.timer.wheel")
 
+-- luacheck: push ignore
+local ngx_log = ngx.log
+local ngx_STDERR = ngx.STDERR
+local ngx_EMERG = ngx.EMERG
+local ngx_ALERT = ngx.ALERT
+local ngx_CRIT = ngx.CRIT
+local ngx_ERR = ngx.ERR
+local ngx_WARN = ngx.WARN
+local ngx_NOTICE = ngx.NOTICE
+local ngx_INFO = ngx.INFO
+local ngx_DEBUG = ngx.DEBUG
+-- luacheck: pop
+
+-- luacheck: push ignore
+local assert = utils.assert
+-- luacheck: pop
+
 local table_insert = table.insert
 
 local string_format = string.format
-
-local ngx = ngx
-
--- luacheck: push ignore
-local ngx_log = ngx.log
-local ngx_ERR = ngx.ERR
--- luacheck: pop
 
 local ngx_now = ngx.now
 local ngx_update_time = ngx.update_time
 
 local ipairs = ipairs
 local setmetatable = setmetatable
-
--- luacheck: push ignore
-local assert = utils.assert
--- luacheck: pop
 
 local _M = {}
 
