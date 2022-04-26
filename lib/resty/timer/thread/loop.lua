@@ -98,7 +98,31 @@ local meta_table = {
 }
 
 
+local function nop_init()
+    return ACTION_CONTINUE
+end
 
+local function nop_before()
+    return ACTION_CONTINUE
+end
+
+local function nop_loop_body()
+    return ACTION_CONTINUE
+end
+
+local function nop_after()
+    return ACTION_CONTINUE
+end
+
+local function nop_finally()
+    return ACTION_CONTINUE
+end
+
+
+---exec phase_handler and handle its result
+---@param self table
+---@param phase_handler function self.init/before/loop_body/after/finally
+---@return boolean need_to_exit_thread
 local function do_phase_handler(self, phase_handler)
     local action, err = phase_handler()
     local log_format = self.log_format_map[phase_handler][action]
@@ -178,11 +202,6 @@ local function callback_wrapper(self, check_worker_exiting, callback, ...)
 end
 
 
-local function nop()
-    return ACTION_CONTINUE
-end
-
-
 local function loop_wrapper(premature, self)
     if premature then
         return
@@ -196,25 +215,22 @@ local function loop_wrapper(premature, self)
     local loop_body = self.loop_body
     local after = self.after
 
-    if do_phase_handler(self, self.init) then
-        goto finally
-    end
+    if not do_phase_handler(self, self.init) then
+        while not ngx_worker_exiting() and not self._kill do
+            if do_phase_handler(self, before) then
+                break
+            end
 
-    while not ngx_worker_exiting() and not self._kill do
-        if do_phase_handler(self, before) then
-            break
-        end
+            if do_phase_handler(self, loop_body) then
+                break
+            end
 
-        if do_phase_handler(self, loop_body) then
-            break
-        end
-
-        if do_phase_handler(self, after) then
-            break
+            if do_phase_handler(self, after) then
+                break
+            end
         end
     end
 
-    ::finally::
 
     do_phase_handler(self, self.finally)
 
@@ -263,11 +279,11 @@ function _M.new(name, options)
         name = tostring(name),
         context = {},
         _kill = false,
-        init = nop,
-        before = nop,
-        loop_body = nop,
-        after = nop,
-        finally = nop,
+        init = nop_init,
+        before = nop_before,
+        loop_body = nop_loop_body,
+        after = nop_after,
+        finally = nop_finally,
     }
 
     local check_worker_exiting = true
@@ -314,57 +330,42 @@ function _M.new(name, options)
     end
 
 
-    self.log_format_map = {}
+    self.log_format_map = {
+        [self.init] = {
+            [ACTION_ERROR]                  = LOG_FORMAT_ERROR_INIT,
+            [ACTION_EXIT]                   = LOG_FORMAT_EXIT_INIT,
+            [LOG_FORMAT_EXIT_WITH_MSG_INIT] = LOG_FORMAT_EXIT_WITH_MSG_INIT,
+            [ACTION_RESTART]                = LOG_FORMAT_RESTART_INIT,
+        },
 
-    self.log_format_map[self.init] = {}
-    self.log_format_map[self.init][ACTION_ERROR] =
-        LOG_FORMAT_ERROR_INIT
-    self.log_format_map[self.init][ACTION_EXIT] =
-        LOG_FORMAT_EXIT_INIT
-    self.log_format_map[self.init][ACTION_EXIT_WITH_MSG] =
-        LOG_FORMAT_EXIT_WITH_MSG_INIT
-    self.log_format_map[self.init][ACTION_RESTART] =
-        LOG_FORMAT_RESTART_INIT
+        [self.before] = {
+            [ACTION_ERROR]                  = LOG_FORMAT_ERROR_BEFORE,
+            [ACTION_EXIT]                   = LOG_FORMAT_EXIT_BEFORE,
+            [LOG_FORMAT_EXIT_WITH_MSG_INIT] = LOG_FORMAT_EXIT_WITH_MSG_BEFORE,
+            [ACTION_RESTART]                = LOG_FORMAT_RESTART_BEFORE,
+        },
 
-    self.log_format_map[self.before] = {}
-    self.log_format_map[self.before][ACTION_ERROR] =
-        LOG_FORMAT_ERROR_BEFORE
-    self.log_format_map[self.before][ACTION_EXIT] =
-        LOG_FORMAT_EXIT_BEFORE
-    self.log_format_map[self.before][ACTION_EXIT_WITH_MSG] =
-        LOG_FORMAT_EXIT_WITH_MSG_BEFORE
-    self.log_format_map[self.before][ACTION_RESTART] =
-        LOG_FORMAT_RESTART_BEFORE
+        [self.loop_body] = {
+            [ACTION_ERROR]                  = LOG_FORMAT_ERROR_LOOP_BODY,
+            [ACTION_EXIT]                   = LOG_FORMAT_EXIT_LOOP_BODY,
+            [LOG_FORMAT_EXIT_WITH_MSG_INIT] = LOG_FORMAT_EXIT_WITH_MSG_LOOP_BODY,
+            [ACTION_RESTART]                = LOG_FORMAT_RESTART_LOOP_BODY,
+        },
 
-    self.log_format_map[self.loop_body] = {}
-    self.log_format_map[self.loop_body][ACTION_ERROR] =
-        LOG_FORMAT_ERROR_LOOP_BODY
-    self.log_format_map[self.loop_body][ACTION_EXIT] =
-        LOG_FORMAT_EXIT_LOOP_BODY
-    self.log_format_map[self.loop_body][ACTION_EXIT_WITH_MSG] =
-        LOG_FORMAT_EXIT_WITH_MSG_LOOP_BODY
-    self.log_format_map[self.loop_body][ACTION_RESTART] =
-        LOG_FORMAT_RESTART_LOOP_BODY
+        [self.after] = {
+            [ACTION_ERROR]                  = LOG_FORMAT_ERROR_AFTER,
+            [ACTION_EXIT]                   = LOG_FORMAT_EXIT_AFTER,
+            [LOG_FORMAT_EXIT_WITH_MSG_INIT] = LOG_FORMAT_EXIT_WITH_MSG_AFTER,
+            [ACTION_RESTART]                = LOG_FORMAT_RESTART_AFTER,
+        },
 
-    self.log_format_map[self.after] = {}
-    self.log_format_map[self.after][ACTION_ERROR] =
-        LOG_FORMAT_ERROR_AFTER
-    self.log_format_map[self.after][ACTION_EXIT] =
-        LOG_FORMAT_EXIT_AFTER
-    self.log_format_map[self.after][ACTION_EXIT_WITH_MSG] =
-        LOG_FORMAT_EXIT_WITH_MSG_AFTER
-    self.log_format_map[self.after][ACTION_RESTART] =
-        LOG_FORMAT_RESTART_AFTER
-
-    self.log_format_map[self.finally] = {}
-    self.log_format_map[self.finally][ACTION_ERROR] =
-        LOG_FORMAT_ERROR_FINALLY
-    self.log_format_map[self.finally][ACTION_EXIT] =
-        LOG_FORMAT_EXIT_FINALLY
-    self.log_format_map[self.finally][ACTION_EXIT_WITH_MSG] =
-        LOG_FORMAT_EXIT_WITH_MSG_FINALLY
-    self.log_format_map[self.finally][ACTION_RESTART] =
-        LOG_FORMAT_RESTART_FINALLY
+        [self.finally] = {
+            [ACTION_ERROR]                  = LOG_FORMAT_ERROR_FINALLY,
+            [ACTION_EXIT]                   = LOG_FORMAT_EXIT_FINALLY,
+            [LOG_FORMAT_EXIT_WITH_MSG_INIT] = LOG_FORMAT_EXIT_WITH_MSG_FINALLY,
+            [ACTION_RESTART]                = LOG_FORMAT_RESTART_FINALLY,
+        },
+    }
 
     return setmetatable(self, meta_table)
 end
