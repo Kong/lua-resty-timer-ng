@@ -332,38 +332,38 @@ function _M.new(name, options)
 
     self.log_format_map = {
         [self.init] = {
-            [ACTION_ERROR]                  = LOG_FORMAT_ERROR_INIT,
-            [ACTION_EXIT]                   = LOG_FORMAT_EXIT_INIT,
-            [LOG_FORMAT_EXIT_WITH_MSG_INIT] = LOG_FORMAT_EXIT_WITH_MSG_INIT,
-            [ACTION_RESTART]                = LOG_FORMAT_RESTART_INIT,
+            [ACTION_ERROR]              = LOG_FORMAT_ERROR_INIT,
+            [ACTION_EXIT]               = LOG_FORMAT_EXIT_INIT,
+            [ACTION_EXIT_WITH_MSG]      = LOG_FORMAT_EXIT_WITH_MSG_INIT,
+            [ACTION_RESTART]            = LOG_FORMAT_RESTART_INIT,
         },
 
         [self.before] = {
-            [ACTION_ERROR]                  = LOG_FORMAT_ERROR_BEFORE,
-            [ACTION_EXIT]                   = LOG_FORMAT_EXIT_BEFORE,
-            [LOG_FORMAT_EXIT_WITH_MSG_INIT] = LOG_FORMAT_EXIT_WITH_MSG_BEFORE,
-            [ACTION_RESTART]                = LOG_FORMAT_RESTART_BEFORE,
+            [ACTION_ERROR]              = LOG_FORMAT_ERROR_BEFORE,
+            [ACTION_EXIT]               = LOG_FORMAT_EXIT_BEFORE,
+            [ACTION_EXIT_WITH_MSG]      = LOG_FORMAT_EXIT_WITH_MSG_BEFORE,
+            [ACTION_RESTART]            = LOG_FORMAT_RESTART_BEFORE,
         },
 
         [self.loop_body] = {
-            [ACTION_ERROR]                  = LOG_FORMAT_ERROR_LOOP_BODY,
-            [ACTION_EXIT]                   = LOG_FORMAT_EXIT_LOOP_BODY,
-            [LOG_FORMAT_EXIT_WITH_MSG_INIT] = LOG_FORMAT_EXIT_WITH_MSG_LOOP_BODY,
-            [ACTION_RESTART]                = LOG_FORMAT_RESTART_LOOP_BODY,
+            [ACTION_ERROR]              = LOG_FORMAT_ERROR_LOOP_BODY,
+            [ACTION_EXIT]               = LOG_FORMAT_EXIT_LOOP_BODY,
+            [ACTION_EXIT_WITH_MSG]      = LOG_FORMAT_EXIT_WITH_MSG_LOOP_BODY,
+            [ACTION_RESTART]            = LOG_FORMAT_RESTART_LOOP_BODY,
         },
 
         [self.after] = {
-            [ACTION_ERROR]                  = LOG_FORMAT_ERROR_AFTER,
-            [ACTION_EXIT]                   = LOG_FORMAT_EXIT_AFTER,
-            [LOG_FORMAT_EXIT_WITH_MSG_INIT] = LOG_FORMAT_EXIT_WITH_MSG_AFTER,
-            [ACTION_RESTART]                = LOG_FORMAT_RESTART_AFTER,
+            [ACTION_ERROR]              = LOG_FORMAT_ERROR_AFTER,
+            [ACTION_EXIT]               = LOG_FORMAT_EXIT_AFTER,
+            [ACTION_EXIT_WITH_MSG]      = LOG_FORMAT_EXIT_WITH_MSG_AFTER,
+            [ACTION_RESTART]            = LOG_FORMAT_RESTART_AFTER,
         },
 
         [self.finally] = {
-            [ACTION_ERROR]                  = LOG_FORMAT_ERROR_FINALLY,
-            [ACTION_EXIT]                   = LOG_FORMAT_EXIT_FINALLY,
-            [LOG_FORMAT_EXIT_WITH_MSG_INIT] = LOG_FORMAT_EXIT_WITH_MSG_FINALLY,
-            [ACTION_RESTART]                = LOG_FORMAT_RESTART_FINALLY,
+            [ACTION_ERROR]              = LOG_FORMAT_ERROR_FINALLY,
+            [ACTION_EXIT]               = LOG_FORMAT_EXIT_FINALLY,
+            [ACTION_EXIT_WITH_MSG]      = LOG_FORMAT_EXIT_WITH_MSG_FINALLY,
+            [ACTION_RESTART]            = LOG_FORMAT_RESTART_FINALLY,
         },
     }
 
