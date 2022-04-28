@@ -31,6 +31,8 @@ local ngx_timer_every = ngx.timer.every
 local ngx_now = ngx.now
 local ngx_update_time = ngx.update_time
 
+local table_insert = table.insert
+
 local pairs = pairs
 local ipairs = ipairs
 local type = type
@@ -60,9 +62,10 @@ local function create(self, name, callback, delay, once, argc, argv)
                                once, argc, argv)
     job:enable()
     jobs[name] = job
+    self.counter.total = self.counter.total + 1
 
     if job:is_immediate() then
-        wheels.ready_jobs[name] = job
+        table_insert(wheels.ready_jobs, job)
         self.thread_group:woke_up_mover_thread()
 
         return true, nil
@@ -212,6 +215,12 @@ function _M.new(options)
     timer_sys.is_first_start = true
 
     timer_sys.wheels = wheel_group.new(opt.wheel_setting, opt.resolution)
+
+    timer_sys.counter = {
+        runs = 0,
+        running = 0,
+        total = 0,
+    }
 
     return setmetatable(timer_sys, { __index = _M })
 end
@@ -365,6 +374,7 @@ function _M:cancel(name)
 
     job:cancel()
     jobs[name] = nil
+    self.counter.total = self.counter.total - 1
 
     return true, nil
 end
@@ -375,16 +385,20 @@ function _M:stats()
     local ready_jobs = self.wheels.ready_jobs
 
     local sys = {
-        running = 0,
-        pending = 0,
+        running = self.counter.running,
+        pending = #pending_jobs + #ready_jobs,
         waiting = 0,
+        total = self.counter.total,
+        runs = self.counter.runs
     }
+
+    sys.waiting = sys.total - sys.running - sys.pending
 
     -- TODO: use `utils.table_new`
     local jobs = {}
 
     for name, job in pairs(self.jobs) do
-        if job.running then
+        if job:is_running() then
             sys.running = sys.running + 1
 
         elseif pending_jobs[name] or ready_jobs[name] then

@@ -1,25 +1,11 @@
 local math_pow = math.pow
 local math_floor = math.floor
 
+local table_insert = table.insert
+
+local ipairs = ipairs
 local pcall = pcall
 local pairs = pairs
-local next = next
-
-
-local table_isempty
-
-do
-    local has_table_isempty, _table_isempty = pcall(require, "table.isempty")
-
-    if has_table_isempty then
-        table_isempty = _table_isempty
-
-    else
-        table_isempty = function(tbl)
-            return next(tbl) == nil
-        end
-    end
-end
 
 
 local table_new
@@ -104,25 +90,20 @@ function _M.table_new(narray, nhash)
 end
 
 
-function _M.table_is_empty(tbl)
-    if not tbl then
-        return true
-    end
-
-    return table_isempty(tbl)
+function _M.array_isempty(arr)
+    return #arr == 0
 end
 
 
-function _M.table_merge(dst, src)
+function _M.array_merge(dst, src)
     assert(dst)
 
     if not src then
         return
     end
 
-    for k, v in pairs(src) do
-        assert(not dst[k])
-        dst[k] = v
+    for _, v in ipairs(src) do
+        table_insert(dst, v)
     end
 end
 
@@ -159,16 +140,15 @@ function _M.print_queue(self)
 
     local str = "\n======== BEGIN PENDING ========" .. ngx.now() .. "\n"
 
-    for _, v in pairs(pending_jobs) do
+    for _, v in ipairs(pending_jobs) do
         str = str .. tostring(v) .. "\n"
     end
 
     str = str .. "======== END PENDING ========\n"
 
-    str = str .. "======== BEGIN READY ========"
-       .. tostring(self.semaphore_mover:count()) .. "\n"
+    str = str .. "======== BEGIN READY ========\n"
 
-    for _, v in pairs(ready_jobs) do
+    for _, v in ipairs(ready_jobs) do
         str = str .. tostring(v) .. "\n"
     end
 
@@ -191,7 +171,7 @@ function _M.print_wheel(wheels)
         str = str .. "nelts = " .. wheel.nelts .. "\n"
 
         for i, v in ipairs(wheel.slots) do
-            for _, value in pairs(v) do
+            for _, value in ipairs(v) do
                 str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
             end
         end

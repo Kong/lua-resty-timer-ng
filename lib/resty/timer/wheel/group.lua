@@ -44,7 +44,7 @@ function _M:get_closest()
 
     -- `lowest_wheel.nelts - 1` means
     -- ignore the current slot
-    for i = 1, lowest_wheel.nelts do
+    for i = 1, lowest_wheel.nelts - 1 do
         local pointer, cycles =
             lowest_wheel:cal_pointer(cur_msec_pointer, i)
 
@@ -65,7 +65,7 @@ function _M:get_closest()
 
         local jobs = lowest_wheel:get_jobs_by_pointer(pointer)
 
-        if not utils.table_is_empty(jobs) then
+        if not utils.array_isempty(jobs) then
             break
         end
     end
@@ -78,7 +78,7 @@ end
 -- * add all expired jobs from wheels to `wheels.ready_jobs`
 function _M:fetch_all_expired_jobs()
     for _, _wheel in ipairs(self.wheels) do
-        utils.table_merge(self.ready_jobs, _wheel:fetch_all_expired_jobs())
+        utils.array_merge(self.ready_jobs, _wheel:fetch_all_expired_jobs())
     end
 end
 

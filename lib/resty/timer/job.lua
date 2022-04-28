@@ -135,6 +135,11 @@ function _M:enable()
 end
 
 
+function _M:is_running()
+    return self._running
+end
+
+
 function _M:is_enabled()
     return self._enable
 end
@@ -151,7 +156,9 @@ end
 
 
 function _M:is_runnable()
-    return self._enable and not self._cancel and not self._running
+    return self:is_enabled()       and
+           not self:is_cancelled() and
+           not self:is_running()
 end
 
 

@@ -19,6 +19,8 @@ local assert = utils.assert
 
 local math_floor = math.floor
 
+local table_insert = table.insert
+
 local setmetatable = setmetatable
 
 local _M = {}
@@ -110,18 +112,7 @@ function _M:insert(job)
     local next_pointer = job:get_next_pointer(self.id)
 
     if next_pointer then
-        local _job = self:get_jobs_by_pointer(next_pointer)[job.name]
-
-        if not _job
-           or (_job:is_cancelled() and not _job:is_enabled())
-        then
-
-            self.slots[next_pointer][job.name] = job
-
-        else
-            return false, "already exists job"
-        end
-
+        table_insert(self.slots[next_pointer], job)
         return true, nil
     end
 
@@ -131,7 +122,7 @@ function _M:insert(job)
         return lower_wheel:insert(job)
     end
 
-    self.expired_jobs[job.name] = job
+    table_insert(self.expired_jobs, job)
 
     return true, nil
 end
@@ -168,7 +159,7 @@ function _M:spin_pointer(offset)
             if lower_wheel then
                 lower_wheel:insert(job)
             else
-                expired_jobs[name] = job
+                table_insert(expired_jobs, job)
             end
         end
 
@@ -191,7 +182,7 @@ end
 ---return all expired jobs, or return nil.
 ---@return table jobs_or_nil
 function _M:fetch_all_expired_jobs()
-    if utils.table_is_empty(self.expired_jobs) then
+    if utils.array_isempty(self.expired_jobs) then
         return nil
     end
 
@@ -223,12 +214,8 @@ function _M.new(id, nelts)
         expired_jobs = {},
     }
 
-    local meta_table_for_each_slot = {
-        __mode = "v",
-    }
-
     for i = 1, self.nelts do
-        self.slots[i] = setmetatable({ }, meta_table_for_each_slot)
+        self.slots[i] = {}
     end
 
     return setmetatable(self, meta_table)

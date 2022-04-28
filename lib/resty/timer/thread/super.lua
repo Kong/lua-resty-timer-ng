@@ -66,7 +66,7 @@ local function thread_body(context, self)
         -- update the status of the wheel group
         wheels:sync_time()
 
-        if not utils.table_is_empty(wheels.ready_jobs) then
+        if not utils.array_isempty(wheels.ready_jobs) then
             self.wake_up_mover_thread()
         end
     end

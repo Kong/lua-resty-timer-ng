@@ -24,6 +24,8 @@ local ngx_worker_exiting = ngx.worker.exiting
 
 local string_format = string.format
 
+local table_remove = table.remove
+
 local setmetatable = setmetatable
 
 local _M = {}
@@ -58,24 +60,25 @@ end
 
 local function thread_body(context, self)
     local timer_sys = self.timer_sys
+    local counter = timer_sys.counter
     local wheels = timer_sys.wheels
-    local jobs = timer_sys.jobs
 
-    while not utils.table_is_empty(wheels.pending_jobs) and
+    while not utils.array_isempty(wheels.pending_jobs) and
           not ngx_worker_exiting()
     do
-        local _, job = next(wheels.pending_jobs)
-
-        wheels.pending_jobs[job.name] = nil
+        local job = table_remove(wheels.pending_jobs)
 
         if not job:is_runnable() then
             goto continue
         end
 
+        counter.running = counter.running + 1
         job:execute()
+        counter.running = counter.running - 1
+        counter.runs = counter.runs + 1
 
         if job:is_oneshot() then
-            jobs[job.name] = nil
+            timer_sys:cancel(job.name)
             goto continue
         end
 
@@ -89,7 +92,7 @@ local function thread_body(context, self)
         ::continue::
     end
 
-    if not utils.table_is_empty(wheels.ready_jobs) then
+    if not utils.array_isempty(wheels.ready_jobs) then
         self.wake_up_mover_thread()
     end
 
