@@ -259,7 +259,7 @@ function _M:destroy()
 end
 
 
-function _M:once(name, callback, delay, ...)
+function _M:once(name, delay, callback, ...)
     assert(self.enable, "the timer module is not started")
     assert(type(callback) == "function", "expected `callback` to be a function")
 
@@ -289,7 +289,7 @@ function _M:once(name, callback, delay, ...)
 end
 
 
-function _M:every(name, callback, interval, ...)
+function _M:every(name, interval, callback, ...)
     assert(self.enable, "the timer module is not started")
     assert(type(callback) == "function", "expected `callback` to be a function")
 

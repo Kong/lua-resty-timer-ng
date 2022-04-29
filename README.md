@@ -114,7 +114,7 @@ Suspend the timer system and the expiration of each timer will be frozen.
 
 ### once
 
-**syntax**: *name_or_false, err = timer:once(name, callback, delay, ...)*
+**syntax**: *name_or_false, err = timer:once(name, delay, callback, ...)*
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
@@ -128,7 +128,7 @@ If you have called `timer:pause()`, you must call this function after you have c
 
 ### every
 
-**syntax**: *name_or_false, err = timer:every(name, callback, interval, ...)*
+**syntax**: *name_or_false, err = timer:every(name, interval, callback, ...)*
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 

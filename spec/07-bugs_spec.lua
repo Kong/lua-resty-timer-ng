@@ -33,10 +33,10 @@ insulate("other bugs | ", function ()
 
     it("No.1 create a timer before the method `start()' is called", function ()
         assert.has.errors(function()
-            timer:once(nil, function() end, 10)
+            timer:once(nil, 10, function() end)
         end)
         assert.has.errors(function()
-            timer:every(nil, function() end, 10)
+            timer:every(nil, 10, function() end)
         end)
     end)
 end)
@@ -71,13 +71,13 @@ insulate("bugs of every timer | ", function ()
     it("No.1 overlap", function ()
         local flag = false
         local record = 0
-        timer:every(nil, function (...)
+        timer:every(nil, 0.3, function (...)
             if now() - record < 0.3 then
                 flag = true
             end
             record = now()
             sleep(1)
-        end, 0.3)
+        end)
 
         ngx.sleep((0.3 + 1) * 10)
 

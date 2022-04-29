@@ -51,7 +51,7 @@ insulate("system start -> freeze -> start | ", function ()
 
     it("once timer", function ()
         assert.has_no.errors(function ()
-            local ok, _ = timer:once(TIMER_NAME_ONCE, callback, 1, tbl)
+            local ok, _ = timer:once(TIMER_NAME_ONCE, 1, callback, tbl)
             assert.is_truthy(ok)
         end)
 
@@ -68,7 +68,7 @@ insulate("system start -> freeze -> start | ", function ()
 
     it("every create -> pause -> run -> cancel", function ()
         assert.has_no.errors(function ()
-            local ok, _ = timer:every(TIMER_NAME_EVERY, callback, 1, tbl)
+            local ok, _ = timer:every(TIMER_NAME_EVERY, 1, callback, tbl)
             assert.is_truthy(ok)
         end)
 

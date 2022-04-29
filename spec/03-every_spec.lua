@@ -56,24 +56,24 @@ insulate("create a every timer with invalid arguments | ", function ()
 
     it("callback is nil", function ()
         assert.has.errors(function ()
-            timer:every(helper.TIMER_NAME_EVERT, nil, 1)
+            timer:every(helper.TIMER_NAME_EVERT, 1, nil)
         end)
     end)
 
     it("callback is not a function", function ()
         assert.has.errors(function ()
-            timer:every(helper.TIMER_NAME_EVERT, "", 1)
+            timer:every(helper.TIMER_NAME_EVERT, 1, "")
         end)
     end)
 
 
     it("interval <= 0", function ()
         assert.has.errors(function ()
-            timer:every(helper.TIMER_NAME_EVERT, empty_callback, 0)
+            timer:every(helper.TIMER_NAME_EVERT, 0, empty_callback)
         end)
 
         assert.has.errors(function ()
-            timer:every(helper.TIMER_NAME_EVERT, empty_callback, -1)
+            timer:every(helper.TIMER_NAME_EVERT, -1, empty_callback)
         end)
     end)
 
@@ -136,7 +136,7 @@ insulate("create a every timer #" .. strategy .. " | ", function ()
             assert.has_no.errors(function ()
                 local ok, _ =
                     timer:every(helper.TIMER_NAME_EVERT,
-                                callback, interval, tbl, sleep_second)
+                                interval, callback, tbl, sleep_second)
                 assert.is_truthy(ok)
             end)
 
