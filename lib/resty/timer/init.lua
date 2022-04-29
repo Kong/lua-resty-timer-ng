@@ -38,10 +38,23 @@ local ipairs = ipairs
 local type = type
 local select = select
 
+local TIMER_ONCE = true
+local TIMER_REPEATED = false
+
 local _M = {}
 
 
-local function create(self, name, callback, delay, once, argc, argv)
+---create a timed task and insert it into the wheel group
+---@param self table self
+---@param name any name of this timer
+---@param callback function callback of this timer
+---@param delay number how many seconds to expire
+---@param timer_type boolean TIMER_ONCE or TIMER_REPEATED
+---@param argc integer the number of arguments to the callback function
+---@param argv table arguments to the callback function
+---@return boolean name_or_false the name of the timer if ok, otherwise false
+---@return string err error message
+local function create(self, name, callback, delay, timer_type, argc, argv)
     local wheels = self.wheels
     local jobs = self.jobs
     if not name then
@@ -59,7 +72,7 @@ local function create(self, name, callback, delay, once, argc, argv)
 
     local job = job_module.new(wheels, name,
                                callback, delay,
-                               once, argc, argv)
+                               timer_type, argc, argv)
     job:enable()
     jobs[name] = job
     self.counter.total = self.counter.total + 1
@@ -68,7 +81,7 @@ local function create(self, name, callback, delay, once, argc, argv)
         table_insert(wheels.ready_jobs, job)
         self.thread_group:woke_up_mover_thread()
 
-        return true, nil
+        return name, nil
     end
 
     local ok, err = wheels:insert_job(job)
@@ -283,7 +296,7 @@ function _M:once(name, delay, callback, ...)
     -- TODO: desc the logic and add related tests
     local name_or_false, err =
         create(self, name, callback, delay,
-               true, select("#", ...), { ... })
+               TIMER_ONCE, select("#", ...), { ... })
 
     return name_or_false, err
 end
@@ -311,7 +324,7 @@ function _M:every(name, interval, callback, ...)
 
     local name_or_false, err =
         create(self, name, callback, interval,
-               false, select("#", ...), { ... })
+               TIMER_REPEATED, select("#", ...), { ... })
 
     return name_or_false, err
 end
