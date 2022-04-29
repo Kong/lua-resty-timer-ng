@@ -183,25 +183,20 @@ end
 
 
 function _M.new(wheels, name, callback, delay, once, argc, argv)
-    local delay_origin = delay
-    local immediate = false
-
-    if delay == 0 then
-        immediate = true
-    end
-
     local self = {
         _enable = true,
         _cancel = false,
         _running = false,
-        _immediate = immediate,
+        _immediate = delay == 0,
         name = name,
         callback = callback,
-        delay = delay_origin,
+        delay = delay,
         steps = utils.convert_second_to_step(delay, wheels.resolution),
 
+        -- a table
         -- map from `wheel_id` to `next_pointer`
-        next_pointers = {},
+        -- will be assigned by `self:re_cal_next_pointer()`
+        next_pointers = nil,
 
         _once = once,
         argc = argc,
@@ -226,7 +221,7 @@ function _M.new(wheels, name, callback, delay, once, argc, argv)
 
     job_create_meta(self)
 
-    if not immediate then
+    if not self.immediate then
         job_re_cal_next_pointer(self, wheels)
     end
 
