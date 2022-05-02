@@ -1,5 +1,26 @@
 # lua-resty-timer-ng
 
+A scalable timer library for OpenResty.
+
+- [lua-resty-timer-ng](#lua-resty-timer-ng)
+  - [Status](#status)
+  - [Synopsis](#synopsis)
+  - [Description](#description)
+  - [Statistics](#statistics)
+  - [History](#history)
+  - [Methods](#methods)
+    - [new](#new)
+    - [start](#start)
+    - [freeze](#freeze)
+    - [once](#once)
+    - [every](#every)
+    - [run](#run)
+    - [pause](#pause)
+    - [cancel](#cancel)
+    - [destroy](#destroy)
+    - [is_managed](#is_managed)
+    - [stats](#stats)
+
 ## Status
 
 This library is under development.
@@ -23,7 +44,7 @@ http {
             threads = 10,
             restart_thread_after_runs = 50,
         }
-        timer_module.configure(timer_sys, options)
+        timer_sys = timer_module.new(options)
 
         -- ‘premature’ is used to be compatible with existing callback functions and will be removed in the future
         local function callback_once(premature, ...)
@@ -37,26 +58,35 @@ http {
         end
 
         -- run after 100 ms
-        timer_sys:once("example-once", callback_once, 0.1)
+        local name, err = timer_sys:once("example-once", 0.1, callback_once)
+
+        if not name then
+            ngx.log(ngx.ERR, err)
+        end
 
         -- run every 1s
-        timer_sys:every("example-every", callback_every, 1)
+        name , err = timer_sys:every("example-every", 1, callback_every)
+
+        if not name then
+            ngx.log(ngx.ERR, err)
+        end
     }
 }
 ```
 
 ## Description
 
-This library is implemented using the timer wheel algorithm, 
-which uses the small number of timers created by OpenResty API `ngx.timer.at` to manage a large number of tasks.
+This system is based on the timer wheel algorithm.
+which uses the small number of timers 
+created by OpenResty API `ngx.timer.at` to manage a large number of timed tasks.
+
+In other words, it can reduce the number of fake requests.
 
 * Efficiently, create, pause, start and cancel a timer takes O(1) time.
 * Concurrency control, you can limit the number of threads.
 * Easy to debug
     * Get statistics such as maximum, minimum, average, and variance of the runtime for each timer.
     * Some information that is useful for debugging, such as where the timer was created and the call stack at that time.
-* If the expiration time is greater than 24 hours then the native timer is used.
-* If the expiration time is less than 100ms and not equal to `0` then the native timer is used.
 
 ## Statistics
 
@@ -90,11 +120,10 @@ local timer_sys = timer_module.configure(timer_sys, {
     -- number of threads
     threads = 10,
 
-    -- restart the LWP after it has run ‘recreate_interval’ tasks.
-    recreate_interval = 50
+    -- restart the LWP after it has run restart_thread_after_runs tasks.
+    restart_thread_after_runs = 50
 })
 ```
-
 
 ### start
 
@@ -181,6 +210,16 @@ Cancel a timer.
 
 **TODO**
 
+### is_managed
+
+**syntax**: *timer:is_managed(name)*
+
+**context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
+
+Return `true` if the specified timer is managed by this system, and `false` otherwise.
+
+* `name`: name of timer
+
 ### stats
 
 **syntax**: info, err = timer:stats()
@@ -205,7 +244,7 @@ end
 -- info.sys = {
 --     running = [number],      number of running timers
 --     pending = [number],      number of pending timers
---     waiting = [number]       number of unexpired timers
+--     waiting = [number],      number of unexpired timers
 -- }
 local sys_info = info.sys
 
@@ -250,6 +289,4 @@ for timer_name, timer in pairs(info.jobs) do
     --     variance = 12
     -- }
 end
-
-
 ```

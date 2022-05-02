@@ -292,8 +292,7 @@ function _M:once(name, delay, callback, ...)
 
         ngx_log(ngx_NOTICE, log)
 
-        local ok, err = ngx_timer_at(delay, callback, ...)
-        return ok ~= nil, err
+        return ngx_timer_at(delay, callback, ...)
     end
 
     -- TODO: desc the logic and add related tests
@@ -321,8 +320,7 @@ function _M:every(name, interval, callback, ...)
 
         ngx_log(ngx_NOTICE, log)
 
-        local ok, err = ngx_timer_every(interval, callback, ...)
-        return ok ~= nil, err
+        return ngx_timer_every(interval, callback, ...)
     end
 
     local name_or_false, err =
@@ -393,6 +391,11 @@ function _M:cancel(name)
     self.counter.total = self.counter.total - 1
 
     return true, nil
+end
+
+
+function _M:is_managed(name)
+    return self.jobs[name] ~= nil
 end
 
 
