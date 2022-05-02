@@ -403,9 +403,9 @@ function _M:stats()
     local sys = {
         running = self.counter.running,
         pending = #pending_jobs + #ready_jobs,
-        waiting = 0,
+        waiting = nil,
         total = self.counter.total,
-        runs = self.counter.runs
+        runs = self.counter.runs,
     }
 
     sys.waiting = sys.total - sys.running - sys.pending
@@ -414,16 +414,6 @@ function _M:stats()
     local jobs = {}
 
     for name, job in pairs(self.jobs) do
-        if job:is_running() then
-            sys.running = sys.running + 1
-
-        elseif pending_jobs[name] or ready_jobs[name] then
-            sys.pending = sys.pending + 1
-
-        else
-            sys.waiting = sys.waiting + 1
-        end
-
         local stats = job.stats
         jobs[name] = {
             name = name,
@@ -434,7 +424,6 @@ function _M:stats()
             last_err_msg = stats.last_err_msg,
         }
     end
-
 
     return {
         sys = sys,
