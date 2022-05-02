@@ -256,6 +256,9 @@ function _M:execute()
 
     else
         stats.last_err_msg = err
+        ngx_log(ngx_ERR,
+                string_format("[timer] failed to run timer %s: %s",
+                              self.name, err))
     end
 
     self._running = false

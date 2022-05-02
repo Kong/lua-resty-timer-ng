@@ -28,55 +28,55 @@ local setmetatable = setmetatable
 local error = error
 local pcall = pcall
 
-local LOG_FORMAT_SPAWN = "thread %s has been spawned"
+local LOG_FORMAT_SPAWN = "[timer] thread %s has been spawned"
 local LOG_FORMAT_ERROR_SPAWN = "failed to spawn thread %s: %s"
 
-local LOG_FORMAT_START = "thread %s has been started"
-local LOG_FORMAT_EXIT = "thread %s has been exited"
+local LOG_FORMAT_START = "[timer] thread %s has been started"
+local LOG_FORMAT_EXIT = "[timer] thread %s has been exited"
 
 local LOG_FORMAT_ERROR_INIT =
-    "thread %s will exits after initializing: %s"
+    "[timer] thread %s will exits after initializing: %s"
 local LOG_FORMAT_EXIT_INIT =
-    "thread %s will exits atfer initializing"
+    "[timer] thread %s will exits atfer initializing"
 local LOG_FORMAT_EXIT_WITH_MSG_INIT =
-    "thread %s will exits atfer initializing: %s"
+    "[timer] thread %s will exits atfer initializing: %s"
 local LOG_FORMAT_RESTART_INIT =
-    "thread %s will be restarted after initializing"
+    "[timer] thread %s will be restarted after initializing"
 local LOG_FORMAT_ERROR_BEFORE =
-    "thread %s will exits after the before_callback is executed: %s"
+    "[timer] thread %s will exits after the before_callback is executed: %s"
 local LOG_FORMAT_EXIT_BEFORE =
-    "thread %s will exits after the before_callback body is executed"
+    "[timer] thread %s will exits after the before_callback is executed"
 local LOG_FORMAT_EXIT_WITH_MSG_BEFORE =
-    "thread %s will exits after the before_callback body is executed: %s"
+    "[timer] thread %s will exits after the before_callback is executed: %s"
 local LOG_FORMAT_RESTART_BEFORE =
-    "thread %s will be restarted after the before_callback body is executed"
+    "[timer] thread %s will be restarted after the before_callback is executed"
 
 local LOG_FORMAT_ERROR_LOOP_BODY =
-    "thread %s will exits after the loop body is executed: %s"
+    "[timer] thread %s will exits after the loop body is executed: %s"
 local LOG_FORMAT_EXIT_LOOP_BODY =
-    "thread %s will exits after the loop body is executed"
+    "[timer] thread %s will exits after the loop body is executed"
 local LOG_FORMAT_EXIT_WITH_MSG_LOOP_BODY =
-    "thread %s will exits after the loop body is executed: %s"
+    "[timer] thread %s will exits after the loop body is executed: %s"
 local LOG_FORMAT_RESTART_LOOP_BODY =
-    "thread %s will be restarted after the loop body is executed"
+    "[timer] thread %s will be restarted after the loop body is executed"
 
 local LOG_FORMAT_ERROR_AFTER =
-    "thread %s will exits after the after_callback is executed: %s"
+    "[timer] thread %s will exits after the after_callback is executed: %s"
 local LOG_FORMAT_EXIT_AFTER =
-    "thread %s will exits after the after_callback body is executed"
+    "[timer] thread %s will exits after the after_callback is executed"
 local LOG_FORMAT_EXIT_WITH_MSG_AFTER =
-    "thread %s will exits after the after_callback body is executed: %s"
+    "[timer] thread %s will exits after the after_callback is executed: %s"
 local LOG_FORMAT_RESTART_AFTER =
-    "thread %s will be restarted after the after_callback body is executed"
+    "[timer] thread %s will be restarted after the after_callback is executed"
 
 local LOG_FORMAT_ERROR_FINALLY =
-        "thread %s will exits after the finally_callback is executed: %s"
+    "[timer] thread %s will exits after the finally_callback is executed: %s"
 local LOG_FORMAT_EXIT_FINALLY =
-        "thread %s will exits after the finally_callback is executed"
+    "[timer] thread %s will exits after the finally_callback is executed"
 local LOG_FORMAT_EXIT_WITH_MSG_FINALLY =
-    "thread %s will exits after the finally_callback is executed: %s"
+    "[timer] thread %s will exits after the finally_callback is executed: %s"
 local LOG_FORMAT_RESTART_FINALLY =
-    "thread %s will be restarted after the finally_callback body is executed"
+    "[timer] thread %s will be restarted after the finally_callback is executed"
 
 local ACTION_CONTINUE = 1
 local ACTION_ERROR = 2

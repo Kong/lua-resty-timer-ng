@@ -95,7 +95,7 @@ local function thread_after(context, self)
 
     if not ok and err ~= "timeout" then
         ngx_log(ngx_ERR,
-                "failed to wait semaphore: "
+                "[timer] failed to wait semaphore: "
              .. err)
     end
 

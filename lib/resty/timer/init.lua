@@ -287,7 +287,7 @@ function _M:once(name, delay, callback, ...)
     then
 
         local log = string_format(
-                        "fallback to ngx.timer.at [delay = %f]",
+                        "[timer] fallback to ngx.timer.at [delay = %f]",
                         delay)
 
         ngx_log(ngx_NOTICE, log)
@@ -316,7 +316,7 @@ function _M:every(name, interval, callback, ...)
         or interval < self.opt.resolution then
 
         local log = string_format(
-                        "fallback to ngx.timer.every [interval = %f]",
+                        "[timer] fallback to ngx.timer.every [interval = %f]",
                         interval)
 
         ngx_log(ngx_NOTICE, log)
