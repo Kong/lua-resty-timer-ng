@@ -17,6 +17,8 @@ local ngx_DEBUG = ngx.DEBUG
 local assert = utils.assert
 -- luacheck: pop
 
+local utils_array_isempty = utils.array_isempty
+
 local math_floor = math.floor
 
 local table_insert = table.insert
@@ -182,7 +184,7 @@ end
 ---return all expired jobs, or return nil.
 ---@return table jobs_or_nil
 function _M:fetch_all_expired_jobs()
-    if utils.array_isempty(self.expired_jobs) then
+    if utils_array_isempty(self.expired_jobs) then
         return nil
     end
 

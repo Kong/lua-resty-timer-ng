@@ -17,6 +17,11 @@ local ngx_DEBUG = ngx.DEBUG
 local assert = utils.assert
 -- luacheck: pop
 
+local utils_table_deepcopy = utils.table_deepcopy
+local utils_convert_second_to_step = utils.convert_second_to_step
+local utils_get_avg = utils.get_avg
+local utils_get_variance =  utils.get_variance
+
 local table_unpack = table.unpack
 local table_concat = table.concat
 local table_insert = table.insert
@@ -168,7 +173,7 @@ end
 
 
 function _M:get_metadata()
-    return utils.table_deepcopy(self.meta)
+    return utils_table_deepcopy(self.meta)
 end
 
 
@@ -191,7 +196,7 @@ function _M.new(wheels, name, callback, delay, once, argc, argv)
         name = name,
         callback = callback,
         delay = delay,
-        steps = utils.convert_second_to_step(delay, wheels.resolution),
+        steps = utils_convert_second_to_step(delay, wheels.resolution),
 
         -- a table
         -- map from `wheel_id` to `next_pointer`
@@ -262,11 +267,11 @@ function _M:execute()
     elapsed_time.min = math_min(elapsed_time.min, spend)
 
     local old_avg = elapsed_time.avg
-    elapsed_time.avg = utils.get_avg(spend, finish, old_avg)
+    elapsed_time.avg = utils_get_avg(spend, finish, old_avg)
 
     local old_variance = elapsed_time.variance
     elapsed_time.variance =
-        utils.get_variance(spend, finish, old_variance, old_avg)
+        utils_get_variance(spend, finish, old_variance, old_avg)
 
 end
 

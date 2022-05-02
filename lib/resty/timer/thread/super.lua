@@ -20,6 +20,8 @@ local ngx_DEBUG = ngx.DEBUG
 local assert = utils.assert
 -- luacheck: pop
 
+local utils_array_isempty = utils.array_isempty
+
 local ngx_now = ngx.now
 local ngx_sleep = ngx.sleep
 local ngx_update_time = ngx.update_time
@@ -66,7 +68,7 @@ local function thread_body(context, self)
         -- update the status of the wheel group
         wheels:sync_time()
 
-        if not utils.array_isempty(wheels.ready_jobs) then
+        if not utils_array_isempty(wheels.ready_jobs) then
             self.wake_up_mover_thread()
         end
     end

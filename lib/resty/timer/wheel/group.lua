@@ -18,6 +18,11 @@ local ngx_DEBUG = ngx.DEBUG
 local assert = utils.assert
 -- luacheck: pop
 
+local utils_array_isempty = utils.array_isempty
+local utils_array_merge = utils.array_merge
+local utils_float_compare = utils.float_compare
+local utils_convert_second_to_step = utils.convert_second_to_step
+
 local table_insert = table.insert
 
 local string_format = string.format
@@ -65,7 +70,7 @@ function _M:get_closest()
 
         local jobs = lowest_wheel:get_jobs_by_pointer(pointer)
 
-        if not utils.array_isempty(jobs) then
+        if not utils_array_isempty(jobs) then
             break
         end
     end
@@ -78,7 +83,7 @@ end
 -- * add all expired jobs from wheels to `wheels.ready_jobs`
 function _M:fetch_all_expired_jobs()
     for _, _wheel in ipairs(self.wheels) do
-        utils.array_merge(self.ready_jobs, _wheel:fetch_all_expired_jobs())
+        utils_array_merge(self.ready_jobs, _wheel:fetch_all_expired_jobs())
     end
 end
 
@@ -93,14 +98,14 @@ function _M:sync_time()
     ngx_update_time()
     self.real_time = ngx_now()
 
-    if utils.float_compare(self.real_time, self.expected_time) <= 0 then
+    if utils_float_compare(self.real_time, self.expected_time) <= 0 then
         -- This could be caused by a floating-point error
         -- or by NTP changing the time to an earlier time.
         return
     end
 
     local delta = self.real_time - self.expected_time
-    local steps = utils.convert_second_to_step(delta, resolution)
+    local steps = utils_convert_second_to_step(delta, resolution)
 
     lowest_wheel:spin_pointer(steps)
 

@@ -20,6 +20,8 @@ local ngx_DEBUG = ngx.DEBUG
 local assert = utils.assert
 -- luacheck: pop
 
+local utils_array_isempty = utils.array_isempty
+
 local ngx_worker_exiting = ngx.worker.exiting
 
 local string_format = string.format
@@ -92,7 +94,7 @@ local function thread_body(context, self)
         ::continue::
     end
 
-    if not utils.array_isempty(wheels.ready_jobs) then
+    if not utils_array_isempty(wheels.ready_jobs) then
         self.wake_up_mover_thread()
     end
 

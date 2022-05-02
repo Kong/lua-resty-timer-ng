@@ -21,6 +21,9 @@ local ngx_DEBUG = ngx.DEBUG
 local assert = utils.assert
 -- luacheck: pop
 
+local utils_float_compare = utils.float_compare
+local utils_table_deepcopy = utils.table_deepcopy
+
 local math_floor = math.floor
 local math_modf = math.modf
 
@@ -130,7 +133,7 @@ function _M.new(options)
             assert(type(options.resolution) == "number",
                 "expected `resolution` to be a number")
 
-            assert(utils.float_compare(options.resolution, 0.1) >= 0,
+            assert(utils_float_compare(options.resolution, 0.1) >= 0,
             "expected `resolution` to be greater than or equal to 0.1")
         end
 
@@ -425,7 +428,7 @@ function _M:stats()
         jobs[name] = {
             name = name,
             meta = job:get_metadata(),
-            elapsed_time = utils.table_deepcopy(job.stats.elapsed_time),
+            elapsed_time = utils_table_deepcopy(job.stats.elapsed_time),
             runs = stats.runs,
             faults = stats.runs - stats.finish,
             last_err_msg = stats.last_err_msg,
