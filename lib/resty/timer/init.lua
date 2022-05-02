@@ -89,7 +89,11 @@ local function create(self, name, callback, delay, timer_type, argc, argv)
 
     local ok, err = wheels:insert_job(job)
 
-    self.thread_group:wake_up_super_thread()
+    local _, need_wake_up = wheels:update_earliest_expiry_time()
+
+    if need_wake_up then
+        self.thread_group:wake_up_super_thread()
+    end
 
     if ok then
         return name, nil

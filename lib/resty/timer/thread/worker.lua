@@ -88,7 +88,12 @@ local function thread_body(context, self)
             wheels:sync_time()
             job:re_cal_next_pointer(wheels)
             wheels:insert_job(job)
-            self.wake_up_super_thread()
+
+            local _, need_wake_up = wheels:update_earliest_expiry_time()
+
+            if need_wake_up then
+                self.wake_up_super_thread()
+            end
         end
 
         ::continue::

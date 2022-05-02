@@ -1,5 +1,6 @@
 local utils = require("resty.timer.utils")
 local wheel = require("resty.timer.wheel")
+local constants = require("resty.timer.constants")
 
 -- luacheck: push ignore
 local ngx_log = ngx.log
@@ -40,11 +41,14 @@ local meta_table = {
 }
 
 
--- calculate how long until the next timer expires
-function _M:get_closest()
+---calculate how long until the next timer expires
+---@return number delay how long until the next timer expires
+---@return boolean is_earlier_than_before
+function _M:update_earliest_expiry_time()
     local delay = 0
     local lowest_wheel = self.lowest_wheel
     local resolution = self.resolution
+    local old = self.earliest_expiry_time
     local cur_msec_pointer = lowest_wheel:get_cur_pointer()
 
     -- `lowest_wheel.nelts - 1` means
@@ -73,9 +77,15 @@ function _M:get_closest()
         if not utils_array_isempty(jobs) then
             break
         end
+
+        if delay >= constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN then
+            break
+        end
     end
 
-    return delay
+    self.earliest_expiry_time = ngx_now() + delay
+
+    return delay, old < self.earliest_expiry_time
 end
 
 
@@ -115,6 +125,9 @@ function _M:sync_time()
     -- `expected_time` to be larger than `real_time`
     -- after this line is run.
     self.expected_time = self.expected_time + resolution * steps
+
+    -- reset
+    self.earliest_expiry_time = 0
 end
 
 
@@ -137,6 +150,8 @@ function _M.new(wheel_setting, resolution)
 
         -- time of last update of wheel-group status
         expected_time = 0,
+
+        earliest_expiry_time = 0,
 
         -- Why use two queues?
         -- Because a zero-delay timer may create another zero-delay timer,
