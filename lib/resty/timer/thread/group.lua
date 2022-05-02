@@ -44,6 +44,9 @@ function _M:wake_up_worker_thread()
 end
 
 
+---spawn super_thread, mover_thread, and all worker threads
+---@return boolean ok ok?
+---@return string err_msg
 function _M:spawn()
     local ok, err
     ok, err = self.super_thread:spawn()
@@ -72,6 +75,7 @@ function _M:spawn()
 end
 
 
+---kill super_thread, mover_thread, and all worker threads
 function _M:kill()
     self.super_thread:kill()
     self.mover_thread:kill()

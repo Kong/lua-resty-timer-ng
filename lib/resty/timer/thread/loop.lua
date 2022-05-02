@@ -174,6 +174,10 @@ local PAHSE_HANDLERS = {
 }
 
 
+---@param self table self
+---@param phase string init | before | loop_body | after | finally
+---@return integer action
+---@return string message
 local function phase_handler_wrapper(self, phase)
     local ok, action_or_err, err_or_nil =
         pcall(self[phase].callback,
@@ -320,6 +324,8 @@ end
 
 
 function _M.new(name, options)
+    assert(options ~= nil)
+
     local self = {
         name = tostring(name),
         context = {},
