@@ -1,11 +1,10 @@
 local math_pow = math.pow
 local math_floor = math.floor
 
-local table_insert = table.insert
-
 local ipairs = ipairs
 local pcall = pcall
 local pairs = pairs
+local rawset = rawset
 
 
 local table_new
@@ -45,6 +44,24 @@ do
             end
 
             return ret
+        end
+    end
+end
+
+
+local table_clear
+
+do
+    local has_table_clear, _table_clear = pcall(require, "table.clear")
+
+    if has_table_clear then
+        table_clear = _table_clear
+
+    else
+        table_clear = function (tbl)
+            for k, _ in pairs(tbl) do
+                rawset(tbl, k, nil)
+            end
         end
     end
 end
@@ -90,21 +107,8 @@ function _M.table_new(narray, nhash)
 end
 
 
-function _M.array_isempty(arr)
-    return #arr == 0
-end
-
-
-function _M.array_merge(dst, src)
-    assert(dst)
-
-    if not src then
-        return
-    end
-
-    for _, v in ipairs(src) do
-        table_insert(dst, v)
-    end
+function _M.table_clear(tbl)
+    table_clear(tbl)
 end
 
 

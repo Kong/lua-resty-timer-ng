@@ -1,4 +1,5 @@
 local utils = require("resty.timer.utils")
+local array = require("resty.timer.array")
 
 -- luacheck: push ignore
 local ngx_log = ngx.log
@@ -17,11 +18,9 @@ local ngx_DEBUG = ngx.DEBUG
 local assert = utils.assert
 -- luacheck: pop
 
-local utils_array_isempty = utils.array_isempty
+local array_new = array.new
 
 local math_floor = math.floor
-
-local table_insert = table.insert
 
 local setmetatable = setmetatable
 
@@ -114,7 +113,7 @@ function _M:insert(job)
     local next_pointer = job:get_next_pointer(self.id)
 
     if next_pointer then
-        table_insert(self.slots[next_pointer], job)
+        self.slots[next_pointer]:push(job)
         return true, nil
     end
 
@@ -124,7 +123,7 @@ function _M:insert(job)
         return lower_wheel:insert(job)
     end
 
-    table_insert(self.expired_jobs, job)
+    self.expired_jobs:push(job)
 
     return true, nil
 end
@@ -155,16 +154,15 @@ function _M:spin_pointer(offset)
 
         local jobs = self:get_jobs_by_pointer(final_pointer)
 
-        for name, job in pairs(jobs) do
-            jobs[name] = nil
+        while not jobs:is_empty() do
+            local job = jobs:pop()
 
             if lower_wheel then
                 lower_wheel:insert(job)
             else
-                table_insert(expired_jobs, job)
+                expired_jobs:push(job)
             end
         end
-
     end
 
     self.pointer = final_pointer
@@ -184,14 +182,13 @@ end
 ---return all expired jobs, or return nil.
 ---@return table jobs_or_nil
 function _M:fetch_all_expired_jobs()
-    if utils_array_isempty(self.expired_jobs) then
+    if self.expired_jobs:is_empty() then
         return nil
     end
 
     local ret = self.expired_jobs
 
-    -- TODO: GC pressure
-    self.expired_jobs = {}
+    self.expired_jobs = array_new()
 
     return ret
 end
@@ -213,11 +210,11 @@ function _M.new(id, nelts)
         higher_wheel = nil,
         lower_wheel = nil,
 
-        expired_jobs = {},
+        expired_jobs = array.new(),
     }
 
     for i = 1, self.nelts do
-        self.slots[i] = {}
+        self.slots[i] = array_new()
     end
 
     return setmetatable(self, meta_table)

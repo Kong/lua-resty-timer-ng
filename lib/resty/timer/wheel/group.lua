@@ -1,6 +1,7 @@
 local utils = require("resty.timer.utils")
 local wheel = require("resty.timer.wheel")
 local constants = require("resty.timer.constants")
+local array = require("resty.timer.array")
 
 -- luacheck: push ignore
 local ngx_log = ngx.log
@@ -19,8 +20,8 @@ local ngx_DEBUG = ngx.DEBUG
 local assert = utils.assert
 -- luacheck: pop
 
-local utils_array_isempty = utils.array_isempty
-local utils_array_merge = utils.array_merge
+local array_merge = array.merge
+
 local utils_float_compare = utils.float_compare
 local utils_convert_second_to_step = utils.convert_second_to_step
 
@@ -74,7 +75,7 @@ function _M:update_earliest_expiry_time()
 
         local jobs = lowest_wheel:get_jobs_by_pointer(pointer)
 
-        if not utils_array_isempty(jobs) then
+        if not jobs:is_empty() then
             break
         end
 
@@ -93,7 +94,12 @@ end
 -- * add all expired jobs from wheels to `wheels.ready_jobs`
 function _M:fetch_all_expired_jobs()
     for _, _wheel in ipairs(self.wheels) do
-        utils_array_merge(self.ready_jobs, _wheel:fetch_all_expired_jobs())
+        local expired_jobs = _wheel:fetch_all_expired_jobs()
+        array_merge(self.ready_jobs, expired_jobs)
+
+        if expired_jobs then
+            expired_jobs:release()
+        end
     end
 end
 
@@ -163,12 +169,12 @@ function _M.new(wheel_setting, resolution)
         -- the function `fetch_all_expired_jobs`
         -- adds all expired job to this table
         -- TODO: use `utils.table_new`
-        ready_jobs = {},
+        ready_jobs = array.new(),
 
         -- each job in this table will
         -- be run by function `worker_timer_callback`
         -- TODO: use `utils.table_new`
-        pending_jobs = {},
+        pending_jobs = array.new(),
 
         -- store wheels for each level
         -- map from wheel_level to wheel

@@ -20,13 +20,9 @@ local ngx_DEBUG = ngx.DEBUG
 local assert = utils.assert
 -- luacheck: pop
 
-local utils_array_isempty = utils.array_isempty
-
 local ngx_worker_exiting = ngx.worker.exiting
 
 local string_format = string.format
-
-local table_remove = table.remove
 
 local setmetatable = setmetatable
 
@@ -65,10 +61,10 @@ local function thread_body(context, self)
     local counter = timer_sys.counter
     local wheels = timer_sys.wheels
 
-    while not utils.array_isempty(wheels.pending_jobs) and
+    while not wheels.pending_jobs:is_empty() and
           not ngx_worker_exiting()
     do
-        local job = table_remove(wheels.pending_jobs)
+        local job = wheels.pending_jobs:pop()
 
         if not job:is_runnable() then
             goto continue
@@ -99,7 +95,7 @@ local function thread_body(context, self)
         ::continue::
     end
 
-    if not utils_array_isempty(wheels.ready_jobs) then
+    if not wheels.ready_jobs:is_empty() then
         self.wake_up_mover_thread()
     end
 

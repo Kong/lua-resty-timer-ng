@@ -34,8 +34,6 @@ local ngx_timer_every = ngx.timer.every
 local ngx_now = ngx.now
 local ngx_update_time = ngx.update_time
 
-local table_insert = table.insert
-
 local pairs = pairs
 local ipairs = ipairs
 local type = type
@@ -81,7 +79,7 @@ local function create(self, name, callback, delay, timer_type, argc, argv)
     self.counter.total = self.counter.total + 1
 
     if job:is_immediate() then
-        table_insert(wheels.ready_jobs, job)
+        wheels.ready_jobs:push(job)
         self.thread_group:woke_up_mover_thread()
 
         return name, nil

@@ -20,8 +20,6 @@ local ngx_DEBUG = ngx.DEBUG
 local assert = utils.assert
 -- luacheck: pop
 
-local utils_array_isempty = utils.array_isempty
-
 local math_abs = math.abs
 
 local setmetatable = setmetatable
@@ -62,18 +60,12 @@ local function thread_body(context, self)
     local timer_sys = self.timer_sys
     local wheels = timer_sys.wheels
 
-    local is_no_pending_jobs =
-        utils_array_isempty(wheels.pending_jobs)
-
-    local is_no_ready_jobs =
-        utils_array_isempty(wheels.ready_jobs)
-
-    if not is_no_pending_jobs then
+    if not wheels.pending_jobs:is_empty() then
         self.wake_up_worker_thread()
         return loop.ACTION_CONTINUE
     end
 
-    if not is_no_ready_jobs then
+    if not wheels.ready_jobs:is_empty() then
         -- just swap two lists
         -- `wheels.ready_jobs = {}` will bring work to GC
         local temp = wheels.pending_jobs
