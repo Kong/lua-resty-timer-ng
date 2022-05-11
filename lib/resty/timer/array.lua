@@ -49,6 +49,7 @@ function _M:pop()
     end
 
     local value = self.elts[self.nelts]
+    self.elts[self.nelts] = nil
     self.nelts = self.nelts - 1
     return value
 end
