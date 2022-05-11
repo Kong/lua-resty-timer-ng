@@ -64,7 +64,7 @@ local function thread_body(context, self)
     while not wheels.pending_jobs:is_empty() and
           not ngx_worker_exiting()
     do
-        local job = wheels.pending_jobs:pop()
+        local job = wheels.pending_jobs:popback()
 
         if not job:is_runnable() then
             goto continue

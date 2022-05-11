@@ -48,7 +48,7 @@ function _M:is_empty()
 end
 
 
-function _M:pop()
+function _M:popback()
     if self.nelts == 0 then
         return nil
     end
@@ -60,7 +60,7 @@ function _M:pop()
 end
 
 
-function _M:push(value)
+function _M:push_back(value)
     self.elts[self.nelts + 1] = value
     self.nelts = self.nelts + 1
 end
@@ -99,7 +99,7 @@ function _M.merge(dst, src)
     end
 
     for i = 1, src.nelts do
-        dst:push(src.elts[i])
+        dst:push_back(src.elts[i])
     end
 end
 
