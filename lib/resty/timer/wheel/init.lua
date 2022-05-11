@@ -155,7 +155,7 @@ function _M:spin_pointer(offset)
         local jobs = self:get_jobs_by_pointer(final_pointer)
 
         while not jobs:is_empty() do
-            local job = jobs:popback()
+            local job = jobs:pop_back()
 
             if lower_wheel then
                 lower_wheel:insert(job)

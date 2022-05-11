@@ -48,7 +48,7 @@ function _M:is_empty()
 end
 
 
-function _M:popback()
+function _M:pop_back()
     if self.nelts == 0 then
         return nil
     end
