@@ -38,6 +38,11 @@ function _M.next(array, index)
 end
 
 
+function _M:length()
+    return self.nelts
+end
+
+
 function _M:is_empty()
     return self.nelts == 0
 end

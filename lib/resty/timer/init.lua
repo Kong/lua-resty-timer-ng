@@ -407,7 +407,7 @@ function _M:stats()
 
     local sys = {
         running = self.counter.running,
-        pending = #pending_jobs + #ready_jobs,
+        pending = pending_jobs:length() + ready_jobs:length(),
         waiting = nil,
         total = self.counter.total,
         runs = self.counter.runs,

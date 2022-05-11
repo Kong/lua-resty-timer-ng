@@ -66,13 +66,20 @@ insulate("stats |", function ()
 
         assert.is_truthy(ok)
 
+        ok, _ = timer:every(nil, 99999, function () end)
+
+        assert.is_truthy(ok)
+
         for i = 1, 2 do
             sleep(1 + 5 + TOLERANCE)
 
             local stats = timer:stats()
+            local stats_sys = stats.sys
             local timer_info = stats.timers[timer_name]
+            assert.is_truthy(stats_sys)
             assert.is_truthy(timer_info)
 
+            assert.same(1, stats_sys.waiting)
             assert.near(5, timer_info.elapsed_time.avg, TOLERANCE)
             assert.near(5, timer_info.elapsed_time.max, TOLERANCE)
             assert.near(5, timer_info.elapsed_time.min, TOLERANCE)
@@ -84,9 +91,12 @@ insulate("stats |", function ()
         sleep(1 + 5 + TOLERANCE)
 
         local stats = timer:stats()
+        local stats_sys = stats.sys
         local timer_info = stats.timers[timer_name]
+        assert.is_truthy(stats_sys)
         assert.is_truthy(timer_info)
 
+        assert.same(1, stats_sys.waiting)
         assert.near(5, timer_info.elapsed_time.avg, TOLERANCE)
         assert.near(5, timer_info.elapsed_time.max, TOLERANCE)
         assert.near(5, timer_info.elapsed_time.min, TOLERANCE)
