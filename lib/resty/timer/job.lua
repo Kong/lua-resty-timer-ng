@@ -1,21 +1,7 @@
 local utils = require("resty.timer.utils")
 
--- luacheck: push ignore
 local ngx_log = ngx.log
-local ngx_STDERR = ngx.STDERR
-local ngx_EMERG = ngx.EMERG
-local ngx_ALERT = ngx.ALERT
-local ngx_CRIT = ngx.CRIT
 local ngx_ERR = ngx.ERR
-local ngx_WARN = ngx.WARN
-local ngx_NOTICE = ngx.NOTICE
-local ngx_INFO = ngx.INFO
-local ngx_DEBUG = ngx.DEBUG
--- luacheck: pop
-
--- luacheck: push ignore
-local assert = utils.assert
--- luacheck: pop
 
 local utils_table_deepcopy = utils.table_deepcopy
 local utils_convert_second_to_step = utils.convert_second_to_step

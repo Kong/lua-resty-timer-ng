@@ -1,24 +1,6 @@
-local utils = require("resty.timer.utils")
 local super_thread_module = require("resty.timer.thread.super")
 local mover_thread_module = require("resty.timer.thread.mover")
 local worker_thread_module = require("resty.timer.thread.worker")
-
--- luacheck: push ignore
-local ngx_log = ngx.log
-local ngx_STDERR = ngx.STDERR
-local ngx_EMERG = ngx.EMERG
-local ngx_ALERT = ngx.ALERT
-local ngx_CRIT = ngx.CRIT
-local ngx_ERR = ngx.ERR
-local ngx_WARN = ngx.WARN
-local ngx_NOTICE = ngx.NOTICE
-local ngx_INFO = ngx.INFO
-local ngx_DEBUG = ngx.DEBUG
--- luacheck: pop
-
--- luacheck: push ignore
-local assert = utils.assert
--- luacheck: pop
 
 local setmetatable = setmetatable
 

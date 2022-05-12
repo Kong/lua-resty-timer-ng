@@ -1,9 +1,5 @@
 local utils = require("resty.timer.utils")
 
--- luacheck: push ignore
-local assert = utils.assert
--- luacheck: pop
-
 local utils_table_new = utils.table_new
 local utils_table_clear = utils.table_clear
 

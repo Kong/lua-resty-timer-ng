@@ -1,11 +1,7 @@
-local utils = require("resty.timer.utils")
-
 local math_modf = math.modf
 local math_floor = math.floor
 
 local string_format = string.format
-
-local assert = utils.assert
 
 local _M = {
     -- number of worker timers
