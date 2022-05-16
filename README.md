@@ -46,7 +46,7 @@ http {
         }
         timer_sys = timer_module.new(options)
 
-        -- ‘premature’ is used to be compatible with existing callback functions and will be removed in the future
+        -- ‘premature’ is used to be compatible with existing callback functions and it is always false.
         local function callback_once(premature, ...)
             -- do something
             ngx.log(ngx.ERR, "in timer example-once")
@@ -114,7 +114,7 @@ For example
 
 ```lua
 local timer_module = require("resty.timer")
-local timer_sys = timer_module.configure(timer_sys, {
+local timer_sys = timer_module.new({
     -- number of threads
     threads = 10,
 
