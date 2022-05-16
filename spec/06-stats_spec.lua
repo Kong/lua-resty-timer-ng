@@ -39,7 +39,7 @@ insulate("stats |", function ()
         local timer_name = "TEST"
         assert.is_truthy((timer:once(timer_name, 60, function() end)))
 
-        local stats = timer_module.stats(timer)
+        local stats = timer:stats(true)
         local timer_info = stats.timers[timer_name]
         assert.is_truthy(timer_info)
 
@@ -47,6 +47,14 @@ insulate("stats |", function ()
         assert.same("spec/06-stats_spec.lua", callstack[1].source)
 
         assert.is_true((timer:cancel(timer_name)))
+    end)
+
+    it("no verbose", function ()
+        local stats = timer:stats(false)
+        assert(stats.timers == nil)
+
+        stats = timer:stats()
+        assert(stats.timers == nil)
     end)
 
 
@@ -73,7 +81,7 @@ insulate("stats |", function ()
         for i = 1, 2 do
             sleep(1 + 5 + TOLERANCE)
 
-            local stats = timer:stats()
+            local stats = timer:stats(true)
             local stats_sys = stats.sys
             local timer_info = stats.timers[timer_name]
             assert.is_truthy(stats_sys)
@@ -90,7 +98,7 @@ insulate("stats |", function ()
 
         sleep(1 + 5 + TOLERANCE)
 
-        local stats = timer:stats()
+        local stats = timer:stats(true)
         local stats_sys = stats.sys
         local timer_info = stats.timers[timer_name]
         assert.is_truthy(stats_sys)

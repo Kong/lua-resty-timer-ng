@@ -387,7 +387,7 @@ function _M:is_managed(name)
 end
 
 
-function _M:stats()
+function _M:stats(verbose)
     local pending_jobs = self.wheels.pending_jobs
     local ready_jobs = self.wheels.ready_jobs
 
@@ -400,6 +400,12 @@ function _M:stats()
     }
 
     sys.waiting = sys.total - sys.running - sys.pending
+
+    if not verbose then
+        return {
+            sys = sys,
+        }
+    end
 
     -- TODO: use `utils.table_new`
     local jobs = {}
