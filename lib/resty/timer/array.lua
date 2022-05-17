@@ -13,7 +13,7 @@ local array_pool = {}
 local _M = {}
 
 local meta_table = {
-    __index = _M
+    __index = _M,
 }
 
 

@@ -13,98 +13,12 @@ local setmetatable = setmetatable
 local error = error
 local pcall = pcall
 
-local LOG_FORMAT_SPAWN = "[timer] thread %s has been spawned"
-local LOG_FORMAT_ERROR_SPAWN = "failed to spawn thread %s: %s"
-
-local LOG_FORMAT_START = "[timer] thread %s has been started"
-local LOG_FORMAT_EXIT = "[timer] thread %s has been exited"
-
-local LOG_FORMAT_ERROR_INIT =
-    "[timer] thread %s will exits after initializing: %s"
-local LOG_FORMAT_EXIT_INIT =
-    "[timer] thread %s will exits atfer initializing"
-local LOG_FORMAT_EXIT_WITH_MSG_INIT =
-    "[timer] thread %s will exits atfer initializing: %s"
-local LOG_FORMAT_RESTART_INIT =
-    "[timer] thread %s will be restarted after initializing"
-local LOG_FORMAT_ERROR_BEFORE =
-    "[timer] thread %s will exits after the before_callback is executed: %s"
-local LOG_FORMAT_EXIT_BEFORE =
-    "[timer] thread %s will exits after the before_callback is executed"
-local LOG_FORMAT_EXIT_WITH_MSG_BEFORE =
-    "[timer] thread %s will exits after the before_callback is executed: %s"
-local LOG_FORMAT_RESTART_BEFORE =
-    "[timer] thread %s will be restarted after the before_callback is executed"
-
-local LOG_FORMAT_ERROR_LOOP_BODY =
-    "[timer] thread %s will exits after the loop body is executed: %s"
-local LOG_FORMAT_EXIT_LOOP_BODY =
-    "[timer] thread %s will exits after the loop body is executed"
-local LOG_FORMAT_EXIT_WITH_MSG_LOOP_BODY =
-    "[timer] thread %s will exits after the loop body is executed: %s"
-local LOG_FORMAT_RESTART_LOOP_BODY =
-    "[timer] thread %s will be restarted after the loop body is executed"
-
-local LOG_FORMAT_ERROR_AFTER =
-    "[timer] thread %s will exits after the after_callback is executed: %s"
-local LOG_FORMAT_EXIT_AFTER =
-    "[timer] thread %s will exits after the after_callback is executed"
-local LOG_FORMAT_EXIT_WITH_MSG_AFTER =
-    "[timer] thread %s will exits after the after_callback is executed: %s"
-local LOG_FORMAT_RESTART_AFTER =
-    "[timer] thread %s will be restarted after the after_callback is executed"
-
-local LOG_FORMAT_ERROR_FINALLY =
-    "[timer] thread %s will exits after the finally_callback is executed: %s"
-local LOG_FORMAT_EXIT_FINALLY =
-    "[timer] thread %s will exits after the finally_callback is executed"
-local LOG_FORMAT_EXIT_WITH_MSG_FINALLY =
-    "[timer] thread %s will exits after the finally_callback is executed: %s"
-local LOG_FORMAT_RESTART_FINALLY =
-    "[timer] thread %s will be restarted after the finally_callback is executed"
-
 local ACTION_CONTINUE = 1
 local ACTION_ERROR = 2
 local ACTION_EXIT = 3
 local ACTION_EXIT_WITH_MSG = 4
 local ACTION_RESTART = 5
 
-local LOG_FORMAT_MAP = {
-    init = {
-        [ACTION_ERROR]              = LOG_FORMAT_ERROR_INIT,
-        [ACTION_EXIT]               = LOG_FORMAT_EXIT_INIT,
-        [ACTION_EXIT_WITH_MSG]      = LOG_FORMAT_EXIT_WITH_MSG_INIT,
-        [ACTION_RESTART]            = LOG_FORMAT_RESTART_INIT,
-    },
-
-    before = {
-        [ACTION_ERROR]              = LOG_FORMAT_ERROR_BEFORE,
-        [ACTION_EXIT]               = LOG_FORMAT_EXIT_BEFORE,
-        [ACTION_EXIT_WITH_MSG]      = LOG_FORMAT_EXIT_WITH_MSG_BEFORE,
-        [ACTION_RESTART]            = LOG_FORMAT_RESTART_BEFORE,
-    },
-
-    loop_body = {
-        [ACTION_ERROR]              = LOG_FORMAT_ERROR_LOOP_BODY,
-        [ACTION_EXIT]               = LOG_FORMAT_EXIT_LOOP_BODY,
-        [ACTION_EXIT_WITH_MSG]      = LOG_FORMAT_EXIT_WITH_MSG_LOOP_BODY,
-        [ACTION_RESTART]            = LOG_FORMAT_RESTART_LOOP_BODY,
-    },
-
-    after = {
-        [ACTION_ERROR]              = LOG_FORMAT_ERROR_AFTER,
-        [ACTION_EXIT]               = LOG_FORMAT_EXIT_AFTER,
-        [ACTION_EXIT_WITH_MSG]      = LOG_FORMAT_EXIT_WITH_MSG_AFTER,
-        [ACTION_RESTART]            = LOG_FORMAT_RESTART_AFTER,
-    },
-
-    finally = {
-        [ACTION_ERROR]              = LOG_FORMAT_ERROR_FINALLY,
-        [ACTION_EXIT]               = LOG_FORMAT_EXIT_FINALLY,
-        [ACTION_EXIT_WITH_MSG]      = LOG_FORMAT_EXIT_WITH_MSG_FINALLY,
-        [ACTION_RESTART]            = LOG_FORMAT_RESTART_FINALLY,
-    },
-}
 
 local NEED_CHECK_WORKER_EIXTING = {
     init = false,
@@ -115,7 +29,6 @@ local NEED_CHECK_WORKER_EIXTING = {
 }
 
 
-
 local _M = {
     ACTION_CONTINUE = ACTION_CONTINUE,
     ACTION_ERROR = ACTION_ERROR,
@@ -123,6 +36,7 @@ local _M = {
     ACTION_EXIT_WITH_MSG = ACTION_EXIT_WITH_MSG,
     ACTION_RESTART = ACTION_RESTART,
 }
+
 
 local meta_table = {
     __index = _M,
@@ -157,6 +71,42 @@ local PAHSE_HANDLERS = {
     after = nop_after,
     finally = nop_finally,
 }
+
+
+---make log message
+---@param self table
+---@param phase string init | before | loop_body | after | finally
+---@param action number _M.ACTION_*
+---@param msg? string message
+---@return string log_string
+local function make_log_msg(self, phase, action, msg)
+    if action == ACTION_EXIT then
+        return string_format(
+            "[timer] thread %s will exits after the %s phase was executed",
+            self.name,
+            phase,
+            msg
+        )
+    end
+
+    if action == ACTION_RESTART then
+        return string_format(
+            "[timer] thread %s will restart after the %s phase was executed",
+            self.name,
+            phase
+        )
+    end
+
+    if action == ACTION_ERROR or action == ACTION_EXIT_WITH_MSG then
+        return string_format(
+            "[timer] thread %s will exits after the %s phase was executed",
+            self.name,
+            phase
+        )
+    end
+
+    error("unexpected error")
+end
 
 
 ---@param self table self
@@ -216,33 +166,28 @@ end
 ---@return boolean need_to_exit_thread
 local function do_phase_handler(self, phase)
     local action, err = phase_handler_wrapper(self, phase)
-    local log_format = LOG_FORMAT_MAP[phase][action]
 
     if action == ACTION_CONTINUE then
         return false
     end
 
     if action == ACTION_ERROR then
-        ngx_log(ngx_EMERG,
-                string_format(log_format, self.name, err))
+        ngx_log(ngx_EMERG, make_log_msg(self, phase, action, err))
         return true
     end
 
     if action == ACTION_EXIT then
-        ngx_log(ngx_NOTICE,
-                string_format(log_format, self.name))
+        ngx_log(ngx_NOTICE, make_log_msg(self, phase, action, nil))
         return true
     end
 
     if action == ACTION_EXIT_WITH_MSG then
-        ngx_log(ngx_NOTICE,
-                string_format(log_format, self.name, err))
+        ngx_log(ngx_NOTICE, make_log_msg(self, phase, action, err))
         return true
     end
 
     if action == ACTION_RESTART then
-        ngx_log(ngx_NOTICE,
-                string_format(log_format, self.name))
+        ngx_log(ngx_NOTICE, make_log_msg(self, phase, action, nil))
         self:spawn()
         return true
     end
@@ -257,7 +202,7 @@ local function loop_wrapper(premature, self)
     end
 
     ngx_log(ngx_NOTICE,
-            string_format(LOG_FORMAT_START,
+            string_format("[timer] thread %s has been started",
                           self.name))
 
     if not do_phase_handler(self, "init") then
@@ -280,7 +225,7 @@ local function loop_wrapper(premature, self)
     do_phase_handler(self, "finally")
 
     ngx_log(ngx_NOTICE,
-            string_format(LOG_FORMAT_EXIT,
+            string_format("[timer] thread %s has been exited",
                           self.name))
 end
 
@@ -290,14 +235,14 @@ function _M:spawn()
     local ok, err = ngx_timer_at(0, loop_wrapper, self)
 
     if not ok then
-        err = string_format(LOG_FORMAT_ERROR_SPAWN,
+        err = string_format("failed to spawn thread %s: %s",
                             self.name, err)
         ngx_log(ngx_EMERG, err)
         return false, err
     end
 
     ngx_log(ngx_NOTICE,
-            string_format(LOG_FORMAT_SPAWN,
+            string_format("[timer] thread %s has been spawned",
                           self.name))
     return true, nil
 end
