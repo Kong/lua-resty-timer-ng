@@ -81,7 +81,7 @@ local function thread_body(context, self)
     end
 
     if not wheels.ready_jobs:is_empty() then
-        self.wake_up_mover_thread()
+        self.wake_up_super_thread()
     end
 
     return loop.ACTION_CONTINUE
@@ -105,11 +105,6 @@ end
 local function thread_finally(context)
     context.counter.runs = 0
     return loop.ACTION_CONTINUE
-end
-
-
-function _M:set_wake_up_mover_thread_callback(callback)
-    self.wake_up_mover_thread = callback
 end
 
 
