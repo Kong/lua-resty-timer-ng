@@ -84,8 +84,7 @@ local function make_log_msg(self, phase, action, msg)
         return string_format(
             "[timer] thread %s will exits after the %s phase was executed",
             self.name,
-            phase,
-            msg
+            phase
         )
     end
 
@@ -99,9 +98,10 @@ local function make_log_msg(self, phase, action, msg)
 
     if action == ACTION_ERROR or action == ACTION_EXIT_WITH_MSG then
         return string_format(
-            "[timer] thread %s will exits after the %s phase was executed",
+            "[timer] thread %s will exits after the %s phase was executed: %s",
             self.name,
-            phase
+            phase,
+            msg
         )
     end
 
