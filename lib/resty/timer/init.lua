@@ -66,7 +66,7 @@ local function create(self, name, callback, delay, timer_type, argc, argv)
 
     if job:is_immediate() then
         wheels.ready_jobs:push_back(job)
-        self.thread_group:wake_up_super_thread()
+        self.thread_group:woke_up_mover_thread()
 
         return name, nil
     end

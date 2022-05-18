@@ -148,7 +148,7 @@ function _M.new(wheel_setting, resolution)
         -- inserted directly into the queue,
         -- at which point it will cause the queue to never be empty.
 
-        -- will be move to `pending_jobs` by function `super_threadk`
+        -- will be move to `pending_jobs` by function `mover_timer_callback`
         -- the function `fetch_all_expired_jobs`
         -- adds all expired job to this table
         -- TODO: use `utils.table_new`

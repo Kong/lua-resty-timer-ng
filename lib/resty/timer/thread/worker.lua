@@ -9,7 +9,6 @@ local ngx_worker_exiting = ngx.worker.exiting
 
 local string_format = string.format
 
-local next = next
 local setmetatable = setmetatable
 
 local _M = {}
@@ -82,7 +81,7 @@ local function thread_body(context, self)
     end
 
     if not wheels.ready_jobs:is_empty() then
-        self.wake_up_super_thread()
+        self.wake_up_mover_thread()
     end
 
     return loop.ACTION_CONTINUE
@@ -103,24 +102,14 @@ local function thread_after(context, restart_thread_after_runs)
 end
 
 
-local function thread_finally(context, self)
+local function thread_finally(context)
     context.counter.runs = 0
-    local jobs = self.timer_sys.jobs
-
-    if ngx_worker_exiting() then
-        local job_name, job = next(jobs)
-        while job_name do
-            jobs[job_name] = nil
-
-            if not job:is_running() then
-                job:execute()
-            end
-
-            job_name, job = next(jobs)
-        end
-    end
-
     return loop.ACTION_CONTINUE
+end
+
+
+function _M:set_wake_up_mover_thread_callback(callback)
+    self.wake_up_mover_thread = callback
 end
 
 
@@ -199,10 +188,8 @@ function _M.new(timer_sys, threads)
             },
 
             finally = {
-                argc = 1,
-                argv = {
-                    self,
-                },
+                argc = 0,
+                argv = {},
                 callback = thread_finally,
             },
         })
