@@ -115,6 +115,8 @@ local function thread_finally(context, self)
             if not job:is_running() then
                 job:execute()
             end
+
+            job_name, job = next(jobs)
         end
     end
 
