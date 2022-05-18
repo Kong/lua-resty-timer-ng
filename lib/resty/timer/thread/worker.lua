@@ -9,6 +9,7 @@ local ngx_worker_exiting = ngx.worker.exiting
 
 local string_format = string.format
 
+local next = next
 local setmetatable = setmetatable
 
 local _M = {}
@@ -102,8 +103,21 @@ local function thread_after(context, restart_thread_after_runs)
 end
 
 
-local function thread_finally(context)
+local function thread_finally(context, self)
     context.counter.runs = 0
+    local jobs = self.timer_sys.jobs
+
+    if ngx_worker_exiting() then
+        local job_name, job = next(jobs)
+        repeat
+            jobs[job_name] = nil
+
+            if not job:is_running() then
+                job:execute()
+            end
+        until job_name == nil
+    end
+
     return loop.ACTION_CONTINUE
 end
 
@@ -183,8 +197,10 @@ function _M.new(timer_sys, threads)
             },
 
             finally = {
-                argc = 0,
-                argv = {},
+                argc = 1,
+                argv = {
+                    self,
+                },
                 callback = thread_finally,
             },
         })

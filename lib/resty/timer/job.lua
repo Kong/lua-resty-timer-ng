@@ -21,6 +21,7 @@ local math_huge = math.huge
 local pcall = pcall
 
 local ngx_now = ngx.now
+local ngx_worker_exiting = ngx.worker.exiting
 
 local setmetatable = setmetatable
 local tostring = tostring
@@ -232,7 +233,7 @@ function _M:execute()
 
     self._running = true
 
-    local ok, err = pcall(self.callback, false,
+    local ok, err = pcall(self.callback, ngx_worker_exiting(),
                           table_unpack(self.argv, 1, self.argc))
 
     local finish = stats.finish
