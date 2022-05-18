@@ -77,6 +77,10 @@ function _M.new(timer_sys)
         worker_thread = worker_thread,
     }
 
+    super_thread:set_spawn_worker_thread_callback(function ()
+        worker_thread:spawn()
+    end)
+
     super_thread:set_wake_up_mover_thread_callback(function ()
         mover_thread:wake_up()
     end)

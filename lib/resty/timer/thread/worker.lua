@@ -3,8 +3,12 @@ local loop = require("resty.timer.thread.loop")
 local constants = require("resty.timer.constants")
 
 local ngx_log = ngx.log
+local ngx_NOTICE = ngx.NOTICE
 local ngx_ERR = ngx.ERR
 
+local math_floor = math.floor
+
+local ngx_now = ngx.now
 local ngx_worker_exiting = ngx.worker.exiting
 
 local string_format = string.format
@@ -18,7 +22,63 @@ local meta_table = {
 }
 
 
-local function thread_init(context)
+local function report_alive(self, thread)
+    assert(self.spawned_threads[thread.name] ~= nil)
+
+    self.alive_threads[thread.name] = thread
+    self.alive_threads_count = self.alive_threads_count + 1
+
+    ngx_log(
+        ngx_NOTICE,
+        string_format("[timer] thread %s is alive", thread.name)
+    )
+
+    ngx_log(
+        ngx_NOTICE,
+        string_format("[timer] spawned worker threads: %d",
+                      self.spawned_threads_count)
+    )
+
+    ngx_log(
+        ngx_NOTICE,
+        string_format("[timer] alive worker threads: %d",
+                      self.alive_threads_count)
+    )
+end
+
+
+local function report_exit(self, thread)
+    assert(self.spawned_threads[thread.name] ~= nil)
+    assert(self.alive_threads[thread.name] ~= nil)
+
+    self.spawned_threads[thread.name] = nil
+    self.alive_threads[thread.name] = nil
+
+    self.spawned_threads_count = self.spawned_threads_count - 1
+    self.alive_threads_count = self.alive_threads_count - 1
+
+    ngx_log(
+        ngx_NOTICE,
+        string_format("[timer] thread %s exits", thread.name)
+    )
+
+    ngx_log(
+        ngx_NOTICE,
+        string_format("[timer] spawned worker threads: %d",
+                      self.spawned_threads_count)
+    )
+
+    ngx_log(
+        ngx_NOTICE,
+        string_format("[timer] alive worker threads: %d",
+                      self.alive_threads_count)
+    )
+end
+
+
+local function thread_init(context, report_alive_callback, self)
+    report_alive_callback(self, context.self)
+
     context.counter = {
         runs = 0,
     }
@@ -95,15 +155,16 @@ local function thread_after(context, restart_thread_after_runs)
     counter.runs = runs
 
     if runs > restart_thread_after_runs then
-        return loop.ACTION_RESTART
+        return loop.ACTION_EXIT
     end
 
     return loop.ACTION_CONTINUE
 end
 
 
-local function thread_finally(context)
+local function thread_finally(context, report_exit_callback, self)
     context.counter.runs = 0
+    report_exit_callback(self, context.self)
     return loop.ACTION_CONTINUE
 end
 
@@ -119,28 +180,45 @@ end
 
 
 function _M:kill()
-    local threads = self.threads
-    for i = 1, #threads do
-        threads[i]:kill()
+    local spawned_threads = self.spawned_threads
+    for _, thread in pairs(spawned_threads) do
+        thread:kill()
     end
 end
 
 
 function _M:wake_up()
     local wake_up_semaphore = self.wake_up_semaphore
-    wake_up_semaphore:post(#self.threads)
+    wake_up_semaphore:post(self.alive_threads)
 end
 
 
 function _M:spawn()
     local ok, err
-    local threads = self.threads
-    for i = 1, #threads do
-        ok, err = threads[i]:spawn()
+
+    while self.spawned_threads_count < self.max_threads do
+        local name = string_format(
+            "worker#%d#%d",
+            math_floor(ngx_now() * 1000),
+            self.name_counter)
+
+        self.name_counter = self.name_counter + 1
+
+        self.spawned_threads[name] = loop.new(name, {
+            init = self.init,
+            before = self.before,
+            loop_body = self.loop_body,
+            after = self.after,
+            finally = self.finally,
+        })
+
+        ok, err = self.spawned_threads[name]:spawn()
 
         if not ok then
             return false, err
         end
+
+        self.spawned_threads_count = self.spawned_threads_count + 1
     end
 
     return true, nil
@@ -149,51 +227,59 @@ end
 
 function _M.new(timer_sys, threads)
     local self = {
+        name_counter = 0,
         timer_sys = timer_sys,
         wake_up_semaphore = semaphore.new(0),
-        threads = {},
+        max_threads = threads,
+
+        spawned_threads_count = 0,
+        spawned_threads = {},
+
+        alive_threads_count = 0,
+        alive_threads = {},
     }
 
-    for i = 1, threads do
-        local name = string_format("worker#%d", i)
-        self.threads[i] = loop.new(name, {
-            init = {
-                argc = 0,
-                argv = {},
-                callback = thread_init,
-            },
+    self.init = {
+        argc = 2,
+        argv = {
+            report_alive,
+            self,
+        },
+        callback = thread_init,
+    }
 
-            before = {
-                argc = 1,
-                argv = {
-                    self,
-                },
-                callback = thread_before,
-            },
+    self.before = {
+        argc = 1,
+        argv = {
+            self,
+        },
+        callback = thread_before,
+    }
 
-            loop_body = {
-                argc = 1,
-                argv = {
-                    self,
-                },
-                callback = thread_body,
-            },
+    self.loop_body = {
+        argc = 1,
+        argv = {
+            self,
+        },
+        callback = thread_body,
+    }
 
-            after = {
-                argc = 1,
-                argv = {
-                    timer_sys.opt.restart_thread_after_runs,
-                },
-                callback = thread_after,
-            },
+    self.after = {
+        argc = 1,
+        argv = {
+            self.timer_sys.opt.restart_thread_after_runs,
+        },
+        callback = thread_after,
+    }
 
-            finally = {
-                argc = 0,
-                argv = {},
-                callback = thread_finally,
-            },
-        })
-    end
+    self.finally = {
+        argc = 2,
+        argv = {
+            report_exit,
+            self,
+        },
+        callback = thread_finally,
+    }
 
     return setmetatable(self, meta_table)
 end

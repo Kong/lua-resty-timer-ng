@@ -70,7 +70,7 @@ local function thread_after(context)
     counter.runs = runs
 
     if runs > _M.RESTART_THREAD_AFTER_RUNS then
-        return loop.ACTION_RESTART
+        return loop.ACTION_EXIT
     end
 
     return loop.ACTION_CONTINUE

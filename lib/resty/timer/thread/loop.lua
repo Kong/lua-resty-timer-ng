@@ -17,7 +17,6 @@ local ACTION_CONTINUE = 1
 local ACTION_ERROR = 2
 local ACTION_EXIT = 3
 local ACTION_EXIT_WITH_MSG = 4
-local ACTION_RESTART = 5
 
 
 local NEED_CHECK_WORKER_EIXTING = {
@@ -34,7 +33,6 @@ local _M = {
     ACTION_ERROR = ACTION_ERROR,
     ACTION_EXIT = ACTION_EXIT,
     ACTION_EXIT_WITH_MSG = ACTION_EXIT_WITH_MSG,
-    ACTION_RESTART = ACTION_RESTART,
 }
 
 
@@ -88,14 +86,6 @@ local function make_log_msg(self, phase, action, msg)
         )
     end
 
-    if action == ACTION_RESTART then
-        return string_format(
-            "[timer] thread %s will restart after the %s phase was executed",
-            self.name,
-            phase
-        )
-    end
-
     if action == ACTION_ERROR or action == ACTION_EXIT_WITH_MSG then
         return string_format(
             "[timer] thread %s will exits after the %s phase was executed: %s",
@@ -126,8 +116,7 @@ local function phase_handler_wrapper(self, phase)
     local action = action_or_err
     local err = err_or_nil
 
-    if action == ACTION_CONTINUE or
-       action == ACTION_RESTART
+    if action == ACTION_CONTINUE
     then
         if  self[phase].need_check_worker_exiting and
             ngx_worker_exiting()
@@ -183,12 +172,6 @@ local function do_phase_handler(self, phase)
 
     if action == ACTION_EXIT_WITH_MSG then
         ngx_log(ngx_NOTICE, make_log_msg(self, phase, action, err))
-        return true
-    end
-
-    if action == ACTION_RESTART then
-        ngx_log(ngx_NOTICE, make_log_msg(self, phase, action, nil))
-        self:spawn()
         return true
     end
 
@@ -258,9 +241,13 @@ function _M.new(name, options)
 
     local self = {
         name = tostring(name),
-        context = {},
+        context = {
+            self = nil
+        },
         _kill = false
     }
+
+    self.context.self = self
 
     for phase, default_handler in pairs(PAHSE_HANDLERS) do
         self[phase] = {}

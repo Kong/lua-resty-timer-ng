@@ -15,9 +15,7 @@ local math_min = math.min
 
 local setmetatable = setmetatable
 
-local _M = {
-    RESTART_THREAD_AFTER_RUNS = 10 ^ 5,
-}
+local _M = {}
 
 local meta_table = {
     __index = _M,
@@ -34,10 +32,6 @@ local function thread_init(context, self)
     ngx_update_time()
     wheels.real_time = ngx_now()
     wheels.expected_time = wheels.real_time - opt_resolution
-
-    context.counter = {
-        runs = 0,
-    }
 
     return loop.ACTION_CONTINUE
 end
@@ -63,10 +57,8 @@ end
 local function thread_after(context, self)
     local timer_sys = self.timer_sys
     local wheels = timer_sys.wheels
-    local counter = context.counter
-    local runs = counter.runs + 1
 
-    counter.runs = runs
+    self.spawn_worker_thread()
 
     local delay, _ = wheels:update_earliest_expiry_time()
 
@@ -82,22 +74,22 @@ local function thread_after(context, self)
              .. err)
     end
 
-    if runs > _M.RESTART_THREAD_AFTER_RUNS then
-        return loop.ACTION_RESTART
-    end
-
     return loop.ACTION_CONTINUE
 end
 
 
 local function thread_finally(context)
-    context.counter.runs = 0
     return loop.ACTION_CONTINUE
 end
 
 
 function _M:set_wake_up_mover_thread_callback(callback)
     self.wake_up_mover_thread = callback
+end
+
+
+function _M:set_spawn_worker_thread_callback(callback)
+    self.spawn_worker_thread = callback
 end
 
 
