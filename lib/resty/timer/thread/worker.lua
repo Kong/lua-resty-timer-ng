@@ -109,13 +109,13 @@ local function thread_finally(context, self)
 
     if ngx_worker_exiting() then
         local job_name, job = next(jobs)
-        repeat
+        while not job_name do
             jobs[job_name] = nil
 
             if not job:is_running() then
                 job:execute()
             end
-        until job_name == nil
+        end
     end
 
     return loop.ACTION_CONTINUE
