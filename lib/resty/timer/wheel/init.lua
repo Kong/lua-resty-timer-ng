@@ -95,7 +95,7 @@ function _M:insert(job)
     local next_pointer = job:get_next_pointer(self.id)
 
     if next_pointer then
-        self.slots[next_pointer]:push_back(job)
+        self.slots[next_pointer]:push_right(job)
         return true, nil
     end
 
@@ -105,7 +105,7 @@ function _M:insert(job)
         return lower_wheel:insert(job)
     end
 
-    self.expired_jobs:push_back(job)
+    self.expired_jobs:push_right(job)
 
     return true, nil
 end
@@ -137,12 +137,12 @@ function _M:spin_pointer(offset)
         local jobs = self:get_jobs_by_pointer(final_pointer)
 
         while not jobs:is_empty() do
-            local job = jobs:pop_back()
+            local job = jobs:pop_right()
 
             if lower_wheel then
                 lower_wheel:insert(job)
             else
-                expired_jobs:push_back(job)
+                expired_jobs:push_right(job)
             end
         end
     end

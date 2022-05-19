@@ -35,30 +35,55 @@ end
 
 
 function _M:length()
-    return self.nelts
+    return self.last - self.first + 1
 end
+
 
 
 function _M:is_empty()
-    return self.nelts == 0
+    return self.first > self.last
 end
 
 
-function _M:pop_back()
-    if self.nelts == 0 then
-        return nil
+function _M:push_left (value)
+    local first = self.first - 1
+    self.first = first
+    self.elts[first] = value
+end
+
+
+function _M:push_right(value)
+    local last = self.last + 1
+    self.last = last
+    self.elts[last] = value
+end
+
+
+function _M:pop_left ()
+    local first = self.first
+
+    if first > self.last then
+        error("list is empty")
     end
 
-    local value = self.elts[self.nelts]
-    self.elts[self.nelts] = nil
-    self.nelts = self.nelts - 1
+    local value = self.elts[first]
+    self.elts[first] = nil
+    self.first = first + 1
     return value
 end
 
 
-function _M:push_back(value)
-    self.elts[self.nelts + 1] = value
-    self.nelts = self.nelts + 1
+function _M:pop_right()
+    local last = self.last
+
+    if self.first > last then
+        error("list is empty")
+    end
+
+    local value = self.elts[last]
+    self.elts[last] = nil
+    self.last = last - 1
+    return value
 end
 
 
@@ -75,7 +100,8 @@ function _M.new(n)
 
     self = {
         elts = utils_table_new(n, 0),
-        nelts = 0,
+        first = 0,
+        last = -1,
     }
 
     return setmetatable(self, meta_table)
@@ -84,18 +110,19 @@ end
 
 function _M:release()
     utils_table_clear(self.elts)
-    self.nelts = 0
+    self.first = 0
+    self.last = -1
     table_insert(array_pool, self)
 end
 
 
 function _M.merge(dst, src)
-    if src == nil or src.nelts == 0 then
+    if src == nil then
         return
     end
 
-    for i = 1, src.nelts do
-        dst:push_back(src.elts[i])
+    while not src:is_empty() do
+        dst:push_left(src:pop_left())
     end
 end
 
