@@ -45,8 +45,16 @@ local function thread_body(context, self)
         -- update the status of the wheel group
         wheels:sync_time()
 
-        if not wheels.ready_jobs:is_empty() then
-            self.wake_up_mover_thread()
+        if not wheels.pending_jobs:is_empty() then
+            self.wake_up_worker_thread()
+
+        elseif not wheels.ready_jobs:is_empty() then
+            -- just swap two lists
+            -- `wheels.ready_jobs = {}` will bring work to GC
+            local temp = wheels.pending_jobs
+            wheels.pending_jobs = wheels.ready_jobs
+            wheels.ready_jobs = temp
+            self.wake_up_worker_thread()
         end
     end
 
@@ -83,8 +91,8 @@ local function thread_finally(context)
 end
 
 
-function _M:set_wake_up_mover_thread_callback(callback)
-    self.wake_up_mover_thread = callback
+function _M:set_wake_up_worker_thread_callback(callback)
+    self.wake_up_worker_thread = callback
 end
 
 
