@@ -78,7 +78,7 @@ end
 function _M:fetch_all_expired_jobs()
     for _, _wheel in ipairs(self.wheels) do
         local expired_jobs = _wheel:fetch_all_expired_jobs()
-        array_merge(self.ready_jobs, expired_jobs)
+        array_merge(self.pending_jobs, expired_jobs)
 
         if expired_jobs then
             expired_jobs:release()

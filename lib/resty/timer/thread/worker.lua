@@ -140,9 +140,7 @@ local function thread_body(context, self)
         ::continue::
     end
 
-    if not wheels.ready_jobs:is_empty() then
-        self.wake_up_super_thread()
-    end
+    self.wake_up_super_thread()
 
     return loop.ACTION_CONTINUE
 end

@@ -65,7 +65,7 @@ local function create(self, name, callback, delay, timer_type, argc, argv)
     self.counter.total = self.counter.total + 1
 
     if job:is_immediate() then
-        wheels.ready_jobs:push_right(job)
+        wheels.pending_jobs:push_right(job)
         self.thread_group:wake_up_super_thread()
 
         return name, nil

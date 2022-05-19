@@ -47,14 +47,6 @@ local function thread_body(context, self)
 
         if not wheels.pending_jobs:is_empty() then
             self.wake_up_worker_thread()
-
-        elseif not wheels.ready_jobs:is_empty() then
-            -- just swap two lists
-            -- `wheels.ready_jobs = {}` will bring work to GC
-            local temp = wheels.pending_jobs
-            wheels.pending_jobs = wheels.ready_jobs
-            wheels.ready_jobs = temp
-            self.wake_up_worker_thread()
         end
     end
 
