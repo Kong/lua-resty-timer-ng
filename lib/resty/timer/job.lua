@@ -174,7 +174,7 @@ function _M:re_cal_next_pointer(wheels)
 end
 
 
-function _M.new(wheels, name, callback, delay, once, argc, argv)
+function _M.new(wheels, name, callback, delay, once, debug, argc, argv)
     local self = {
         _enable = true,
         _cancel = false,
@@ -183,6 +183,7 @@ function _M.new(wheels, name, callback, delay, once, argc, argv)
         name = name,
         callback = callback,
         delay = delay,
+        debug = debug,
         steps = utils_convert_second_to_step(delay, wheels.resolution),
 
         -- a table
@@ -206,12 +207,14 @@ function _M.new(wheels, name, callback, delay, once, argc, argv)
             last_err_msg = "",
         },
         meta = {
-            name = "[C]",
+            name = "debug off",
             callstack = {},
         },
     }
 
-    job_create_meta(self)
+    if debug then
+        job_create_meta(self)
+    end
 
     if not self.immediate then
         job_re_cal_next_pointer(self, wheels)

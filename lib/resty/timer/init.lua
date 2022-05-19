@@ -57,9 +57,14 @@ local function create(self, name, callback, delay, timer_type, argc, argv)
 
     wheels:sync_time()
 
-    local job = job_module.new(wheels, name,
-                               callback, delay,
-                               timer_type, argc, argv)
+    local job = job_module.new(wheels,
+                               name,
+                               callback,
+                               delay,
+                               timer_type,
+                               self.opt.debug,
+                               argc,
+                               argv)
     job:enable()
     jobs[name] = job
     self.counter.total = self.counter.total + 1
@@ -92,6 +97,11 @@ function _M.new(options)
 
     if options then
         assert(type(options) == "table", "expected `options` to be a table")
+
+        if options.debug then
+            assert(type(debug) == "boolean",
+                "expected `debug` to be a boolean")
+        end
 
         if options.restart_thread_after_runs then
             assert(type(options.restart_thread_after_runs) == "number",
@@ -174,6 +184,10 @@ function _M.new(options)
     end
 
     local opt = {
+        debug = options
+            and options.debug
+            or constants.DEFAULT_DEBUG,
+
         wheel_setting = options
             and options.wheel_setting
             or constants.DEFAULT_WHEEL_SETTING,
@@ -426,6 +440,13 @@ function _M:stats(verbose)
         sys = sys,
         timers = jobs,
     }
+end
+
+
+---enable or disable debug mode
+---@param status boolean true -> enable | false -> disable
+function _M:set_debug(status)
+    self.opt.debug = status
 end
 
 

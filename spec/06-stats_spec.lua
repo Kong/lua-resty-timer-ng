@@ -38,15 +38,22 @@ insulate("stats |", function ()
 
         local timer_name = "TEST"
         assert.is_truthy((timer:once(timer_name, 60, function() end)))
-
         local stats = timer:stats(true)
         local timer_info = stats.timers[timer_name]
         assert.is_truthy(timer_info)
+        assert.same("debug off", timer_info.meta.name)
+        assert.is_true((timer:cancel(timer_name)))
 
+
+        timer:set_debug(true)
+        assert.is_truthy((timer:once(timer_name, 60, function() end)))
+        stats = timer:stats(true)
+        timer_info = stats.timers[timer_name]
+        assert.is_truthy(timer_info)
         local callstack = timer_info.meta.callstack
         assert.same("spec/06-stats_spec.lua", callstack[1].source)
-
         assert.is_true((timer:cancel(timer_name)))
+        timer:set_debug(false)
     end)
 
     it("no verbose", function ()

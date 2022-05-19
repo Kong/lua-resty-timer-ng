@@ -4,6 +4,9 @@ local math_floor = math.floor
 local string_format = string.format
 
 local _M = {
+    -- disable debug mode
+    DEFAULT_DEBUG = false,
+
     -- number of worker timers
     DEFAULT_THREADS = 32,
 

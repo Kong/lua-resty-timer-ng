@@ -218,6 +218,18 @@ Return `true` if the specified timer is managed by this system, and `false` othe
 
 * `name`: name of timer
 
+
+### set_debug
+
+**syntax**: *timer:set_debug(status)*
+
+**context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
+
+Enable or disable debug mode.
+
+* `status`: If true then debug mode will be enabled and vice versa debug mode will be disabled.
+
+
 ### stats
 
 **syntax**: info, err = timer:stats(verbose?)
