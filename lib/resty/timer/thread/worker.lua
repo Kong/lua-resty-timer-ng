@@ -164,6 +164,18 @@ end
 
 local function thread_finally(context, report_exit_callback, self)
     context.counter.runs = 0
+
+    if ngx_worker_exiting() then
+        local jobs = self.timer_sys.jobs
+        local job_name, job = next(jobs)
+
+        while job_name do
+            jobs[job_name] = nil
+            job:execute()
+            job_name, job = next(jobs)
+        end
+    end
+
     report_exit_callback(self, context.self)
     return loop.ACTION_CONTINUE
 end
