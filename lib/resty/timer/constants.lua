@@ -10,8 +10,8 @@ local _M = {
     -- number of worker timers
     DEFAULT_THREADS = 32,
 
-    -- restart the thread after every 50 jobs have been run
-    DEFAULT_RESTART_THREAD_AFTER_RUNS = 50,
+    -- restart the thread after every 2000 jobs have been run
+    DEFAULT_RESTART_THREAD_AFTER_RUNS = 2000,
 
     -- not used at the moment
     DEFAULT_FORCE_UPDATE_TIME = true,
