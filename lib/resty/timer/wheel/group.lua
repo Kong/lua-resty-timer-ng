@@ -74,7 +74,7 @@ end
 
 
 -- do the following things
--- * add all expired jobs from wheels to `wheels.ready_jobs`
+-- * add all expired jobs from wheels to `wheels.pending_jobs`
 function _M:fetch_all_expired_jobs()
     for _, _wheel in ipairs(self.wheels) do
         local expired_jobs = _wheel:fetch_all_expired_jobs()
@@ -142,21 +142,6 @@ function _M.new(wheel_setting, resolution)
 
         earliest_expiry_time = 0,
 
-        -- Why use two queues?
-        -- Because a zero-delay timer may create another zero-delay timer,
-        -- and all zero-delay timers will be
-        -- inserted directly into the queue,
-        -- at which point it will cause the queue to never be empty.
-
-        -- will be move to `pending_jobs` by super timer
-        -- the function `fetch_all_expired_jobs`
-        -- adds all expired job to this table
-        -- TODO: use `utils.table_new`
-        ready_jobs = array.new(),
-
-        -- each job in this table will
-        -- be run by function `worker_timer_callback`
-        -- TODO: use `utils.table_new`
         pending_jobs = array.new(),
 
         -- store wheels for each level

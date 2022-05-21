@@ -16,7 +16,20 @@ luarocks install luacov-console
 Run the following command to run some tests.
 
 ```shell
-resty -I lib -I spec --errlog-level notice spec/runner.lua --coverage --verbose -o htest spec/
+resty   -c 1024 \
+        --http-conf "lua_max_running_timers 1024;" \
+        --http-conf "lua_max_pending_timers 1024;" \
+        -I lib \
+        -I spec \
+        --errlog-level notice \
+        spec/runner.lua --coverage --verbose -o htest spec/
+# or
+resty   -c 1024 \
+        --http-conf "lua_max_running_timers 1024;" \
+        --http-conf "lua_max_pending_timers 1024;" \
+        -I lib  \
+        -I spec \
+        spec/runner.lua --coverage --verbose -o htest spec/
 ```
 
 Run the following command to generate a coverage report.

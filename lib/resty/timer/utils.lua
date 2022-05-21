@@ -138,7 +138,6 @@ end
 
 function _M.print_queue(self)
     local pending_jobs = self.wheels.pending_jobs
-    local ready_jobs = self.wheels.ready_jobs
 
     ngx.update_time()
 
@@ -148,15 +147,7 @@ function _M.print_queue(self)
         str = str .. tostring(v) .. "\n"
     end
 
-    str = str .. "======== END PENDING ========\n"
-
-    str = str .. "======== BEGIN READY ========\n"
-
-    for _, v in ipairs(ready_jobs) do
-        str = str .. tostring(v) .. "\n"
-    end
-
-    str = str .. "======== END READY ========"
+    str = str .. "======== END PENDING ========"
 
     ngx.log(ngx.ERR, str)
 end

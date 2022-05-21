@@ -53,24 +53,16 @@ end
 function _M.new(timer_sys)
     local super_thread = super_thread_module.new(timer_sys)
     local worker_thread = worker_thread_module.new(timer_sys,
-                                                   timer_sys.opt.threads)
+                                                   timer_sys.opt.min_threads,
+                                                   timer_sys.opt.max_threads)
 
     local self = {
         super_thread = super_thread,
         worker_thread = worker_thread,
     }
 
-    super_thread:set_spawn_worker_thread_callback(function ()
-        worker_thread:spawn()
-    end)
-
-    super_thread:set_wake_up_worker_thread_callback(function ()
-        worker_thread:wake_up()
-    end)
-
-    worker_thread:set_wake_up_super_thread_callback(function ()
-        super_thread:wake_up()
-    end)
+    super_thread:set_worker_thread_ref(worker_thread)
+    worker_thread:set_super_thread_ref(super_thread)
 
     return setmetatable(self, meta_table)
 end

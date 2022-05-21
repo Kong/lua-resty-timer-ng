@@ -7,6 +7,7 @@ local ngx_NOTICE = ngx.NOTICE
 local ngx_ERR = ngx.ERR
 
 local math_floor = math.floor
+local math_abs = math.abs
 
 local ngx_now = ngx.now
 local ngx_worker_exiting = ngx.worker.exiting
@@ -76,6 +77,34 @@ local function report_exit(self, thread)
 end
 
 
+local function start_loop(self)
+    local name = string_format(
+        "worker#%d#%d",
+        math_floor(ngx_now() * 1000),
+        self.name_counter)
+
+    self.name_counter = self.name_counter + 1
+
+    self.spawned_threads[name] = loop.new(name, {
+        init = self.init,
+        before = self.before,
+        loop_body = self.loop_body,
+        after = self.after,
+        finally = self.finally,
+    })
+
+    local ok, err = self.spawned_threads[name]:spawn()
+
+    if not ok then
+        return false, err
+    end
+
+    self.spawned_threads_count = self.spawned_threads_count + 1
+
+    return true, nil
+end
+
+
 local function thread_init(context, report_alive_callback, self)
     report_alive_callback(self, context.self)
 
@@ -133,14 +162,14 @@ local function thread_body(context, self)
             local _, need_wake_up = wheels:update_earliest_expiry_time()
 
             if need_wake_up then
-                self.wake_up_super_thread()
+                self.super_thread:wake_up()
             end
         end
 
         ::continue::
     end
 
-    self.wake_up_super_thread()
+    self.super_thread:wake_up()
 
     return loop.ACTION_CONTINUE
 end
@@ -179,8 +208,13 @@ local function thread_finally(context, report_exit_callback, self)
 end
 
 
-function _M:set_wake_up_super_thread_callback(callback)
-    self.wake_up_super_thread = callback
+function _M:get_alive_thread_count()
+    return self.alive_threads_count
+end
+
+
+function _M:set_super_thread_ref(super_thread)
+    self.super_thread = super_thread
 end
 
 
@@ -198,51 +232,73 @@ function _M:wake_up()
 end
 
 
-function _M:spawn()
-    local ok, err
+function _M:stretch(ratio)
+    if ratio == 0 then
+        return true, nil
+    end
 
-    while self.spawned_threads_count < self.max_threads do
-        local name = string_format(
-            "worker#%d#%d",
-            math_floor(ngx_now() * 1000),
-            self.name_counter)
+    local delta = (self.max_threads - self.min_threads) * math_abs(ratio)
+    delta = math_floor(delta)
 
-        self.name_counter = self.name_counter + 1
+    if ratio < 0 then
+        local thread_name, thread = next(self.alive_threads)
 
-        self.spawned_threads[name] = loop.new(name, {
-            init = self.init,
-            before = self.before,
-            loop_body = self.loop_body,
-            after = self.after,
-            finally = self.finally,
-        })
-
-        ok, err = self.spawned_threads[name]:spawn()
-
-        if not ok then
-            return false, err
+        while delta > 0
+          and thread_name
+          and self.cur_threads > self.min_threads
+        do
+            thread:kill()
+            delta = delta - 1
+            self.cur_threads = self.cur_threads - 1
+            thread_name, thread = next(self.alive_threads, thread_name)
         end
 
-        self.spawned_threads_count = self.spawned_threads_count + 1
+        return true, nil
+    end
+
+    while delta > 0 and self.cur_threads < self.max_threads do
+        self.cur_threads = self.cur_threads + 1
+        delta = delta - 1
     end
 
     return true, nil
 end
 
 
-function _M.new(timer_sys, threads)
+function _M:spawn()
+    local ok, err
+
+    while self.spawned_threads_count < self.cur_threads do
+        ok, err = start_loop(self)
+
+        if not ok then
+            return false, err
+        end
+    end
+
+    return true, nil
+end
+
+
+function _M.new(timer_sys, min_threads, max_threads)
     local self = {
         name_counter = 0,
         timer_sys = timer_sys,
         wake_up_semaphore = semaphore.new(0),
-        max_threads = threads,
+        min_threads = min_threads,
+        cur_threads = nil,
+        max_threads = max_threads,
 
         spawned_threads_count = 0,
         spawned_threads = {},
 
         alive_threads_count = 0,
         alive_threads = {},
+
+        super_thread = nil,
     }
+
+    self.cur_threads = math_floor((min_threads + max_threads) / 2)
 
     self.init = {
         argc = 2,

@@ -15,8 +15,6 @@ local _M = {
 
     ERROR_TOLERANCE = 0.2,
 
-    THREADS = 16,
-
     WHEEL_SETTING = {
         level = 3,
         slots_for_each_level = {

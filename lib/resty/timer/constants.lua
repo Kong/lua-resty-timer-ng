@@ -7,8 +7,11 @@ local _M = {
     -- disable debug mode
     DEFAULT_DEBUG = false,
 
-    -- number of worker timers
-    DEFAULT_THREADS = 32,
+    DEFAULT_MIN_THREADS = 128,
+
+    DEFAULT_MAX_THREADS = 256,
+
+    DEFAULT_AUTO_SCALING_LOAD_THRESHOLD = 5,
 
     -- restart the thread after every 2000 jobs have been run
     DEFAULT_RESTART_THREAD_AFTER_RUNS = 2000,

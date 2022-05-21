@@ -116,15 +116,45 @@ function _M.new(options)
                 "expected `restart_thread_after_runs` to be an integer")
         end
 
-        if options.threads then
-            assert(type(options.threads) == "number",
-                "expected `threads` to be a number")
+        if options.min_threads then
+            assert(options.min_threads and options.max_threads,
+                "both `min_thread` and `max_threads` must to be set")
 
-            assert(options.threads > 0,
-            "expected `threads` to be greater than 0")
+            assert(type(options.min_threads) == "number",
+                "expected `min_threads` to be a number")
 
-            local _, tmp = math_modf(options.threads)
-            assert(tmp == 0, "expected `threads` to be an integer")
+            assert(options.min_threads > 0,
+            "expected `min_threads` to be greater than 0")
+
+            local _, tmp = math_modf(options.min_threads)
+            assert(tmp == 0, "expected `min_threads` to be an integer")
+        end
+
+        if options.max_threads then
+            assert(options.min_threads and options.max_threads,
+                "both `min_thread` and `max_threads` must to be set")
+
+            assert(type(options.max_threads) == "number",
+                "expected `max_threads` to be a number")
+
+            assert(options.max_threads > 0,
+            "expected `max_threads` to be greater than 0")
+
+            local _, tmp = math_modf(options.max_threads)
+            assert(tmp == 0, "expected `max_threads` to be an integer")
+        end
+
+        if options.min_threads and options.max_threads then
+            assert(options.min_threads < options.max_threads,
+                "expected `max_threads` to be greater than `min_threads`")
+        end
+
+        if options.auto_scaling_load_threshold then
+            assert(type(options.auto_scaling_load_threshold) == "number",
+                "expected `auto_scaling_load_threshold` to be a number")
+
+            assert(options.auto_scaling_load_threshold > 0,
+            "expected `auto_scaling_load_threshold` to be greater than 0")
         end
 
         if options.resolution then
@@ -202,9 +232,17 @@ function _M.new(options)
             or constants.DEFAULT_RESTART_THREAD_AFTER_RUNS,
 
         -- number of timer will be created by OpenResty API
-        threads = options
-            and options.threads
-            or constants.DEFAULT_THREADS,
+        min_threads = options
+            and options.min_threads
+            or constants.DEFAULT_MIN_THREADS,
+
+        max_threads = options
+            and options.max_threads
+            or constants.DEFAULT_MAX_THREADS,
+
+        auto_scaling_load_threshold = options
+            and options.auto_scaling_load_threshold
+            or constants.DEFAULT_AUTO_SCALING_LOAD_THRESHOLD,
 
         -- call function `ngx.update_time` every run of timer job
         force_update_time = options
@@ -403,11 +441,10 @@ end
 
 function _M:stats(verbose)
     local pending_jobs = self.wheels.pending_jobs
-    local ready_jobs = self.wheels.ready_jobs
 
     local sys = {
         running = self.counter.running,
-        pending = pending_jobs:length() + ready_jobs:length(),
+        pending = pending_jobs:length(),
         waiting = nil,
         total = self.counter.total,
         runs = self.counter.runs,
