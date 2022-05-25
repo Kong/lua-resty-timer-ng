@@ -36,7 +36,10 @@ insulate("create a once timer with invalid arguments | ", function ()
     randomize()
 
     lazy_setup(function ()
-        timer = timer_module.new()
+        timer = timer_module.new({
+            min_threads = 16,
+            max_threads = 32,
+        })
         local ok, _ = timer:start()
         assert.is_true(ok)
 
@@ -82,6 +85,8 @@ insulate("create a once timer #" .. strategy .. " | ", function ()
         timer = timer_module.new({
             resolution = helper.RESOLUTION,
             wheel_setting = helper.WHEEL_SETTING,
+            min_threads = 16,
+            max_threads = 32,
         })
         local ok, _ = timer:start()
         assert.is_true(ok)

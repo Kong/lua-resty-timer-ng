@@ -19,7 +19,10 @@ insulate("timer | ", function ()
     randomize()
 
     lazy_setup(function ()
-        timer = timer_module.new()
+        timer = timer_module.new({
+            min_threads = 16,
+            max_threads = 32,
+        })
         local ok, _ = timer:start()
         assert.is_true(ok)
 
