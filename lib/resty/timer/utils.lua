@@ -1,7 +1,6 @@
 local math_pow = math.pow
 local math_floor = math.floor
 
-local ipairs = ipairs
 local pcall = pcall
 local pairs = pairs
 local rawset = rawset
@@ -135,48 +134,6 @@ function _M.convert_second_to_step(second, resolution)
     return math_floor(_M.round(second / resolution, 3))
 end
 
-
-function _M.print_queue(self)
-    local pending_jobs = self.wheels.pending_jobs
-
-    ngx.update_time()
-
-    local str = "\n======== BEGIN PENDING ========" .. ngx.now() .. "\n"
-
-    for _, v in ipairs(pending_jobs) do
-        str = str .. tostring(v) .. "\n"
-    end
-
-    str = str .. "======== END PENDING ========"
-
-    ngx.log(ngx.ERR, str)
-end
-
-
-function _M.print_wheel(wheels)
-    ngx.update_time()
-
-    local str = ""
-
-    for level, wheel in ipairs(wheels.wheels) do
-        str = str .. "\n======== BEGIN #" .. tostring(level)
-            .. " ========" .. ngx.now() .. "\n"
-
-        str = str .. "pointer = " .. wheel.pointer + 1 .. "\n"
-        str = str .. "nelts = " .. wheel.nelts .. "\n"
-
-        for i, v in ipairs(wheel.slots) do
-            for _, value in ipairs(v) do
-                str = str .. "index = " .. i .. ", " .. tostring(value) .. "\n"
-            end
-        end
-
-        str = str .. "\n======== END #" .. tostring(level)
-            .. " ========\n"
-    end
-
-    ngx.log(ngx.ERR, str)
-end
 
 function _M.round(value, digits)
     local x = 10 ^ digits
