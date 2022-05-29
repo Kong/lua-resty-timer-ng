@@ -299,6 +299,7 @@ function _M.new(timer_sys, min_threads, max_threads)
     }
 
     self.cur_threads = math_floor((min_threads + max_threads) / 2)
+    self.wake_up_semaphore:post(self.cur_threads)
 
     self.init = {
         argc = 2,
