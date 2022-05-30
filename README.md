@@ -262,6 +262,21 @@ end
 local sys_info = info.sys
 
 
+local flamegraph = info.flamegraph
+
+-- flamegraph.* is a string, which is fold stacks, like
+-- unix`_sys_sysenter_post_swapgs 1401
+-- unix`_sys_sysenter_post_swapgs;genunix`close 5
+-- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf 85
+-- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;c2audit`audit_closef 26
+-- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;c2audit`audit_setf 5
+-- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;genunix`audit_getstate 6
+-- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;genunix`audit_unfalloc 2
+-- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;genunix`closef 48
+-- you can run `flamegraph.pl <output> > a.svg` to generate flamegraph.
+-- ref https://github.com/brendangregg/FlameGraph
+
+
 for timer_name, timer in pairs(info.jobs) do
     local meta = timer.meta
     local stats = timer.stats
@@ -271,19 +286,9 @@ for timer_name, timer in pairs(info.jobs) do
     -- that stores the location where the creation timer was created.
     -- Such as 'task.lua:56:start_background_task()'
 
-    -- meta.callstack is a string, which is fold stacks, like
-    -- unix`_sys_sysenter_post_swapgs 1401
-    -- unix`_sys_sysenter_post_swapgs;genunix`close 5
-    -- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf 85
-    -- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;c2audit`audit_closef 26
-    -- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;c2audit`audit_setf 5
-    -- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;genunix`audit_getstate 6
-    -- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;genunix`audit_unfalloc 2
-    -- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;genunix`closef 48
-    -- you can run `flamegraph.pl <output> > a.svg` to generate flamegraph.
-    -- ref https://github.com/brendangregg/FlameGraph
+    -- meta.callstack is a string.
 
-    -- Such as:
+
     stats = {
         -- elapsed_time is a table that stores the 
         -- maximum, minimum, average and variance 

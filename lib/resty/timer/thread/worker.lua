@@ -41,6 +41,7 @@ local function report_before_job_execute(self, job)
         stat = {
             running = 0,
             pending = 0,
+            elapsed_time = 0,
         }
 
         debug_stats:set(callstack, stat)

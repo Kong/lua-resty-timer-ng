@@ -118,6 +118,7 @@ insulate("stats |", function ()
 
         ngx.log(ngx.ERR, "flamegraph.running\n", stats.flamegraph.running)
         ngx.log(ngx.ERR, "flamegraph.pending\n", stats.flamegraph.pending)
+        ngx.log(ngx.ERR, "flamegraph.elapsed_time\n", stats.flamegraph.elapsed_time)
 
         ngx.sleep(0.2)
 
@@ -134,6 +135,24 @@ insulate("stats |", function ()
 
         ngx.log(ngx.ERR, "flamegraph.running\n", stats.flamegraph.running)
         ngx.log(ngx.ERR, "flamegraph.pending\n", stats.flamegraph.pending)
+        ngx.log(ngx.ERR, "flamegraph.elapsed_time\n", stats.flamegraph.elapsed_time)
+
+        ngx.sleep(1)
+
+        stats = timer:stats({
+            verbose = true,
+            flamegraph = true,
+        })
+
+        assert(stats)
+        assert(stats.timers)
+        assert(stats.flamegraph)
+        assert(stats.flamegraph.running)
+        assert(stats.flamegraph.pending)
+
+        ngx.log(ngx.ERR, "flamegraph.running\n", stats.flamegraph.running)
+        ngx.log(ngx.ERR, "flamegraph.pending\n", stats.flamegraph.pending)
+        ngx.log(ngx.ERR, "flamegraph.elapsed_time\n", stats.flamegraph.elapsed_time)
 
         timer:set_debug(false)
     end)

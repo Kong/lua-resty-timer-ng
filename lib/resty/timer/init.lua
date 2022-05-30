@@ -49,12 +49,39 @@ local function report_job_expire_callback_inernal(self, job)
         stat = {
             running = 0,
             pending = 0,
+            elapsed_time = 0,
         }
 
         debug_stats:set(callstack, stat)
     end
 
     stat.pending = stat.pending + 1
+end
+
+
+
+local function report_job_cancel_callback_inernal(self, job)
+    if not job.debug then
+        return
+    end
+
+    local debug_stats = self.debug_stats
+    local callstack = job.meta.callstack
+
+    local stat = debug_stats:get(callstack)
+
+    if not stat then
+        stat = {
+            running = 0,
+            pending = 0,
+            elapsed_time = 0,
+        }
+
+        debug_stats:set(callstack, stat)
+    end
+
+    stat.elapsed_time =
+        stat.elapsed_time + job.stats.runs * job.stats.elapsed_time.avg
 end
 
 
@@ -461,6 +488,7 @@ function _M:cancel(name)
         return false, "timer not found"
     end
 
+    report_job_cancel_callback_inernal(self, job)
     job:cancel()
     jobs[name] = nil
     self.sys_stats.total = self.sys_stats.total - 1
@@ -517,6 +545,7 @@ function _M:stats(options)
     local flamegraph = {
         running = {},
         pending = {},
+        elapsed_time = {},
     }
     local backtraces = self.debug_stats:get_keys()
 
@@ -532,10 +561,16 @@ function _M:stats(options)
         table_insert(flamegraph.pending, " ")
         table_insert(flamegraph.pending, stat.pending)
         table_insert(flamegraph.pending, "\n")
+
+        table_insert(flamegraph.elapsed_time, backtrace)
+        table_insert(flamegraph.elapsed_time, " ")
+        table_insert(flamegraph.elapsed_time, stat.elapsed_time)
+        table_insert(flamegraph.elapsed_time, "\n")
     end
 
     flamegraph.running = table_concat(flamegraph.running)
     flamegraph.pending = table_concat(flamegraph.pending)
+    flamegraph.elapsed_time = table_concat(flamegraph.elapsed_time)
 
     return {
         sys = sys,
