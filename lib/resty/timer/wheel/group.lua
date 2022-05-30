@@ -126,7 +126,7 @@ function _M:insert_job(job)
 end
 
 
-function _M.new(wheel_setting, resolution)
+function _M.new(wheel_setting, resolution, report_job_expire_callback)
     local self = {
         -- see `constants.DEFAULT_WHEEL_SETTING`
         setting = wheel_setting,
@@ -147,6 +147,8 @@ function _M.new(wheel_setting, resolution)
         -- store wheels for each level
         -- map from wheel_level to wheel
         wheels = utils.table_new(wheel_setting.level, 0),
+
+        report_job_expire_callback = report_job_expire_callback,
     }
 
     local prev_wheel = nil
@@ -155,7 +157,7 @@ function _M.new(wheel_setting, resolution)
     -- connect all the wheels to make a group, like a clock.
     for level, slots in ipairs(wheel_setting.slots_for_each_level) do
         local wheel_id = string_format("wheel#%d", level)
-        cur_wheel = wheel.new(wheel_id, slots)
+        cur_wheel = wheel.new(wheel_id, slots, report_job_expire_callback)
 
         if prev_wheel then
             cur_wheel:set_lower_wheel(prev_wheel)

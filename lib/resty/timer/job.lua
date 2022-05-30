@@ -11,12 +11,12 @@ local utils_get_variance =  utils.get_variance
 local table_unpack = table.unpack
 local table_concat = table.concat
 local table_insert = table.insert
+local table_remove = table.remove
 
 local debug_getinfo = debug.getinfo
 
 local math_max = math.max
 local math_min = math.min
-local math_huge = math.huge
 
 local pcall = pcall
 
@@ -27,7 +27,10 @@ local setmetatable = setmetatable
 local tostring = tostring
 local pairs = pairs
 
+local string_sub = string.sub
 local string_format = string.format
+
+local MAX_CALLSTACK_DEPTH = 128
 
 local _M = {}
 
@@ -72,33 +75,46 @@ local meta_table = {
 
 local function job_create_meta(job)
     local meta = job.meta
-    local callstack = meta.callstack
 
     -- job_create_meta + job.new + create + once | every = 4
     -- function `create` in file `lib/resty/timer/init.lua`
     local base_callstack_level = 4
 
-    for i = 1, 3 do
+    local callstack = {}
+
+    for i = 1, MAX_CALLSTACK_DEPTH do
         local info = debug_getinfo(i + base_callstack_level, "nSl")
 
         if not info or info.short_src == "[C]" then
             break
         end
 
-        callstack[i] = {
-            line = info.currentline,
-            func = info.name or info.what,
-            source = info.short_src,
-        }
+        table.insert(callstack, info.source)
+        table.insert(callstack, ":")
+        table.insert(callstack, info.currentline)
+        table.insert(callstack, ":")
+        table.insert(callstack, info.name or info.what)
+        table.insert(callstack, "()")
+        table.insert(callstack, ";")
     end
 
-    local top_stack = callstack[1]
+    -- remove the last ';'
+    table_remove(callstack)
 
-    if top_stack then
+    -- has at least one callstack
+    if #callstack >= 6 then
+        -- make the top callstack
         -- like `init.lua:128:start_timer()`
-        meta.name = top_stack.source .. ":" .. top_stack.line .. ":"
-            .. top_stack.func .. "()"
+        meta.name = table_concat(callstack, nil, 1, 6)
     end
+
+    if string_sub(callstack[#callstack - 5], 1, 1) == "@" then
+        -- remove the prefix @ from the bottom call stack
+        -- to adjust the flamegraph's raw data
+        callstack[#callstack - 5] = string_sub(callstack[#callstack - 5], 2)
+    end
+
+    meta.callstack = table_concat(callstack, nil)
 end
 
 
@@ -164,6 +180,11 @@ function _M:get_metadata()
 end
 
 
+function _M:get_stats()
+    return utils_table_deepcopy(self.stats)
+end
+
+
 function _M:get_next_pointer(wheel_id)
     return self.next_pointers[wheel_id]
 end
@@ -198,7 +219,7 @@ function _M.new(wheels, name, callback, delay, once, debug, argc, argv)
             elapsed_time = {
                 avg = 0,
                 max = -1,
-                min = math_huge,
+                min = 9999999,
                 variance = 0,
             },
 
@@ -208,7 +229,7 @@ function _M.new(wheels, name, callback, delay, once, debug, argc, argv)
         },
         meta = {
             name = "debug off",
-            callstack = {},
+            callstack = "debug off",
         },
     }
 
@@ -254,17 +275,20 @@ function _M:execute()
     self._running = false
     stats.finish = finish
 
-    local spend = ngx_now() - start
+    if self.debug then
+        ngx.update_time()
+        local spend = ngx_now() - start
 
-    elapsed_time.max = math_max(elapsed_time.max, spend)
-    elapsed_time.min = math_min(elapsed_time.min, spend)
+        elapsed_time.max = math_max(elapsed_time.max, spend)
+        elapsed_time.min = math_min(elapsed_time.min, spend)
 
-    local old_avg = elapsed_time.avg
-    elapsed_time.avg = utils_get_avg(spend, finish, old_avg)
+        local old_avg = elapsed_time.avg
+        elapsed_time.avg = utils_get_avg(spend, finish, old_avg)
 
-    local old_variance = elapsed_time.variance
-    elapsed_time.variance =
-        utils_get_variance(spend, finish, old_variance, old_avg)
+        local old_variance = elapsed_time.variance
+        elapsed_time.variance =
+            utils_get_variance(spend, finish, old_variance, old_avg)
+    end
 
 end
 

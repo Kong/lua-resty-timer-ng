@@ -105,6 +105,7 @@ function _M:insert(job)
         return lower_wheel:insert(job)
     end
 
+    self.report_job_expire_callback(job)
     self.expired_jobs:push_right(job)
 
     return true, nil
@@ -142,6 +143,7 @@ function _M:spin_pointer(offset)
             if lower_wheel then
                 lower_wheel:insert(job)
             else
+                self.report_job_expire_callback(job)
                 expired_jobs:push_right(job)
             end
         end
@@ -179,7 +181,7 @@ end
 ---@param id string id of this wheel
 ---@param nelts integer slots of this wheel
 ---@return table wheel a wheel
-function _M.new(id, nelts)
+function _M.new(id, nelts, report_job_expire_callback)
     assert(id ~= nil)
 
     local self = {
@@ -193,6 +195,8 @@ function _M.new(id, nelts)
         lower_wheel = nil,
 
         expired_jobs = array.new(),
+
+        report_job_expire_callback = report_job_expire_callback,
     }
 
     for i = 1, self.nelts do

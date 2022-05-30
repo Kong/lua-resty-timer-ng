@@ -232,14 +232,17 @@ Enable or disable debug mode.
 
 ### stats
 
-**syntax**: info, err = timer:stats(verbose?)
+**syntax**: info, err = timer:stats(options?)
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
 
 Get the statistics of the system.
 
-* `verbose`: If true, the statistics for each timer will be returned.
+* `options`:
+    * `verbose`: If `true`, the statistics for each timer will be returned, defualt `false`.
+    * `flamegraph`: If `true` and `verbose == true`, the raw data of flamegraph will be returned, 
+        you can run `flamegraph.pl <output> > a.svg` to generate flamegraph, default `false`.
 
 For example:
 
@@ -261,42 +264,44 @@ local sys_info = info.sys
 
 for timer_name, timer in pairs(info.jobs) do
     local meta = timer.meta
-    local elapsed_time = timer.elapsed_time
+    local stats = timer.stats
     local runs = timer.runs                     -- total number of runs
-    local faults = timer.faults                 -- total number of faults (exceptions)
-    local last_err_msg = timer.last_err_msg     -- the error message for last execption
 
     -- meta.name is an automatically generated string 
     -- that stores the location where the creation timer was created.
     -- Such as 'task.lua:56:start_background_task()'
 
-    -- meta.callstack is an array of length three, 
-    -- each of item stores a layer of callstack information.
+    -- meta.callstack is a string, which is fold stacks, like
+    -- unix`_sys_sysenter_post_swapgs 1401
+    -- unix`_sys_sysenter_post_swapgs;genunix`close 5
+    -- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf 85
+    -- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;c2audit`audit_closef 26
+    -- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;c2audit`audit_setf 5
+    -- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;genunix`audit_getstate 6
+    -- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;genunix`audit_unfalloc 2
+    -- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;genunix`closef 48
+    -- you can run `flamegraph.pl <output> > a.svg` to generate flamegraph.
+    -- ref https://github.com/brendangregg/FlameGraph
+
     -- Such as:
-    -- callstack[1] = {
-    --     line = 56,                           timer is created on this line
-    --     func = "start_background_task",      timer is created in this function
-    --     source = "task.lua"                  timer is created in this file
-    -- }
+    stats = {
+        -- elapsed_time is a table that stores the 
+        -- maximum, minimum, average and variance 
+        -- of the time spent on each run of the timer.
+        elapsed_time = {
+            max = 100
+            min = 50
+            avg = 70
+            variance = 12
+        },
 
-    -- callstack[2] = {
-    --     line = 372,                          function `start_background_task` is called on this line
-    --     func = "init_worker",                function `start_background_task` is called in this function
-    --     source = "init.lua                   function `start_background_task` is called in this file
-    -- }
+        -- total number of runs
+        runs = 0,
 
-    -- callstack[3] = nil                       nil mean code at C language
+        -- Number of successful runs
+        finish = 0,
 
-
-    -- elapsed_time is a table that stores the 
-    -- maximum, minimum, average and variance 
-    -- of the time spent on each run of the timer.
-    -- Such as:
-    -- elapsed_time = {
-    --     max = 100
-    --     min = 50
-    --     avg = 70
-    --     variance = 12
-    -- }
+        last_err_msg = "",
+    }
 end
 ```

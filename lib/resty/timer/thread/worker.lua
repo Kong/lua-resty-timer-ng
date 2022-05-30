@@ -8,6 +8,7 @@ local ngx_ERR = ngx.ERR
 
 local math_floor = math.floor
 local math_abs = math.abs
+local math_max = math.max
 
 local ngx_now = ngx.now
 local ngx_worker_exiting = ngx.worker.exiting
@@ -21,6 +22,57 @@ local _M = {}
 local meta_table = {
     __index = _M,
 }
+
+
+local function report_before_job_execute(self, job)
+    local timer_sys = self.timer_sys
+    timer_sys.sys_stats.running = timer_sys.sys_stats.running + 1
+
+    if not job.debug then
+        return
+    end
+
+    local debug_stats = timer_sys.debug_stats
+    local callstack = job.meta.callstack
+
+    local stat = debug_stats:get(callstack)
+
+    if not stat then
+        stat = {
+            running = 0,
+            pending = 0,
+        }
+
+        debug_stats:set(callstack, stat)
+    end
+
+    stat.running = stat.running + 1
+    stat.pending = math_max(stat.pending - 1, 0)
+end
+
+
+local function report_after_job_execute(self, job)
+    local timer_sys = self.timer_sys
+    timer_sys.sys_stats.running = timer_sys.sys_stats.running - 1
+    timer_sys.sys_stats.runs = timer_sys.sys_stats.runs + 1
+
+    if not job.debug then
+        return
+    end
+
+    local debug_stats = timer_sys.debug_stats
+    local callstack = job.meta.callstack
+
+    local stat = debug_stats:get(callstack)
+
+    if not stat then
+        ngx_log(ngx_NOTICE,
+                "[timer] lost stats key: " .. callstack)
+        return
+    end
+
+    stat.running = math_max(stat.running - 1, 0)
+end
 
 
 local function report_alive(self, thread)
@@ -130,9 +182,10 @@ local function thread_before(context, self)
 end
 
 
-local function thread_body(context, self)
+local function thread_body(context, self,
+                           report_before_job_execute_callback,
+                           report_after_job_execute_callback)
     local timer_sys = self.timer_sys
-    local counter = timer_sys.counter
     local wheels = timer_sys.wheels
 
     while not wheels.pending_jobs:is_empty() and
@@ -144,10 +197,9 @@ local function thread_body(context, self)
             goto continue
         end
 
-        counter.running = counter.running + 1
+        report_before_job_execute_callback(self, job)
         job:execute()
-        counter.running = counter.running - 1
-        counter.runs = counter.runs + 1
+        report_after_job_execute_callback(self, job)
 
         if job:is_oneshot() then
             timer_sys:cancel(job.name)
@@ -319,9 +371,11 @@ function _M.new(timer_sys, min_threads, max_threads)
     }
 
     self.loop_body = {
-        argc = 1,
+        argc = 3,
         argv = {
             self,
+            report_before_job_execute,
+            report_after_job_execute,
         },
         callback = thread_body,
     }

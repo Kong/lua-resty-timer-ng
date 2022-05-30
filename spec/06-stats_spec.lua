@@ -39,9 +39,11 @@ insulate("stats |", function ()
         -- the function `job_create_meta`
         -- in the file `lib/resty/timer/job.lua`.
 
-        local timer_name = "TEST"
-        assert.is_truthy((timer:once(timer_name, 60, function() end)))
-        local stats = timer:stats(true)
+        timer:set_debug(false)
+        local timer_name = assert(timer:once(nil, 60, function() end))
+        local stats = timer:stats({
+            verbose = true,
+        })
         local timer_info = stats.timers[timer_name]
         assert.is_truthy(timer_info)
         assert.same("debug off", timer_info.meta.name)
@@ -49,26 +51,96 @@ insulate("stats |", function ()
 
 
         timer:set_debug(true)
-        assert.is_truthy((timer:once(timer_name, 60, function() end)))
-        stats = timer:stats(true)
+        timer_name = assert(timer:once(nil, 60, function() end))
+        stats = timer:stats({
+            verbose = true,
+        })
         timer_info = stats.timers[timer_name]
         assert.is_truthy(timer_info)
         local callstack = timer_info.meta.callstack
-        assert.same("spec/06-stats_spec.lua", callstack[1].source)
-        assert.is_true((timer:cancel(timer_name)))
+        local meta_name = timer_info.meta.name
+
+        if not string.find(meta_name, "spec/06-stats_spec.lua", 1, true) then
+            error("incorrect meta name: " .. meta_name)
+        end
+
+        if not string.find(callstack, "spec/06-stats_spec.lua", 1, true) then
+            error("incorrect callstack: \n" .. callstack)
+        end
+
+        assert.is_true(timer:cancel(timer_name))
         timer:set_debug(false)
     end)
 
     it("no verbose", function ()
-        local stats = timer:stats(false)
+        local stats = timer:stats()
         assert(stats.timers == nil)
 
-        stats = timer:stats()
+        stats = timer:stats({
+            verbose = false,
+        })
         assert(stats.timers == nil)
     end)
 
 
+    it("flamegraph #only", function ()
+        timer:set_debug(true)
+        assert(timer:once(nil, 0, function ()
+            ngx.sleep(1)
+        end))
+
+        assert(timer:once(nil, 0, function ()
+            ngx.sleep(1)
+        end))
+
+        assert(timer:once(nil, 0, function ()
+            ngx.sleep(1)
+        end))
+
+        assert(timer:once(nil, 0, function ()
+            ngx.sleep(1)
+        end))
+
+        assert(timer:once(nil, 0, function ()
+            ngx.sleep(1)
+        end))
+
+        local stats = timer:stats({
+            verbose = true,
+            flamegraph = true,
+        })
+
+        assert(stats)
+        assert(stats.timers)
+        assert(stats.flamegraph)
+        assert(stats.flamegraph.running)
+        assert(stats.flamegraph.pending)
+
+        ngx.log(ngx.ERR, "flamegraph.running\n", stats.flamegraph.running)
+        ngx.log(ngx.ERR, "flamegraph.pending\n", stats.flamegraph.pending)
+
+        ngx.sleep(0.2)
+
+        stats = timer:stats({
+            verbose = true,
+            flamegraph = true,
+        })
+
+        assert(stats)
+        assert(stats.timers)
+        assert(stats.flamegraph)
+        assert(stats.flamegraph.running)
+        assert(stats.flamegraph.pending)
+
+        ngx.log(ngx.ERR, "flamegraph.running\n", stats.flamegraph.running)
+        ngx.log(ngx.ERR, "flamegraph.pending\n", stats.flamegraph.pending)
+
+        timer:set_debug(false)
+    end)
+
+
     it("others", function()
+        timer:set_debug(true)
         local timer_name = "TEST"
         local record = 1
         local ok, _ = timer:every(timer_name, 1, function ()
@@ -91,35 +163,39 @@ insulate("stats |", function ()
         for i = 1, 2 do
             sleep(1 + 5 + TOLERANCE)
 
-            local stats = timer:stats(true)
+            local stats = timer:stats({
+                verbose = true,
+            })
             local stats_sys = stats.sys
             local timer_info = stats.timers[timer_name]
             assert.is_truthy(stats_sys)
             assert.is_truthy(timer_info)
 
             assert.same(1, stats_sys.waiting)
-            assert.near(5, timer_info.elapsed_time.avg, TOLERANCE)
-            assert.near(5, timer_info.elapsed_time.max, TOLERANCE)
-            assert.near(5, timer_info.elapsed_time.min, TOLERANCE)
-            assert.same(i, timer_info.runs)
-            assert.same(0, timer_info.faults)
-            assert.same("", timer_info.last_err_msg)
+            assert.near(5, timer_info.stats.elapsed_time.avg, TOLERANCE)
+            assert.near(5, timer_info.stats.elapsed_time.max, TOLERANCE)
+            assert.near(5, timer_info.stats.elapsed_time.min, TOLERANCE)
+            assert.same(i, timer_info.stats.runs)
+            assert.same(i, timer_info.stats.finish)
+            assert.same("", timer_info.stats.last_err_msg)
         end
 
         sleep(1 + 5 + TOLERANCE)
 
-        local stats = timer:stats(true)
+        local stats = timer:stats({
+            verbose = true,
+        })
         local stats_sys = stats.sys
         local timer_info = stats.timers[timer_name]
         assert.is_truthy(stats_sys)
         assert.is_truthy(timer_info)
 
         assert.same(1, stats_sys.waiting)
-        assert.near(5, timer_info.elapsed_time.avg, TOLERANCE)
-        assert.near(5, timer_info.elapsed_time.max, TOLERANCE)
-        assert.near(5, timer_info.elapsed_time.min, TOLERANCE)
-        assert.same(3, timer_info.runs)
-        assert.same(1, timer_info.faults)
+        assert.near(5, timer_info.stats.elapsed_time.avg, TOLERANCE)
+        assert.near(5, timer_info.stats.elapsed_time.max, TOLERANCE)
+        assert.near(5, timer_info.stats.elapsed_time.min, TOLERANCE)
+        assert.same(3, timer_info.stats.runs)
+        assert.same(2, timer_info.stats.finish)
         assert.not_same("", timer_info.last_err_msg)
 
         assert.is_true((timer:cancel(timer_name)))

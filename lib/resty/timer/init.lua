@@ -1,3 +1,4 @@
+local lrucache = require("resty.lrucache")
 local job_module = require("resty.timer.job")
 local utils = require("resty.timer.utils")
 local wheel_group = require("resty.timer.wheel.group")
@@ -8,7 +9,9 @@ local ngx_log = ngx.log
 local ngx_NOTICE = ngx.NOTICE
 
 local utils_float_compare = utils.float_compare
-local utils_table_deepcopy = utils.table_deepcopy
+
+local table_insert = table.insert
+local table_concat = table.concat
 
 local math_floor = math.floor
 local math_modf = math.modf
@@ -29,6 +32,30 @@ local TIMER_ONCE = true
 local TIMER_REPEATED = false
 
 local _M = {}
+
+
+
+local function report_job_expire_callback_inernal(self, job)
+    if not job.debug then
+        return
+    end
+
+    local debug_stats = self.debug_stats
+    local callstack = job.meta.callstack
+
+    local stat = debug_stats:get(callstack)
+
+    if not stat then
+        stat = {
+            running = 0,
+            pending = 0,
+        }
+
+        debug_stats:set(callstack, stat)
+    end
+
+    stat.pending = stat.pending + 1
+end
 
 
 ---create a timed task and insert it into the wheel group
@@ -67,11 +94,12 @@ local function create(self, name, callback, delay, timer_type, argc, argv)
                                argv)
     job:enable()
     jobs[name] = job
-    self.counter.total = self.counter.total + 1
+    self.sys_stats.total = self.sys_stats.total + 1
 
     if job:is_immediate() then
         wheels.pending_jobs:push_right(job)
         self.thread_group:wake_up_super_thread()
+        report_job_expire_callback_inernal(self, job)
 
         return name, nil
     end
@@ -99,7 +127,7 @@ function _M.new(options)
         assert(type(options) == "table", "expected `options` to be a table")
 
         if options.debug then
-            assert(type(debug) == "boolean",
+            assert(type(options.debug) == "boolean",
                 "expected `debug` to be a boolean")
         end
 
@@ -270,13 +298,20 @@ function _M.new(options)
 
     timer_sys.is_first_start = true
 
-    timer_sys.wheels = wheel_group.new(opt.wheel_setting, opt.resolution)
-
-    timer_sys.counter = {
-        runs = 0,
+    timer_sys.sys_stats = {
         running = 0,
         total = 0,
+        runs = 0,
     }
+    timer_sys.debug_stats = assert(lrucache.new(1024))
+
+    local function report_job_expire_callback(job)
+        report_job_expire_callback_inernal(timer_sys, job)
+    end
+
+    timer_sys.wheels = wheel_group.new(opt.wheel_setting,
+                                       opt.resolution,
+                                       report_job_expire_callback)
 
     return setmetatable(timer_sys, { __index = _M })
 end
@@ -428,7 +463,7 @@ function _M:cancel(name)
 
     job:cancel()
     jobs[name] = nil
-    self.counter.total = self.counter.total - 1
+    self.sys_stats.total = self.sys_stats.total - 1
 
     return true, nil
 end
@@ -439,43 +474,73 @@ function _M:is_managed(name)
 end
 
 
-function _M:stats(verbose)
+function _M:stats(options)
+    if not options then
+        options = {}
+    end
+
     local pending_jobs = self.wheels.pending_jobs
 
     local sys = {
-        running = self.counter.running,
+        running = self.sys_stats.running,
         pending = pending_jobs:length(),
         waiting = nil,
-        total = self.counter.total,
-        runs = self.counter.runs,
+        total = self.sys_stats.total,
+        runs = self.sys_stats.runs,
     }
 
     sys.waiting = sys.total - sys.running - sys.pending
 
-    if not verbose then
+    if not options.verbose then
         return {
             sys = sys,
         }
     end
 
-    -- TODO: use `utils.table_new`
     local jobs = {}
 
     for name, job in pairs(self.jobs) do
-        local stats = job.stats
         jobs[name] = {
             name = name,
             meta = job:get_metadata(),
-            elapsed_time = utils_table_deepcopy(job.stats.elapsed_time),
-            runs = stats.runs,
-            faults = stats.runs - stats.finish,
-            last_err_msg = stats.last_err_msg,
+            stats = job:get_stats(),
         }
     end
+
+    if not options.flamegraph then
+        return {
+            sys = sys,
+            timers = jobs,
+        }
+    end
+
+    local flamegraph = {
+        running = {},
+        pending = {},
+    }
+    local backtraces = self.debug_stats:get_keys()
+
+    for _, backtrace in ipairs(backtraces) do
+        local stat = self.debug_stats:get(backtrace)
+
+        table_insert(flamegraph.running, backtrace)
+        table_insert(flamegraph.running, " ")
+        table_insert(flamegraph.running, stat.running)
+        table_insert(flamegraph.running, "\n")
+
+        table_insert(flamegraph.pending, backtrace)
+        table_insert(flamegraph.pending, " ")
+        table_insert(flamegraph.pending, stat.pending)
+        table_insert(flamegraph.pending, "\n")
+    end
+
+    flamegraph.running = table_concat(flamegraph.running)
+    flamegraph.pending = table_concat(flamegraph.pending)
 
     return {
         sys = sys,
         timers = jobs,
+        flamegraph = flamegraph,
     }
 end
 
