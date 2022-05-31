@@ -61,6 +61,8 @@ end
 
 
 local function report_job_cancel_callback_inernal(self, job)
+    self.sys_stats.total = self.sys_stats.total - 1
+
     if not job.debug then
         return
     end
@@ -491,7 +493,6 @@ function _M:cancel(name)
     report_job_cancel_callback_inernal(self, job)
     job:cancel()
     jobs[name] = nil
-    self.sys_stats.total = self.sys_stats.total - 1
 
     return true, nil
 end
@@ -564,7 +565,8 @@ function _M:stats(options)
 
         table_insert(flamegraph.elapsed_time, backtrace)
         table_insert(flamegraph.elapsed_time, " ")
-        table_insert(flamegraph.elapsed_time, stat.elapsed_time)
+        table_insert(flamegraph.elapsed_time,
+                     math_floor(stat.elapsed_time * 1000))
         table_insert(flamegraph.elapsed_time, "\n")
     end
 

@@ -29,6 +29,7 @@ local pairs = pairs
 
 local string_sub = string.sub
 local string_format = string.format
+local string_len = string.len
 
 local MAX_CALLSTACK_DEPTH = 128
 
@@ -89,29 +90,30 @@ local function job_create_meta(job)
             break
         end
 
-        table.insert(callstack, info.source)
-        table.insert(callstack, ":")
-        table.insert(callstack, info.currentline)
-        table.insert(callstack, ":")
-        table.insert(callstack, info.name or info.what)
-        table.insert(callstack, "()")
-        table.insert(callstack, ";")
+        local str = string_format("%s:%d:%s();",
+                                  info.source,
+                                  info.currentline,
+                                  info.name or info.what)
+
+        table_insert(callstack, str)
     end
 
     -- remove the last ';'
-    table_remove(callstack)
+    local top = callstack[1]
+    callstack[1] = string_sub(top, 1, string_len(top) -  1)
 
     -- has at least one callstack
-    if #callstack >= 6 then
-        -- make the top callstack
+    if #callstack > 0 then
         -- like `init.lua:128:start_timer()`
-        meta.name = table_concat(callstack, nil, 1, 6)
+        meta.name = callstack[1]
     end
 
-    if string_sub(callstack[#callstack - 5], 1, 1) == "@" then
-        -- remove the prefix @ from the bottom call stack
-        -- to adjust the flamegraph's raw data
-        callstack[#callstack - 5] = string_sub(callstack[#callstack - 5], 2)
+    local _callstack = callstack
+    callstack = {}
+
+    -- to adjust the order of raw data of flamegraph
+    for _ = 1, #_callstack do
+        table_insert(callstack, table_remove(_callstack))
     end
 
     meta.callstack = table_concat(callstack, nil)

@@ -44,10 +44,9 @@ insulate("stats |", function ()
         local stats = timer:stats({
             verbose = true,
         })
-        local timer_info = stats.timers[timer_name]
-        assert.is_truthy(timer_info)
+        local timer_info = assert(stats.timers[timer_name])
         assert.same("debug off", timer_info.meta.name)
-        assert.is_true((timer:cancel(timer_name)))
+        assert(timer:cancel(timer_name))
 
 
         timer:set_debug(true)
@@ -55,8 +54,7 @@ insulate("stats |", function ()
         stats = timer:stats({
             verbose = true,
         })
-        timer_info = stats.timers[timer_name]
-        assert.is_truthy(timer_info)
+        timer_info = assert(stats.timers[timer_name])
         local callstack = timer_info.meta.callstack
         local meta_name = timer_info.meta.name
 
@@ -68,7 +66,7 @@ insulate("stats |", function ()
             error("incorrect callstack: \n" .. callstack)
         end
 
-        assert.is_true(timer:cancel(timer_name))
+        assert(timer:cancel(timer_name))
         timer:set_debug(false)
     end)
 

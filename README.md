@@ -264,7 +264,8 @@ local sys_info = info.sys
 
 local flamegraph = info.flamegraph
 
--- flamegraph.* is a string, which is fold stacks, like
+-- flamegraph.running | pending | elapsed_time (second * 1000)
+-- is a string, which is fold stacks, like
 -- unix`_sys_sysenter_post_swapgs 1401
 -- unix`_sys_sysenter_post_swapgs;genunix`close 5
 -- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf 85
@@ -292,7 +293,7 @@ for timer_name, timer in pairs(info.jobs) do
     stats = {
         -- elapsed_time is a table that stores the 
         -- maximum, minimum, average and variance 
-        -- of the time spent on each run of the timer.
+        -- of the time spent on each run of the timer (second).
         elapsed_time = {
             max = 100
             min = 50
