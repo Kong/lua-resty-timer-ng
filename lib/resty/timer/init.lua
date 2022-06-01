@@ -100,16 +100,6 @@ end
 local function create(self, name, callback, delay, timer_type, argc, argv)
     local wheels = self.wheels
     local jobs = self.jobs
-    if not name then
-        name = string_format("unix_timestamp=%f;counter=%d",
-                             math_floor(ngx_now() * 1000),
-                             self.id_counter)
-        self.id_counter = self.id_counter + 1
-    end
-
-    if jobs[name] then
-        return false, "already exists timer"
-    end
 
     wheels:sync_time()
 
@@ -121,8 +111,14 @@ local function create(self, name, callback, delay, timer_type, argc, argv)
                                self.opt.debug,
                                argc,
                                argv)
+
+    if jobs[job.name] then
+        return false, "already exists timer"
+    end
+
     job:enable()
-    jobs[name] = job
+
+    jobs[job.name] = job
     self.sys_stats.total = self.sys_stats.total + 1
 
     if job:is_immediate() then
@@ -130,7 +126,7 @@ local function create(self, name, callback, delay, timer_type, argc, argv)
         self.thread_group:wake_up_super_thread()
         report_job_expire_callback_inernal(self, job)
 
-        return name, nil
+        return job.name, nil
     end
 
     local ok, err = wheels:insert_job(job)
@@ -142,7 +138,7 @@ local function create(self, name, callback, delay, timer_type, argc, argv)
     end
 
     if ok then
-        return name, nil
+        return job.name, nil
     end
 
     return false, err

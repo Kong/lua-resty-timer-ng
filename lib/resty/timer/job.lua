@@ -17,6 +17,7 @@ local debug_getinfo = debug.getinfo
 
 local math_max = math.max
 local math_min = math.min
+local math_floor = math.floor
 
 local pcall = pcall
 
@@ -31,6 +32,7 @@ local string_sub = string.sub
 local string_format = string.format
 local string_len = string.len
 
+local NAME_COUNTER = 0
 local MAX_CALLSTACK_DEPTH = 128
 
 local _M = {}
@@ -237,6 +239,15 @@ function _M.new(wheels, name, callback, delay, once, debug, argc, argv)
 
     if debug then
         job_create_meta(self)
+    end
+
+    if self.name == nil then
+        self.name = string_format("unix_timestamp=%f;counter=%d:meta=%s",
+                                  math_floor(ngx_now() * 1000),
+                                  NAME_COUNTER,
+                                  self.meta.name)
+
+        NAME_COUNTER = NAME_COUNTER + 1
     end
 
     if not self.immediate then
