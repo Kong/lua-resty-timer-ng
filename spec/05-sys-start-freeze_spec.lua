@@ -1,4 +1,3 @@
-local timer_module = require("resty.timer")
 local helper = require("helper")
 
 local sleep = ngx.sleep
@@ -12,6 +11,7 @@ local TOLERANCE = 0.2
 
 
 insulate("system start -> freeze -> start | ", function ()
+    local timer_module = require("resty.timer")
     local timer = { }
     local callback
     local tbl
@@ -100,4 +100,70 @@ insulate("system start -> freeze -> start | ", function ()
 
     end)
 
+end)
+
+
+insulate("worker exiting | ", function ()
+    local worker_exiting_flag = false
+    local native_ngx_worker_exiting = ngx.worker.exiting
+
+    local function ngx_worker_exiting_patched()
+        return worker_exiting_flag
+    end
+
+    local timer_module
+
+    lazy_setup(function ()
+        -- luacheck: push ignore
+        ngx.worker.exiting = function ()
+            return ngx_worker_exiting_patched()
+        end
+        -- luacheck: pop
+
+        timer_module = require("resty.timer")
+    end)
+
+    lazy_teardown(function ()
+        -- luacheck: push ignore
+        ngx.worker.exiting = native_ngx_worker_exiting
+        -- luacheck: pop
+    end)
+
+    after_each(function ()
+        worker_exiting_flag = false
+    end)
+
+    it("flush all timers", function ()
+        local timers = 10
+        local counter = 0
+        local timer = timer_module.new({
+            min_threads = 16,
+            max_threads = 32,
+        })
+
+        assert(timer:start())
+
+        for _ = 1, timers / 2 do
+            assert(timer:once(nil, 120, function (premature)
+                if premature then
+                    counter = counter + 1
+                end
+            end))
+
+            assert(timer:every(nil, 120, function (premature)
+                if premature then
+                    counter = counter + 1
+                end
+            end))
+        end
+
+        worker_exiting_flag = true
+
+        ngx.update_time()
+
+        -- waiting for worker timer was woke-up
+        ngx.sleep(2)
+
+        assert.same(counter, timers)
+    end)
 end)
