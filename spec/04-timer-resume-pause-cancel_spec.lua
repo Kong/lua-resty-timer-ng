@@ -52,7 +52,7 @@ insulate("timer | ", function ()
         tbl.time = 0
     end)
 
-    it("once create -> pause -> run", function ()
+    it("once create -> pause -> resume", function ()
         assert.has_no.errors(function ()
             local ok, _ = timer:once(TIMER_NAME_ONCE, 1, callback, tbl)
             assert.is_truthy(ok)
@@ -82,7 +82,7 @@ insulate("timer | ", function ()
         assert.same(0, tbl.time)
     end)
 
-    it("every create -> pause -> run -> cancel", function ()
+    it("every create -> pause -> resume -> cancel", function ()
         assert.has_no.errors(function ()
             local ok, _ = timer:every(TIMER_NAME_EVERY, 1, callback, tbl)
             assert.is_truthy(ok)
