@@ -62,7 +62,7 @@ insulate("timer | ", function ()
         sleep(1 + TOLERANCE)
         assert.same(0, tbl.time)
 
-        local ok, _ = timer:run(TIMER_NAME_ONCE)
+        local ok, _ = timer:resume(TIMER_NAME_ONCE)
         assert.is_true(ok)
 
         update_time()
@@ -92,7 +92,7 @@ insulate("timer | ", function ()
         sleep(2 + TOLERANCE)
         assert.same(0, tbl.time)
 
-        local ok, _ = timer:run(TIMER_NAME_EVERY)
+        local ok, _ = timer:resume(TIMER_NAME_EVERY)
         assert.is_true(ok)
 
         update_time()

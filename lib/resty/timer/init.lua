@@ -435,7 +435,7 @@ function _M:every(name, interval, callback, ...)
 end
 
 
-function _M:run(name)
+function _M:resume(name)
     assert(type(name) == "string", "expected `name` to be a string")
 
     local jobs = self.jobs
