@@ -34,7 +34,7 @@ https://github.com/Kong/kong-madr/pull/28
 
 ## Synopsis
 
-```nginx
+```
 http {
     init_worker_by_lua_block {
         local timer_module = require("resty.timer")
