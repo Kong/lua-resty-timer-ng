@@ -70,22 +70,6 @@ end
 local _M = {}
 
 
-function _M.assert(v, message)
-    if message == nil then
-        message = "assertion failed!"
-    end
-
-    if not v then
-        error(debug.traceback(message), 2)
-    end
-end
-
-
--- luacheck: push ignore
-local assert = _M.assert
--- luacheck: pop
-
-
 -- get average
 function _M.get_avg(cur_value, cur_count, old_avg)
     -- recurrence formula
