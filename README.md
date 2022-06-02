@@ -38,18 +38,15 @@ https://github.com/Kong/kong-madr/pull/28
 http {
     init_worker_by_lua_block {
         local timer_module = require("resty.timer")
-        local timer_sys = { }
 
         local options = {}
-        timer_sys = timer_module.new(options)
+        local timer_sys = timer_module.new(options)
 
         local function callback_once(premature, ...)
-            -- do something
             ngx.log(ngx.ERR, "in timer at")
         end
 
         local function callback_every(premature, ...)
-            -- do something
             ngx.log(ngx.ERR, "in timer every")
         end
 
