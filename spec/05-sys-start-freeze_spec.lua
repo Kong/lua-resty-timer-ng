@@ -54,7 +54,7 @@ insulate("system start -> freeze -> start | ", function ()
 
     it("once timer", function ()
         assert.has_no.errors(function ()
-            local ok, _ = timer:once(TIMER_NAME_ONCE, 1, callback, tbl)
+            local ok, _ = timer:named_at(TIMER_NAME_ONCE, 1, callback, tbl)
             assert.is_truthy(ok)
         end)
 
@@ -71,7 +71,7 @@ insulate("system start -> freeze -> start | ", function ()
 
     it("every create -> pause -> run -> cancel", function ()
         assert.has_no.errors(function ()
-            local ok, _ = timer:every(TIMER_NAME_EVERY, 1, callback, tbl)
+            local ok, _ = timer:named_every(TIMER_NAME_EVERY, 1, callback, tbl)
             assert.is_truthy(ok)
         end)
 
@@ -144,13 +144,13 @@ insulate("worker exiting | ", function ()
         assert(timer:start())
 
         for _ = 1, timers / 2 do
-            assert(timer:once(nil, 120, function (premature)
+            assert(timer:named_at(nil, 120, function (premature)
                 if premature then
                     counter = counter + 1
                 end
             end))
 
-            assert(timer:every(nil, 120, function (premature)
+            assert(timer:named_every(nil, 120, function (premature)
                 if premature then
                     counter = counter + 1
                 end

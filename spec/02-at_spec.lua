@@ -59,13 +59,13 @@ insulate("create a once timer with invalid arguments | ", function ()
 
     it("delay < 0", function ()
         assert.has.errors(function ()
-            timer:once(helper.TIMER_NAME_ONCE, -1, empty_callback)
+            timer:named_at(helper.TIMER_NAME_ONCE, -1, empty_callback)
         end)
     end)
 
     it("callback = nil", function ()
         assert.has.errors(function ()
-            timer:once(helper.TIMER_NAME_ONCE, 0, nil)
+            timer:named_at(helper.TIMER_NAME_ONCE, 0, nil)
         end)
     end)
 
@@ -129,7 +129,7 @@ insulate("create a once timer #" .. strategy .. " | ", function ()
 
             assert.has_no.errors(function ()
                 local ok, _ =
-                    timer:once(helper.TIMER_NAME_ONCE,
+                    timer:named_at(helper.TIMER_NAME_ONCE,
                                delay, callback, tbl, sleep_second)
                 assert.is_truthy(ok)
             end)

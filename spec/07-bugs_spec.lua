@@ -36,10 +36,10 @@ insulate("other bugs | ", function ()
 
     it("No.1 create a timer before the method `start()' is called", function ()
         assert.has.errors(function()
-            timer:once(nil, 10, function() end)
+            timer:named_at(nil, 10, function() end)
         end)
         assert.has.errors(function()
-            timer:every(nil, 10, function() end)
+            timer:named_every(nil, 10, function() end)
         end)
     end)
 end)
@@ -77,7 +77,7 @@ insulate("bugs of every timer | ", function ()
     it("No.1 overlap", function ()
         local flag = false
         local record = 0
-        timer:every(nil, 0.3, function (...)
+        timer:named_every(nil, 0.3, function (...)
             if now() - record < 0.3 then
                 flag = true
             end

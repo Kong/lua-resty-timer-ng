@@ -7,7 +7,7 @@ local _M = {
     -- disable debug mode
     DEFAULT_DEBUG = false,
 
-    DEFAULT_MIN_THREADS = 128,
+    DEFAULT_MIN_THREADS = 32,
 
     DEFAULT_MAX_THREADS = 256,
 

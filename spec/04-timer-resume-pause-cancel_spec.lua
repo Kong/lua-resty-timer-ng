@@ -54,7 +54,7 @@ insulate("timer | ", function ()
 
     it("once create -> pause -> resume", function ()
         assert.has_no.errors(function ()
-            local ok, _ = timer:once(TIMER_NAME_ONCE, 1, callback, tbl)
+            local ok, _ = timer:named_at(TIMER_NAME_ONCE, 1, callback, tbl)
             assert.is_truthy(ok)
         end)
 
@@ -73,7 +73,7 @@ insulate("timer | ", function ()
 
     it("once create -> cancel", function ()
         assert.has_no.errors(function ()
-            local ok, _ = timer:once(TIMER_NAME_ONCE, 1, callback, tbl)
+            local ok, _ = timer:named_at(TIMER_NAME_ONCE, 1, callback, tbl)
             assert.is_truthy(ok)
         end)
 
@@ -84,7 +84,7 @@ insulate("timer | ", function ()
 
     it("every create -> pause -> resume -> cancel", function ()
         assert.has_no.errors(function ()
-            local ok, _ = timer:every(TIMER_NAME_EVERY, 1, callback, tbl)
+            local ok, _ = timer:named_every(TIMER_NAME_EVERY, 1, callback, tbl)
             assert.is_truthy(ok)
         end)
 

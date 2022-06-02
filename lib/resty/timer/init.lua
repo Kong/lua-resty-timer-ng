@@ -369,13 +369,12 @@ function _M:freeze()
 end
 
 
--- TODO: rename this method
 function _M:destroy()
     self.thread_group:kill()
 end
 
 
-function _M:once(name, delay, callback, ...)
+function _M:named_at(name, delay, callback, ...)
     assert(self.enable, "the timer module is not started")
     assert(type(callback) == "function", "expected `callback` to be a function")
 
@@ -395,7 +394,6 @@ function _M:once(name, delay, callback, ...)
         return ngx_timer_at(delay, callback, ...)
     end
 
-    -- TODO: desc the logic and add related tests
     local name_or_false, err =
         create(self, name, callback, delay,
                TIMER_ONCE, select("#", ...), { ... })
@@ -404,7 +402,7 @@ function _M:once(name, delay, callback, ...)
 end
 
 
-function _M:every(name, interval, callback, ...)
+function _M:named_every(name, interval, callback, ...)
     assert(self.enable, "the timer module is not started")
     assert(type(callback) == "function", "expected `callback` to be a function")
 
@@ -428,6 +426,16 @@ function _M:every(name, interval, callback, ...)
                TIMER_REPEATED, select("#", ...), { ... })
 
     return name_or_false, err
+end
+
+
+function _M:at(delay, callback, ...)
+    return self:named_at(nil, delay, callback, ...)
+end
+
+
+function _M:every(interval, callback, ...)
+    return self:named_every(nil, interval, callback, ...)
 end
 
 

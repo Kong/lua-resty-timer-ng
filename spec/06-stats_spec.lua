@@ -40,7 +40,7 @@ insulate("stats |", function ()
         -- in the file `lib/resty/timer/job.lua`.
 
         timer:set_debug(false)
-        local timer_name = assert(timer:once(nil, 60, function() end))
+        local timer_name = assert(timer:at(60, function() end))
         local stats = timer:stats({
             verbose = true,
         })
@@ -50,7 +50,7 @@ insulate("stats |", function ()
 
 
         timer:set_debug(true)
-        timer_name = assert(timer:once(nil, 60, function() end))
+        timer_name = assert(timer:at(60, function() end))
         stats = timer:stats({
             verbose = true,
         })
@@ -83,23 +83,23 @@ insulate("stats |", function ()
 
     it("flamegraph #only", function ()
         timer:set_debug(true)
-        assert(timer:once(nil, 0, function ()
+        assert(timer:named_at(nil, 0, function ()
             ngx.sleep(1)
         end))
 
-        assert(timer:once(nil, 0, function ()
+        assert(timer:named_at(nil, 0, function ()
             ngx.sleep(1)
         end))
 
-        assert(timer:once(nil, 0, function ()
+        assert(timer:named_at(nil, 0, function ()
             ngx.sleep(1)
         end))
 
-        assert(timer:once(nil, 0, function ()
+        assert(timer:named_at(nil, 0, function ()
             ngx.sleep(1)
         end))
 
-        assert(timer:once(nil, 0, function ()
+        assert(timer:named_at(nil, 0, function ()
             ngx.sleep(1)
         end))
 
@@ -160,7 +160,7 @@ insulate("stats |", function ()
         timer:set_debug(true)
         local timer_name = "TEST"
         local record = 1
-        local ok, _ = timer:every(timer_name, 1, function ()
+        local ok, _ = timer:named_every(timer_name, 1, function ()
             if record < 3 then
                 sleep(5)
                 record = record + 1
@@ -173,7 +173,7 @@ insulate("stats |", function ()
 
         assert.is_truthy(ok)
 
-        ok, _ = timer:every(nil, 99999, function () end)
+        ok, _ = timer:named_every(nil, 99999, function () end)
 
         assert.is_truthy(ok)
 

@@ -35,37 +35,28 @@ http {
         local timer_module = require("resty.timer")
         local timer_sys = { }
 
-        local options = {
-            wheel_setting = {
-                level = 4,
-                slots = { 10, 60, 60, 24 },
-            },
-            resolution = 0.1,
-            threads = 10,
-            restart_thread_after_runs = 50,
-        }
+        local options = {}
         timer_sys = timer_module.new(options)
 
-        -- ‘premature’ is used to be compatible with existing callback functions and it is always false.
         local function callback_once(premature, ...)
             -- do something
-            ngx.log(ngx.ERR, "in timer example-once")
+            ngx.log(ngx.ERR, "in timer at")
         end
 
         local function callback_every(premature, ...)
             -- do something
-            ngx.log(ngx.ERR, "in timer example-every")
+            ngx.log(ngx.ERR, "in timer every")
         end
 
         -- run after 100 ms
-        local name, err = timer_sys:once("example-once", 0.1, callback_once)
+        local name, err = timer_sys:at(0.1, callback_once)
 
         if not name then
             ngx.log(ngx.ERR, err)
         end
 
         -- run every 1s
-        name , err = timer_sys:every("example-every", 1, callback_every)
+        name , err = timer_sys:every(1, callback_every)
 
         if not name then
             ngx.log(ngx.ERR, err)
@@ -96,6 +87,39 @@ The system records the following information:
 * The location of each timer created, such as call stack.
 
 
+## Debug Mode
+
+The following information will be recorded in debug mode.
+
+* The callstack when the timer was created
+* The elapsed_time for each timer
+* The timers that are running
+* Timers that are queued
+
+In debug mode, 
+you can call [stats()](#stats) to get the raw data needed to generate the flamegraph.
+
+
+## Maximum delay/interval
+
+```lua
+-- for resolution, please see `timer_module.new(options?)`
+max_delay = resolution
+max_interval = resolution
+
+-- for wheel_setting, please see `timer_module.new(options?)`
+for _, slots in ipairs(wheel_setting.slots_for_each_level) do
+    max_delay = max_delay * slots
+    max_interval = max_interval * slots
+end
+
+max_delay = max_delay - 2       -- second
+max_interval = max_interval - 2 -- second
+```
+
+Exceeding this range will use OpenResty's timer.
+
+
 ## History
 
 Versioning is strictly based on [Semantic Versioning](https://semver.org/)
@@ -108,18 +132,32 @@ Versioning is strictly based on [Semantic Versioning](https://semver.org/)
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
-**TODO**
-
 For example
 
 ```lua
 local timer_module = require("resty.timer")
 local timer_sys = timer_module.new({
-    -- number of threads
-    threads = 10,
+    -- debug mode
+    debug = false,
 
-    -- restart the LWP after it has run restart_thread_after_runs tasks.
-    restart_thread_after_runs = 50
+    -- 100ms
+    resolution = 0.1,
+
+    restart_thread_after_runs = 5000,
+
+    -- automatically adjusts the number of threads according to the load
+    -- load = (running_timers + pending_timers) / threads
+    auto_scaling_load_threshold = 5,
+
+    min_threads = 32,
+    max_threads = 256,
+
+    -- 0.1 is resolution
+    -- max_delay/interval = 10 * 60 * 60 * 21 * 0.1 second
+    wheel_setting = {
+        level = 4,
+        slots_for_each_level = { 10, 60, 60, 24 } ,
+    }
 })
 ```
 
@@ -139,9 +177,9 @@ Start the timer system.
 
 Suspend the timer system and the expiration of each timer will be frozen.
 
-### once
+### named_at
 
-**syntax**: *name_or_false, err = timer:once(name, delay, callback, ...)*
+**syntax**: *name_or_false, err = timer:named_at(name, delay, callback, ...)*
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
@@ -153,9 +191,9 @@ If you have called `timer:pause()`, you must call this function after you have c
 * delay: The expiration of this timer.
 
 
-### every
+### named_every
 
-**syntax**: *name_or_false, err = timer:every(name, interval, callback, ...)*
+**syntax**: *name_or_false, err = timer:named_every(name, interval, callback, ...)*
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
@@ -167,7 +205,15 @@ If you have called `timer:pause()`, you must call this function after you have c
 * interval: The expiration of this timer.
 
 
-### run
+### at
+
+Equivalent to `timer:named_at(nil, delay, callback, ...)`
+
+### every
+
+Equivalent to `timer:named_every(nil, interval, callback, ...)`
+
+### resume
 
 **syntax**: *ok, err = timer:resume(name)*
 
@@ -206,7 +252,9 @@ Cancel a timer.
 
 **context**: *init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
-**TODO**
+Destroy all timers and the object is no longer available.
+
+**Any operation (except GC) on this object after calling this method is undefined.**
 
 ### is_managed
 
@@ -266,14 +314,8 @@ local flamegraph = info.flamegraph
 
 -- flamegraph.running | pending | elapsed_time (second * 1000)
 -- is a string, which is fold stacks, like
--- unix`_sys_sysenter_post_swapgs 1401
--- unix`_sys_sysenter_post_swapgs;genunix`close 5
--- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf 85
--- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;c2audit`audit_closef 26
--- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;c2audit`audit_setf 5
--- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;genunix`audit_getstate 6
--- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;genunix`audit_unfalloc 2
--- unix`_sys_sysenter_post_swapgs;genunix`close;genunix`closeandsetf;genunix`closef 48
+-- @/lualib/background.lua:32:init();@/lualib/background.lua:64:start_dns_timer() 16
+-- @/lualib/background.lua:46:init();@/lualib/background.lua:128:start_cache_timer() 76
 -- you can run `flamegraph.pl <output> > a.svg` to generate flamegraph.
 -- ref https://github.com/brendangregg/FlameGraph
 
