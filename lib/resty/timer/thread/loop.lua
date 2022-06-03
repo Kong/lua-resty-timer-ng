@@ -97,7 +97,7 @@ local function make_log_msg(self, phase, action, msg)
         )
 
     else
-        error("unexpected error")
+        error("[timer] unexpected error")
     end
 end
 
