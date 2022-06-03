@@ -2,6 +2,7 @@ local array = require("resty.timer.array")
 
 local array_new = array.new
 
+local assert = assert
 local math_floor = math.floor
 
 local setmetatable = setmetatable
@@ -17,9 +18,11 @@ function _M:set_higher_wheel(wheel)
     self.higher_wheel = wheel
 end
 
+
 function _M:set_lower_wheel(wheel)
     self.lower_wheel = wheel
 end
+
 
 function _M:get_cur_pointer()
     return self.pointer
@@ -199,8 +202,9 @@ function _M.new(id, nelts, report_job_expire_callback)
         report_job_expire_callback = report_job_expire_callback,
     }
 
+    local slots = self.slots
     for i = 1, self.nelts do
-        self.slots[i] = array_new()
+        slots[i] = array_new()
     end
 
     return setmetatable(self, meta_table)

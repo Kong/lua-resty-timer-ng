@@ -13,8 +13,10 @@ local math_max = math.max
 local ngx_now = ngx.now
 local ngx_worker_exiting = ngx.worker.exiting
 
+local next = next
+local pairs = pairs
+local assert = assert
 local string_format = string.format
-
 local setmetatable = setmetatable
 
 local _M = {}
@@ -67,8 +69,7 @@ local function report_after_job_execute(self, job)
     local stat = debug_stats:get(callstack)
 
     if not stat then
-        ngx_log(ngx_NOTICE,
-                "[timer] lost stats key: " .. callstack)
+        ngx_log(ngx_NOTICE, "[timer] lost stats key: ", callstack)
         return
     end
 
@@ -82,22 +83,11 @@ local function report_alive(self, thread)
     self.alive_threads[thread.name] = thread
     self.alive_threads_count = self.alive_threads_count + 1
 
-    ngx_log(
-        ngx_NOTICE,
-        string_format("[timer] thread %s is alive", thread.name)
-    )
-
-    ngx_log(
-        ngx_NOTICE,
-        string_format("[timer] spawned worker threads: %d",
-                      self.spawned_threads_count)
-    )
-
-    ngx_log(
-        ngx_NOTICE,
-        string_format("[timer] alive worker threads: %d",
-                      self.alive_threads_count)
-    )
+    ngx_log(ngx_NOTICE, "[timer] thread ", thread.name, " is alive")
+    ngx_log(ngx_NOTICE, "[timer] spawned worker threads: ",
+            self.spawned_threads_count)
+    ngx_log(ngx_NOTICE, "[timer] alive worker threads: ",
+            self.alive_threads_count)
 end
 
 
@@ -111,22 +101,11 @@ local function report_exit(self, thread)
     self.spawned_threads_count = self.spawned_threads_count - 1
     self.alive_threads_count = self.alive_threads_count - 1
 
-    ngx_log(
-        ngx_NOTICE,
-        string_format("[timer] thread %s exits", thread.name)
-    )
-
-    ngx_log(
-        ngx_NOTICE,
-        string_format("[timer] spawned worker threads: %d",
-                      self.spawned_threads_count)
-    )
-
-    ngx_log(
-        ngx_NOTICE,
-        string_format("[timer] alive worker threads: %d",
-                      self.alive_threads_count)
-    )
+    ngx_log(ngx_NOTICE, "[timer] thread ", thread.name, " exits")
+    ngx_log(ngx_NOTICE, "[timer] spawned worker threads: ",
+            self.spawned_threads_count)
+    ngx_log(ngx_NOTICE, "[timer] alive worker threads: ",
+            self.alive_threads_count)
 end
 
 
@@ -174,9 +153,7 @@ local function thread_before(context, self)
         wake_up_semaphore:wait(constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN)
 
     if not ok and err ~= "timeout" then
-        ngx_log(ngx_ERR,
-                "[timer] failed to wait semaphore: "
-             .. err)
+        ngx_log(ngx_ERR, "[timer] failed to wait semaphore: ", err)
     end
 
     return loop.ACTION_CONTINUE
@@ -290,6 +267,7 @@ function _M:stretch(ratio)
         return true, nil
     end
 
+
     local delta = (self.max_threads - self.min_threads) * math_abs(ratio)
     delta = math_floor(delta)
 
@@ -319,11 +297,8 @@ end
 
 
 function _M:spawn()
-    local ok, err
-
     while self.spawned_threads_count < self.cur_threads do
-        ok, err = start_loop(self)
-
+        local ok, err = start_loop(self)
         if not ok then
             return false, err
         end

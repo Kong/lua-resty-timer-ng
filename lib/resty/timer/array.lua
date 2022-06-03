@@ -6,6 +6,7 @@ local utils_table_clear = utils.table_clear
 local table_insert = table.insert
 local table_remove = table.remove
 
+local error = error
 local setmetatable = setmetatable
 
 local array_pool = {}
@@ -125,5 +126,6 @@ function _M.merge(dst, src)
         dst:push_left(src:pop_left())
     end
 end
+
 
 return _M

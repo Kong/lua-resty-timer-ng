@@ -10,8 +10,6 @@ local utils_convert_second_to_step = utils.convert_second_to_step
 
 local table_insert = table.insert
 
-local string_format = string.format
-
 local ngx_now = ngx.now
 local ngx_update_time = ngx.update_time
 
@@ -154,9 +152,11 @@ function _M.new(wheel_setting, resolution, report_job_expire_callback)
     local prev_wheel = nil
     local cur_wheel
 
+    local wheels = self.wheels
+
     -- connect all the wheels to make a group, like a clock.
     for level, slots in ipairs(wheel_setting.slots_for_each_level) do
-        local wheel_id = string_format("wheel#%d", level)
+        local wheel_id = "wheel#" .. level
         cur_wheel = wheel.new(wheel_id, slots, report_job_expire_callback)
 
         if prev_wheel then
@@ -164,15 +164,15 @@ function _M.new(wheel_setting, resolution, report_job_expire_callback)
             prev_wheel:set_higher_wheel(cur_wheel)
         end
 
-        table_insert(self.wheels, cur_wheel)
+        table_insert(wheels, cur_wheel)
         prev_wheel = cur_wheel
     end
 
     -- the highest wheels was used to insert jobs
-    self.highest_wheel = self.wheels[#self.wheels]
+    self.highest_wheel = wheels[#wheels]
 
     -- the lowest wheel was used to reschedule jobs
-    self.lowest_wheel = self.wheels[1]
+    self.lowest_wheel = wheels[1]
 
     return setmetatable(self, meta_table)
 end
