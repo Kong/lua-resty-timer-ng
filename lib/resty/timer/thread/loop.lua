@@ -10,8 +10,11 @@ local string_format = string.format
 local table_unpack = table.unpack
 
 local setmetatable = setmetatable
+local tostring = tostring
+local assert = assert
 local error = error
 local pcall = pcall
+local pairs = pairs
 
 local ACTION_CONTINUE = 1
 local ACTION_ERROR = 2
@@ -84,18 +87,18 @@ local function make_log_msg(self, phase, action, msg)
             self.name,
             phase
         )
-    end
 
-    if action == ACTION_ERROR or action == ACTION_EXIT_WITH_MSG then
+    elseif action == ACTION_ERROR or action == ACTION_EXIT_WITH_MSG then
         return string_format(
             "[timer] thread %s will exits after the %s phase was executed: %s",
             self.name,
             phase,
             msg
         )
-    end
 
-    error("unexpected error")
+    else
+        error("unexpected error")
+    end
 end
 
 
@@ -129,23 +132,19 @@ local function phase_handler_wrapper(self, phase)
         end
 
         return action
-    end
 
-    if action == ACTION_EXIT then
+    elseif action == ACTION_EXIT then
         return action
-    end
 
-    if action == ACTION_EXIT_WITH_MSG then
+    elseif action == ACTION_EXIT_WITH_MSG then
         assert(err ~= nil)
         return action, err
-    end
-
-    if action == ACTION_ERROR then
+    elseif action == ACTION_ERROR then
         assert(err ~= nil)
         return ACTION_ERROR, err
+    else
+        error("[timer] unexpected error")
     end
-
-    error("unexpected error")
 end
 
 
@@ -158,24 +157,22 @@ local function do_phase_handler(self, phase)
 
     if action == ACTION_CONTINUE then
         return false
-    end
 
-    if action == ACTION_ERROR then
+    elseif action == ACTION_ERROR then
         ngx_log(ngx_EMERG, make_log_msg(self, phase, action, err))
         return true
-    end
 
-    if action == ACTION_EXIT then
-        ngx_log(ngx_NOTICE, make_log_msg(self, phase, action, nil))
+    elseif action == ACTION_EXIT then
+        ngx_log(ngx_NOTICE, make_log_msg(self, phase, action))
         return true
-    end
 
-    if action == ACTION_EXIT_WITH_MSG then
+    elseif action == ACTION_EXIT_WITH_MSG then
         ngx_log(ngx_NOTICE, make_log_msg(self, phase, action, err))
         return true
-    end
 
-    error("unexpected error")
+    else
+        error("[timer] unexpected error")
+    end
 end
 
 
@@ -184,32 +181,22 @@ local function loop_wrapper(premature, self)
         return
     end
 
-    ngx_log(ngx_NOTICE,
-            string_format("[timer] thread %s has been started",
-                          self.name))
+    ngx_log(ngx_NOTICE, "[timer] thread ", self.name, " has been started")
 
     if not do_phase_handler(self, "init") then
         while not ngx_worker_exiting() and not self._kill do
-            if do_phase_handler(self, "before") then
-                break
-            end
-
-            if do_phase_handler(self, "loop_body") then
-                break
-            end
-
-            if do_phase_handler(self, "after") then
+            if do_phase_handler(self, "before")
+            or do_phase_handler(self, "loop_body")
+            or do_phase_handler(self, "after")
+            then
                 break
             end
         end
     end
 
-
     do_phase_handler(self, "finally")
 
-    ngx_log(ngx_NOTICE,
-            string_format("[timer] thread %s has been exited",
-                          self.name))
+    ngx_log(ngx_NOTICE, "[timer] thread ", self.name, " has been exited")
 end
 
 
@@ -218,15 +205,12 @@ function _M:spawn()
     local ok, err = ngx_timer_at(0, loop_wrapper, self)
 
     if not ok then
-        err = string_format("failed to spawn thread %s: %s",
-                            self.name, err)
-        ngx_log(ngx_EMERG, err)
+        ngx_log(ngx_EMERG, "[timer] failed to spawn thread ", self.name, ": ",
+                err)
         return false, err
     end
 
-    ngx_log(ngx_NOTICE,
-            string_format("[timer] thread %s has been spawned",
-                          self.name))
+    ngx_log(ngx_NOTICE, "[timer] thread ", self.name, " has been spawned")
     return true, nil
 end
 

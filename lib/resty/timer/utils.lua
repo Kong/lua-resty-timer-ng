@@ -1,29 +1,16 @@
 local math_pow = math.pow
 local math_floor = math.floor
 
+local type = type
 local pcall = pcall
 local pairs = pairs
-local rawset = rawset
 
 
-local table_new
-
-do
-    local has_table_new, _table_new = pcall(require, "table.new")
-
-    if has_table_new then
-        table_new = _table_new
-
-    else
-        table_new = function ()
-            return { }
-        end
-    end
-end
+local table_new = require "table.new"
+local table_clear = require "table.clear"
 
 
 local table_deepcopy
-
 do
     local has_penlight_tablex, pl_tablex = pcall(require, "pl.tablex")
     if has_penlight_tablex then
@@ -46,25 +33,6 @@ do
         end
     end
 end
-
-
-local table_clear
-
-do
-    local has_table_clear, _table_clear = pcall(require, "table.clear")
-
-    if has_table_clear then
-        table_clear = _table_clear
-
-    else
-        table_clear = function (tbl)
-            for k, _ in pairs(tbl) do
-                rawset(tbl, k, nil)
-            end
-        end
-    end
-end
-
 
 
 local _M = {}
@@ -123,5 +91,6 @@ function _M.round(value, digits)
     local x = 10 ^ digits
     return math_floor(value * x + 0.1) / x
 end
+
 
 return _M

@@ -22,6 +22,7 @@ local math_floor = math.floor
 local pcall = pcall
 
 local ngx_now = ngx.now
+local ngx_update_time = ngx.update_time
 local ngx_worker_exiting = ngx.worker.exiting
 
 local setmetatable = setmetatable
@@ -280,16 +281,14 @@ function _M:execute()
 
     else
         stats.last_err_msg = err
-        ngx_log(ngx_ERR,
-                string_format("[timer] failed to run timer %s: %s",
-                              self.name, err))
+        ngx_log(ngx_ERR, "[timer] failed to run timer ", self.name, ": ", err)
     end
 
     self._running = false
     stats.finish = finish
 
     if self.debug then
-        ngx.update_time()
+        ngx_update_time()
         local spend = ngx_now() - start
 
         elapsed_time.max = math_max(elapsed_time.max, spend)

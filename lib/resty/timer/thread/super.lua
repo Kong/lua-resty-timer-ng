@@ -14,8 +14,6 @@ local math_abs = math.abs
 local math_max = math.max
 local math_min = math.min
 
-local string_format = string.format
-
 local setmetatable = setmetatable
 
 local _M = {}
@@ -25,7 +23,7 @@ local meta_table = {
 }
 
 
-local function scaling_init(self, context)
+local function scaling_init(context)
     context.scaling_info = {
         last_record_time = 0,
         loads = 0,
@@ -54,20 +52,9 @@ local function scaling_record(self, context)
     scaling_info.load_avg =
         (scaling_info.load_avg + load) / scaling_info.loads
 
-    ngx_log(
-        ngx_INFO,
-        string_format("alive threads: %d", alive_threads)
-    )
-
-    ngx_log(
-        ngx_INFO,
-        string_format("runable jobs: %d", runable_jobs)
-    )
-
-    ngx_log(
-        ngx_INFO,
-        string_format("load: %f", load)
-    )
+    ngx_log(ngx_INFO, "alive threads: ", alive_threads)
+    ngx_log(ngx_INFO, "runable jobs: ", runable_jobs)
+    ngx_log(ngx_INFO, "load: ", load)
 end
 
 
@@ -114,13 +101,13 @@ local function thread_init(context, self)
     wheels.real_time = ngx_now()
     wheels.expected_time = wheels.real_time - opt_resolution
 
-    scaling_init(self, context)
+    scaling_init(context)
 
     return loop.ACTION_CONTINUE
 end
 
 
-local function thread_body(context, self)
+local function thread_body(_, self)
     local timer_sys = self.timer_sys
     local wheels = timer_sys.wheels
 
@@ -155,16 +142,14 @@ local function thread_after(context, self)
     local ok, err = self.wake_up_semaphore:wait(delay)
 
     if not ok and err ~= "timeout" then
-        ngx_log(ngx_ERR,
-                "[timer] failed to wait semaphore: "
-             .. err)
+        ngx_log(ngx_ERR, "[timer] failed to wait semaphore: ", err)
     end
 
     return loop.ACTION_CONTINUE
 end
 
 
-local function thread_finally(context)
+local function thread_finally(_)
     return loop.ACTION_CONTINUE
 end
 

@@ -1,7 +1,4 @@
-local math_modf = math.modf
-local math_floor = math.floor
-
-local string_format = string.format
+local assert = assert
 
 local _M = {
     -- disable debug mode
@@ -43,8 +40,14 @@ assert(_M.DEFAULT_RESOLUTION >= _M.MIN_RESOLUTION,
     "`DEFAULT_RESOLUTION` must be greater than "
  .. "or equal to `MIN_RESOLUTION`")
 
-
 do
+    local type = type
+    local error = error
+    local math_modf = math.modf
+    local math_floor = math.floor
+    local ipairs = ipairs
+    local string_format = string.format
+
     local wheel_setting = _M.DEFAULT_WHEEL_SETTING
 
     assert(type(wheel_setting) == "table",

@@ -23,6 +23,8 @@ local ngx_timer_every = ngx.timer.every
 local ngx_now = ngx.now
 local ngx_update_time = ngx.update_time
 
+local error = error
+local assert = assert
 local pairs = pairs
 local ipairs = ipairs
 local type = type
@@ -384,13 +386,8 @@ function _M:named_at(name, delay, callback, ...)
     if delay >= self.max_expire
         or (delay ~= 0 and delay < self.opt.resolution)
     then
-
-        local log = string_format(
-                        "[timer] fallback to ngx.timer.at [delay = %f]",
-                        delay)
-
-        ngx_log(ngx_NOTICE, log)
-
+        ngx_log(ngx_NOTICE, "[timer] fallback to ngx.timer.at [delay = ",
+                delay, "]")
         return ngx_timer_at(delay, callback, ...)
     end
 
@@ -411,13 +408,8 @@ function _M:named_every(name, interval, callback, ...)
 
     if interval >= self.max_expire
         or interval < self.opt.resolution then
-
-        local log = string_format(
-                        "[timer] fallback to ngx.timer.every [interval = %f]",
-                        interval)
-
-        ngx_log(ngx_NOTICE, log)
-
+        ngx_log(ngx_NOTICE, "[timer] fallback to ngx.timer.every [interval = ",
+                interval, "]")
         return ngx_timer_every(interval, callback, ...)
     end
 
@@ -513,13 +505,14 @@ function _M:stats(options)
     end
 
     local pending_jobs = self.wheels.pending_jobs
+    local sys_stats = self.sys_stats
 
     local sys = {
-        running = self.sys_stats.running,
+        running = sys_stats.running,
         pending = pending_jobs:length(),
         waiting = nil,
-        total = self.sys_stats.total,
-        runs = self.sys_stats.runs,
+        total = sys_stats.total,
+        runs = sys_stats.runs,
     }
 
     sys.waiting = sys.total - sys.running - sys.pending
@@ -552,10 +545,11 @@ function _M:stats(options)
         pending = {},
         elapsed_time = {},
     }
-    local backtraces = self.debug_stats:get_keys()
+    local debug_stats = self.debug_stats
+    local backtraces = debug_stats:get_keys()
 
     for _, backtrace in ipairs(backtraces) do
-        local stat = self.debug_stats:get(backtrace)
+        local stat = debug_stats:get(backtrace)
 
         table_insert(flamegraph.running, backtrace)
         table_insert(flamegraph.running, " ")
