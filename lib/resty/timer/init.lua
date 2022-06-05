@@ -299,6 +299,10 @@ function _M.new(options)
             and options.auto_scaling_load_threshold
             or constants.DEFAULT_AUTO_SCALING_LOAD_THRESHOLD,
 
+        auto_scaling_interval = options
+            and options.auto_scaling_interval
+            or constants.DEFAULT_AUTO_SCALING_INERVAL,
+
         -- call function `ngx.update_time` every run of timer job
         force_update_time = options
             and options.force_update_time
@@ -584,6 +588,16 @@ end
 ---@param status boolean true -> enable | false -> disable
 function _M:set_debug(status)
     self.opt.debug = status
+end
+
+
+function _M:_debug_alive_worker_thread_count()
+    return self.thread_group:get_alive_worker_thread_count()
+end
+
+
+function _M:_debug_expected_alive_worker_thread_count()
+    return self.thread_group:get_expected_alive_worker_thread_count()
 end
 
 

@@ -20,6 +20,16 @@ function _M:wake_up_worker_thread()
 end
 
 
+function _M:get_expected_alive_worker_thread_count()
+    return self.worker_thread:get_expected_alive_thread_count()
+end
+
+
+function _M:get_alive_worker_thread_count()
+    return self.worker_thread:get_alive_thread_count()
+end
+
+
 ---spawn super_thread, and all worker threads
 ---@return boolean ok ok?
 ---@return string err_msg

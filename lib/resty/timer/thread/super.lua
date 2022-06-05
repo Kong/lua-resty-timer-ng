@@ -1,9 +1,9 @@
 local semaphore = require("ngx.semaphore")
 local loop = require("resty.timer.thread.loop")
-local constants = require("resty.timer.constants")
 
 local ngx_log = ngx.log
 local ngx_INFO = ngx.INFO
+local ngx_WARN = ngx.WARN
 local ngx_ERR = ngx.ERR
 
 local ngx_now = ngx.now
@@ -13,6 +13,11 @@ local ngx_update_time = ngx.update_time
 local math_abs = math.abs
 local math_max = math.max
 local math_min = math.min
+
+local CONSTANTS_SCALING_RECORD_INTERVAL =
+    require("resty.timer.constants").SCALING_RECORD_INTERVAL
+local CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN =
+    require("resty.timer.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
 
 local setmetatable = setmetatable
 
@@ -27,7 +32,7 @@ local function scaling_init(context)
     context.scaling_info = {
         last_record_time = 0,
         loads = 0,
-        load_avg = 0,
+        load_sum = 0,
     }
 end
 
@@ -36,8 +41,9 @@ local function scaling_record(self, context)
     local scaling_info = context.scaling_info
 
     local now = ngx_now()
+    local delta = now - scaling_info.last_record_time
 
-    if now - scaling_info.last_record_time < 1 then
+    if delta < CONSTANTS_SCALING_RECORD_INTERVAL then
         return
     end
 
@@ -49,8 +55,7 @@ local function scaling_record(self, context)
     local load = runable_jobs / alive_threads
 
     scaling_info.loads = scaling_info.loads + 1
-    scaling_info.load_avg =
-        (scaling_info.load_avg + load) / scaling_info.loads
+    scaling_info.load_sum = scaling_info.load_sum + load
 
     ngx_log(ngx_INFO, "alive threads: ", alive_threads)
     ngx_log(ngx_INFO, "runable jobs: ", runable_jobs)
@@ -61,21 +66,27 @@ end
 local function scaling_execute(self, context)
     local scaling_info = context.scaling_info
     local threshold = self.timer_sys.opt.auto_scaling_load_threshold
+    local interval = self.timer_sys.opt.auto_scaling_interval
 
-    if scaling_info.loads < 10 then
+    if scaling_info.loads < interval then
         return
     end
 
-    local load_avg = scaling_info.load_avg
+    local load_avg = scaling_info.load_sum / scaling_info.loads
 
     scaling_info.loads = 0
-    scaling_info.load_avg = 0
+    scaling_info.load_sum = 0
 
     if load_avg > threshold then
-        local ok, err = self.worker_thread:stretch(0.33)
+        local ok, delta_thread_count_or_err =
+            self.worker_thread:stretch(0.33)
 
         if not ok then
-            return false, err
+            return false, delta_thread_count_or_err
+        end
+
+        if delta_thread_count_or_err <= 0 then
+            ngx.log(ngx_WARN, "[timer] overload: ", load_avg)
         end
 
         return true, nil
@@ -137,7 +148,7 @@ local function thread_after(context, self)
 
     delay = math_max(delay, timer_sys.opt.resolution)
     delay = math_min(delay,
-                     constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN)
+                     CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN)
 
     local ok, err = self.wake_up_semaphore:wait(delay)
 

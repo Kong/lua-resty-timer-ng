@@ -1,6 +1,5 @@
 local semaphore = require("ngx.semaphore")
 local loop = require("resty.timer.thread.loop")
-local constants = require("resty.timer.constants")
 
 local ngx_log = ngx.log
 local ngx_NOTICE = ngx.NOTICE
@@ -18,6 +17,9 @@ local pairs = pairs
 local assert = assert
 local string_format = string.format
 local setmetatable = setmetatable
+
+local CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN =
+    require("resty.timer.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
 
 local _M = {}
 
@@ -150,7 +152,7 @@ end
 local function thread_before(context, self)
     local wake_up_semaphore = self.wake_up_semaphore
     local ok, err =
-        wake_up_semaphore:wait(constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN)
+        wake_up_semaphore:wait(CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN)
 
     if not ok and err ~= "timeout" then
         ngx_log(ngx_ERR, "[timer] failed to wait semaphore: ", err)
@@ -243,6 +245,11 @@ function _M:get_alive_thread_count()
 end
 
 
+function _M:get_expected_alive_thread_count()
+    return self.expected_alive_thread_count
+end
+
+
 function _M:set_super_thread_ref(super_thread)
     self.super_thread = super_thread
 end
@@ -264,9 +271,10 @@ end
 
 function _M:stretch(ratio)
     if ratio == 0 then
-        return true, nil
+        return true, 0
     end
 
+    local delta_thread_count = 0
 
     local delta = (self.max_threads - self.min_threads) * math_abs(ratio)
     delta = math_floor(delta)
@@ -276,28 +284,34 @@ function _M:stretch(ratio)
 
         while delta > 0
           and thread_name
-          and self.cur_threads > self.min_threads
+          and self.expected_alive_thread_count > self.min_threads
         do
             thread:kill()
             delta = delta - 1
-            self.cur_threads = self.cur_threads - 1
+            self.expected_alive_thread_count =
+                self.expected_alive_thread_count - 1
+                delta_thread_count = delta_thread_count - 1
             thread_name, thread = next(self.alive_threads, thread_name)
         end
 
-        return true, nil
+        return true, delta_thread_count
     end
 
-    while delta > 0 and self.cur_threads < self.max_threads do
-        self.cur_threads = self.cur_threads + 1
+    while delta > 0
+      and self.expected_alive_thread_count < self.max_threads
+    do
+        self.expected_alive_thread_count =
+            self.expected_alive_thread_count + 1
+            delta_thread_count = delta_thread_count + 1
         delta = delta - 1
     end
 
-    return true, nil
+    return true, delta_thread_count
 end
 
 
 function _M:spawn()
-    while self.spawned_threads_count < self.cur_threads do
+    while self.spawned_threads_count < self.expected_alive_thread_count do
         local ok, err = start_loop(self)
         if not ok then
             return false, err
@@ -314,7 +328,6 @@ function _M.new(timer_sys, min_threads, max_threads)
         timer_sys = timer_sys,
         wake_up_semaphore = semaphore.new(0),
         min_threads = min_threads,
-        cur_threads = nil,
         max_threads = max_threads,
 
         spawned_threads_count = 0,
@@ -323,11 +336,14 @@ function _M.new(timer_sys, min_threads, max_threads)
         alive_threads_count = 0,
         alive_threads = {},
 
+        expected_alive_thread_count = nil,
+
         super_thread = nil,
     }
 
-    self.cur_threads = math_floor((min_threads + max_threads) / 2)
-    self.wake_up_semaphore:post(self.cur_threads)
+    self.expected_alive_thread_count =
+        math_floor((min_threads + max_threads) / 2)
+    self.wake_up_semaphore:post(self.expected_alive_thread_count)
 
     self.init = {
         argc = 2,

@@ -1,6 +1,5 @@
 local utils = require("resty.timer.utils")
 local wheel = require("resty.timer.wheel")
-local constants = require("resty.timer.constants")
 local array = require("resty.timer.array")
 
 local array_merge = array.merge
@@ -15,6 +14,9 @@ local ngx_update_time = ngx.update_time
 
 local ipairs = ipairs
 local setmetatable = setmetatable
+
+local CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN =
+    require("resty.timer.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
 
 local _M = {}
 
@@ -60,7 +62,7 @@ function _M:update_earliest_expiry_time()
             break
         end
 
-        if delay >= constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN then
+        if delay >= CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN then
             break
         end
     end
