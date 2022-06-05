@@ -1,5 +1,5 @@
 local semaphore = require("ngx.semaphore")
-local loop = require("resty.timer.thread.loop")
+local loop = require("resty.timer-ng.thread.loop")
 
 local ngx_log = ngx.log
 local ngx_NOTICE = ngx.NOTICE
@@ -19,7 +19,7 @@ local string_format = string.format
 local setmetatable = setmetatable
 
 local CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN =
-    require("resty.timer.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
+    require("resty.timer-ng.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
 
 local _M = {}
 
@@ -71,7 +71,7 @@ local function report_after_job_execute(self, job)
     local stat = debug_stats:get(callstack)
 
     if not stat then
-        ngx_log(ngx_NOTICE, "[timer] lost stats key: ", callstack)
+        ngx_log(ngx_NOTICE, "[timer-ng] lost stats key: ", callstack)
         return
     end
 
@@ -85,10 +85,10 @@ local function report_alive(self, thread)
     self.alive_threads[thread.name] = thread
     self.alive_threads_count = self.alive_threads_count + 1
 
-    ngx_log(ngx_NOTICE, "[timer] thread ", thread.name, " is alive")
-    ngx_log(ngx_NOTICE, "[timer] spawned worker threads: ",
+    ngx_log(ngx_NOTICE, "[timer-ng] thread ", thread.name, " is alive")
+    ngx_log(ngx_NOTICE, "[timer-ng] spawned worker threads: ",
             self.spawned_threads_count)
-    ngx_log(ngx_NOTICE, "[timer] alive worker threads: ",
+    ngx_log(ngx_NOTICE, "[timer-ng] alive worker threads: ",
             self.alive_threads_count)
 end
 
@@ -103,10 +103,10 @@ local function report_exit(self, thread)
     self.spawned_threads_count = self.spawned_threads_count - 1
     self.alive_threads_count = self.alive_threads_count - 1
 
-    ngx_log(ngx_NOTICE, "[timer] thread ", thread.name, " exits")
-    ngx_log(ngx_NOTICE, "[timer] spawned worker threads: ",
+    ngx_log(ngx_NOTICE, "[timer-ng] thread ", thread.name, " exits")
+    ngx_log(ngx_NOTICE, "[timer-ng] spawned worker threads: ",
             self.spawned_threads_count)
-    ngx_log(ngx_NOTICE, "[timer] alive worker threads: ",
+    ngx_log(ngx_NOTICE, "[timer-ng] alive worker threads: ",
             self.alive_threads_count)
 end
 
@@ -155,7 +155,7 @@ local function thread_before(context, self)
         wake_up_semaphore:wait(CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN)
 
     if not ok and err ~= "timeout" then
-        ngx_log(ngx_ERR, "[timer] failed to wait semaphore: ", err)
+        ngx_log(ngx_ERR, "[timer-ng] failed to wait semaphore: ", err)
     end
 
     return loop.ACTION_CONTINUE

@@ -37,7 +37,7 @@ https://github.com/Kong/kong-madr/pull/28
 ```
 http {
     init_worker_by_lua_block {
-        local timer_module = require("resty.timer")
+        local timer_module = require("resty.timer-ng")
 
         local options = {}
         local timer_sys = timer_module.new(options)
@@ -130,14 +130,14 @@ Versioning is strictly based on [Semantic Versioning](https://semver.org/)
 
 ### new
 
-**syntax**: *timer, err = require("resty.timer").new(options?)*
+**syntax**: *timer, err = require("resty.timer-ng").new(options?)*
 
 **context**: *init_by_lua\*, init_worker_by_lua\*, set_by_lua\*, rewrite_by_lua\*, access_by_lua\*, content_by_lua\*, header_filter_by_lua\*, body_filter_by_lua\*, log_by_lua\*, ngx.timer.\**
 
 For example
 
 ```lua
-local timer_module = require("resty.timer")
+local timer_module = require("resty.timer-ng")
 local timer_sys = timer_module.new({
     -- debug mode
     debug = false,

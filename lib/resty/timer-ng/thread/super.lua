@@ -1,5 +1,5 @@
 local semaphore = require("ngx.semaphore")
-local loop = require("resty.timer.thread.loop")
+local loop = require("resty.timer-ng.thread.loop")
 
 local ngx_log = ngx.log
 local ngx_INFO = ngx.INFO
@@ -15,9 +15,9 @@ local math_max = math.max
 local math_min = math.min
 
 local CONSTANTS_SCALING_RECORD_INTERVAL =
-    require("resty.timer.constants").SCALING_RECORD_INTERVAL
+    require("resty.timer-ng.constants").SCALING_RECORD_INTERVAL
 local CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN =
-    require("resty.timer.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
+    require("resty.timer-ng.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
 
 local setmetatable = setmetatable
 
@@ -86,7 +86,7 @@ local function scaling_execute(self, context)
         end
 
         if delta_thread_count_or_err <= 0 then
-            ngx.log(ngx_WARN, "[timer] overload: ", load_avg)
+            ngx.log(ngx_WARN, "[timer-ng] overload: ", load_avg)
         end
 
         return true, nil
@@ -153,7 +153,7 @@ local function thread_after(context, self)
     local ok, err = self.wake_up_semaphore:wait(delay)
 
     if not ok and err ~= "timeout" then
-        ngx_log(ngx_ERR, "[timer] failed to wait semaphore: ", err)
+        ngx_log(ngx_ERR, "[timer-ng] failed to wait semaphore: ", err)
     end
 
     return loop.ACTION_CONTINUE

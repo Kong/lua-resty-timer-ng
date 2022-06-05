@@ -1,5 +1,5 @@
-local super_thread_module = require("resty.timer.thread.super")
-local worker_thread_module = require("resty.timer.thread.worker")
+local super_thread_module = require("resty.timer-ng.thread.super")
+local worker_thread_module = require("resty.timer-ng.thread.worker")
 
 local setmetatable = setmetatable
 

@@ -83,21 +83,22 @@ local PAHSE_HANDLERS = {
 local function make_log_msg(self, phase, action, msg)
     if action == ACTION_EXIT then
         return string_format(
-            "[timer] thread %s will exits after the %s phase was executed",
+            "[timer-ng] thread %s will exits after the %s phase was executed",
             self.name,
             phase
         )
 
     elseif action == ACTION_ERROR or action == ACTION_EXIT_WITH_MSG then
         return string_format(
-            "[timer] thread %s will exits after the %s phase was executed: %s",
+            "[timer-ng] thread %s will exits after "
+            .. "the %s phase was executed: %s",
             self.name,
             phase,
             msg
         )
 
     else
-        error("[timer] unexpected error")
+        error("[timer-ng] unexpected error")
     end
 end
 
@@ -143,7 +144,7 @@ local function phase_handler_wrapper(self, phase)
         assert(err ~= nil)
         return ACTION_ERROR, err
     else
-        error("[timer] unexpected error")
+        error("[timer-ng] unexpected error")
     end
 end
 
@@ -171,7 +172,7 @@ local function do_phase_handler(self, phase)
         return true
 
     else
-        error("[timer] unexpected error")
+        error("[timer-ng] unexpected error")
     end
 end
 
@@ -181,7 +182,7 @@ local function loop_wrapper(premature, self)
         return
     end
 
-    ngx_log(ngx_NOTICE, "[timer] thread ", self.name, " has been started")
+    ngx_log(ngx_NOTICE, "[timer-ng] thread ", self.name, " has been started")
 
     if not do_phase_handler(self, "init") then
         while not ngx_worker_exiting() and not self._kill do
@@ -196,7 +197,7 @@ local function loop_wrapper(premature, self)
 
     do_phase_handler(self, "finally")
 
-    ngx_log(ngx_NOTICE, "[timer] thread ", self.name, " has been exited")
+    ngx_log(ngx_NOTICE, "[timer-ng] thread ", self.name, " has been exited")
 end
 
 
@@ -205,12 +206,13 @@ function _M:spawn()
     local ok, err = ngx_timer_at(0, loop_wrapper, self)
 
     if not ok then
-        ngx_log(ngx_EMERG, "[timer] failed to spawn thread ", self.name, ": ",
+        ngx_log(ngx_EMERG,
+                "[timer-ng] failed to spawn thread ", self.name, ": ",
                 err)
         return false, err
     end
 
-    ngx_log(ngx_NOTICE, "[timer] thread ", self.name, " has been spawned")
+    ngx_log(ngx_NOTICE, "[timer-ng] thread ", self.name, " has been spawned")
     return true, nil
 end
 

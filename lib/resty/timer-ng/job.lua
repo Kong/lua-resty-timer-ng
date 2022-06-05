@@ -1,4 +1,4 @@
-local utils = require("resty.timer.utils")
+local utils = require("resty.timer-ng.utils")
 
 local ngx_log = ngx.log
 local ngx_ERR = ngx.ERR
@@ -281,7 +281,11 @@ function _M:execute()
 
     else
         stats.last_err_msg = err
-        ngx_log(ngx_ERR, "[timer] failed to run timer ", self.name, ": ", err)
+        ngx_log(ngx_ERR,
+                "[timer-ng] failed to run timer ",
+                self.name,
+                ": ",
+                err)
     end
 
     self._running = false

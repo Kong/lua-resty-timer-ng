@@ -1,9 +1,9 @@
 local lrucache = require("resty.lrucache")
-local job_module = require("resty.timer.job")
-local utils = require("resty.timer.utils")
-local wheel_group = require("resty.timer.wheel.group")
-local constants = require("resty.timer.constants")
-local thread_group = require("resty.timer.thread.group")
+local job_module = require("resty.timer-ng.job")
+local utils = require("resty.timer-ng.utils")
+local wheel_group = require("resty.timer-ng.wheel.group")
+local constants = require("resty.timer-ng.constants")
+local thread_group = require("resty.timer-ng.thread.group")
 
 local ngx_log = ngx.log
 local ngx_NOTICE = ngx.NOTICE
@@ -390,7 +390,7 @@ function _M:named_at(name, delay, callback, ...)
     if delay >= self.max_expire
         or (delay ~= 0 and delay < self.opt.resolution)
     then
-        ngx_log(ngx_NOTICE, "[timer] fallback to ngx.timer.at [delay = ",
+        ngx_log(ngx_NOTICE, "[timer-ng] fallback to ngx.timer.at [delay = ",
                 delay, "]")
         return ngx_timer_at(delay, callback, ...)
     end
@@ -412,8 +412,10 @@ function _M:named_every(name, interval, callback, ...)
 
     if interval >= self.max_expire
         or interval < self.opt.resolution then
-        ngx_log(ngx_NOTICE, "[timer] fallback to ngx.timer.every [interval = ",
-                interval, "]")
+        ngx_log(ngx_NOTICE,
+                "[timer-ng] fallback to ngx.timer.every [interval = ",
+                interval,
+                "]")
         return ngx_timer_every(interval, callback, ...)
     end
 

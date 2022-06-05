@@ -1,4 +1,4 @@
-local array = require("resty.timer.array")
+local array = require("resty.timer-ng.array")
 
 local array_new = array.new
 
