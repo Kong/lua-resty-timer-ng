@@ -81,7 +81,7 @@ insulate("stats |", function ()
     end)
 
 
-    it("flamegraph #only", function ()
+    it("flamegraph", function ()
         timer:set_debug(true)
         assert(timer:named_at(nil, 0, function ()
             ngx.sleep(1)
