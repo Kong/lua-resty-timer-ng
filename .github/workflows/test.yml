@@ -47,7 +47,7 @@ jobs:
     strategy:
       matrix:
         busted_args:
-        - "spec/01*.lua spec/04*.lua spec/05*.lua spec/06*.lua spec/07*.lua"
+        - "spec/01*.lua spec/04*.lua spec/05*.lua spec/06*.lua spec/07*.lua spec/08*.lua"
         - "spec/02*.lua"
         - "spec/03*.lua"
 
