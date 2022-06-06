@@ -62,7 +62,7 @@ end
 
 
 
-local function report_job_cancel_callback_inernal(self, job)
+local function report_job_cancel_callback_internal(self, job)
     self.sys_stats.total = self.sys_stats.total - 1
 
     if not job.debug then
@@ -492,7 +492,7 @@ function _M:cancel(name)
         return false, "timer not found"
     end
 
-    report_job_cancel_callback_inernal(self, job)
+    report_job_cancel_callback_internal(self, job)
     job:cancel()
     jobs[name] = nil
 
