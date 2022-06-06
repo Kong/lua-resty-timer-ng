@@ -114,7 +114,7 @@ jobs:
       - name: Show coverage
         run: |
           eval $(luarocks path)
-          luacov lib/resty/timer
-          luacov-console lib/resty/timer
+          luacov lib/resty/timer-ng
+          luacov-console lib/resty/timer-ng
           luacov-console -s
-          luacov-console -l lib/resty/timer/*
+          luacov-console -l lib/resty/timer-ng/*
