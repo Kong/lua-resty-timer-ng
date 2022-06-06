@@ -1,5 +1,5 @@
 local semaphore = require("ngx.semaphore")
-local loop = require("resty.timer-ng.thread.loop")
+local loop = require("resty.timerng.thread.loop")
 
 local ngx_log = ngx.log
 local ngx_NOTICE = ngx.NOTICE
@@ -19,7 +19,7 @@ local string_format = string.format
 local setmetatable = setmetatable
 
 local CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN =
-    require("resty.timer-ng.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
+    require("resty.timerng.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
 
 local _M = {}
 

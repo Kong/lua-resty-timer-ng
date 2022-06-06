@@ -1,4 +1,4 @@
-local timer_module = require("resty.timer-ng")
+local timer_module = require("resty.timerng")
 local helper = require("helper")
 
 local sleep = ngx.sleep

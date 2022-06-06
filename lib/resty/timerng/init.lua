@@ -1,9 +1,9 @@
 local lrucache = require("resty.lrucache")
-local job_module = require("resty.timer-ng.job")
-local utils = require("resty.timer-ng.utils")
-local wheel_group = require("resty.timer-ng.wheel.group")
-local constants = require("resty.timer-ng.constants")
-local thread_group = require("resty.timer-ng.thread.group")
+local job_module = require("resty.timerng.job")
+local utils = require("resty.timerng.utils")
+local wheel_group = require("resty.timerng.wheel.group")
+local constants = require("resty.timerng.constants")
+local thread_group = require("resty.timerng.thread.group")
 
 local ngx_log = ngx.log
 local ngx_NOTICE = ngx.NOTICE

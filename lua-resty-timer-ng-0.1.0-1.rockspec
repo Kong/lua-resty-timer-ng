@@ -15,18 +15,18 @@ dependencies = {
 build = {
    type = "builtin",
    modules = {
-     ["resty.timer-ng"] = "lib/resty/timer-ng/init.lua",
-     ["resty.timer-ng.job"] = "lib/resty/timer-ng/job.lua",
-     ["resty.timer-ng.array"] = "lib/resty/timer-ng/array.lua",
-     ["resty.timer-ng.constants"] = "lib/resty/timer-ng/constants.lua",
-     ["resty.timer-ng.utils"] = "lib/resty/timer-ng/utils.lua",
+     ["resty.timerng"] = "lib/resty/timerng/init.lua",
+     ["resty.timerng.job"] = "lib/resty/timerng/job.lua",
+     ["resty.timerng.array"] = "lib/resty/timerng/array.lua",
+     ["resty.timerng.constants"] = "lib/resty/timerng/constants.lua",
+     ["resty.timerng.utils"] = "lib/resty/timerng/utils.lua",
 
-     ["resty.timer-ng.wheel"] = "lib/resty/timer-ng/wheel/init.lua",
-     ["resty.timer-ng.wheel.group"] = "lib/resty/timer-ng/wheel/group.lua",
+     ["resty.timerng.wheel"] = "lib/resty/timerng/wheel/init.lua",
+     ["resty.timerng.wheel.group"] = "lib/resty/timerng/wheel/group.lua",
 
-     ["resty.timer-ng.thread.group"] = "lib/resty/timer-ng/thread/group.lua",
-     ["resty.timer-ng.thread.loop"] = "lib/resty/timer-ng/thread/loop.lua",
-     ["resty.timer-ng.thread.super"] = "lib/resty/timer-ng/thread/super.lua",
-     ["resty.timer-ng.thread.worker"] = "lib/resty/timer-ng/thread/worker.lua",
+     ["resty.timerng.thread.group"] = "lib/resty/timerng/thread/group.lua",
+     ["resty.timerng.thread.loop"] = "lib/resty/timerng/thread/loop.lua",
+     ["resty.timerng.thread.super"] = "lib/resty/timerng/thread/super.lua",
+     ["resty.timerng.thread.worker"] = "lib/resty/timerng/thread/worker.lua",
    }
 }

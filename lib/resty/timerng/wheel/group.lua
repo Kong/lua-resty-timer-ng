@@ -1,6 +1,6 @@
-local utils = require("resty.timer-ng.utils")
-local wheel = require("resty.timer-ng.wheel")
-local array = require("resty.timer-ng.array")
+local utils = require("resty.timerng.utils")
+local wheel = require("resty.timerng.wheel")
+local array = require("resty.timerng.array")
 
 local array_merge = array.merge
 
@@ -16,7 +16,7 @@ local ipairs = ipairs
 local setmetatable = setmetatable
 
 local CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN =
-    require("resty.timer-ng.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
+    require("resty.timerng.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
 
 local _M = {}
 

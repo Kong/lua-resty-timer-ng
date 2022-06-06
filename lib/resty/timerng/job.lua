@@ -1,4 +1,4 @@
-local utils = require("resty.timer-ng.utils")
+local utils = require("resty.timerng.utils")
 
 local ngx_log = ngx.log
 local ngx_ERR = ngx.ERR

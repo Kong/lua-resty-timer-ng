@@ -1,4 +1,4 @@
-local utils = require("resty.timer-ng.utils")
+local utils = require("resty.timerng.utils")
 
 local utils_table_new = utils.table_new
 local utils_table_clear = utils.table_clear

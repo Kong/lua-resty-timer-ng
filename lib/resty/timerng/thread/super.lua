@@ -1,5 +1,5 @@
 local semaphore = require("ngx.semaphore")
-local loop = require("resty.timer-ng.thread.loop")
+local loop = require("resty.timerng.thread.loop")
 
 local ngx_log = ngx.log
 local ngx_INFO = ngx.INFO
@@ -15,9 +15,9 @@ local math_max = math.max
 local math_min = math.min
 
 local CONSTANTS_SCALING_RECORD_INTERVAL =
-    require("resty.timer-ng.constants").SCALING_RECORD_INTERVAL
+    require("resty.timerng.constants").SCALING_RECORD_INTERVAL
 local CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN =
-    require("resty.timer-ng.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
+    require("resty.timerng.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
 
 local setmetatable = setmetatable
 

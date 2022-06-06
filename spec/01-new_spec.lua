@@ -1,4 +1,4 @@
-local timer_module = require("resty.timer-ng")
+local timer_module = require("resty.timerng")
 
 describe("new with | ", function ()
     it("empty options", function ()

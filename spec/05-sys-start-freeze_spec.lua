@@ -11,7 +11,7 @@ local TOLERANCE = 0.2
 
 
 insulate("system start -> freeze -> start | ", function ()
-    local timer_module = require("resty.timer-ng")
+    local timer_module = require("resty.timerng")
     local timer = { }
     local callback
     local tbl
@@ -120,7 +120,7 @@ insulate("worker exiting | ", function ()
         end
         -- luacheck: pop
 
-        timer_module = require("resty.timer-ng")
+        timer_module = require("resty.timerng")
     end)
 
     lazy_teardown(function ()
