@@ -29,9 +29,7 @@ A scalable timer library for OpenResty.
 
 ## Status
 
-This library is under development.
-
-https://github.com/Kong/kong-madr/pull/28
+This library is currently considered experimental.
 
 ## Synopsis
 
