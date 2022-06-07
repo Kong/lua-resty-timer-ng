@@ -25,6 +25,7 @@ A scalable timer library for OpenResty.
         * [is_managed](#is_managed)
         * [set_debug](#set_debug)
         * [stats](#stats)
+    * [License](#license)
 
 ## Status
 
