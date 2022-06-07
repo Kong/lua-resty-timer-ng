@@ -2,7 +2,7 @@ package = "lua-resty-timer-ng"
 version = "0.1.0-1"
 source = {
    url = "git://github.com/kong/lua-resty-timer-ng",
-   branch = "master"
+   tag = "0.1.0"
 }
 description = {
    summary = "A scalable timer library for OpenResty.",
