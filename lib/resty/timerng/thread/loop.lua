@@ -1,6 +1,5 @@
 local ngx_log = ngx.log
 local ngx_EMERG = ngx.EMERG
-local ngx_NOTICE = ngx.NOTICE
 
 local ngx_timer_at = ngx.timer.at
 local ngx_worker_exiting = ngx.worker.exiting
@@ -19,8 +18,6 @@ local pairs = pairs
 local ACTION_CONTINUE = 1
 local ACTION_ERROR = 2
 local ACTION_EXIT = 3
-local ACTION_EXIT_WITH_MSG = 4
-
 
 local NEED_CHECK_WORKER_EIXTING = {
     init = false,
@@ -35,7 +32,6 @@ local _M = {
     ACTION_CONTINUE = ACTION_CONTINUE,
     ACTION_ERROR = ACTION_ERROR,
     ACTION_EXIT = ACTION_EXIT,
-    ACTION_EXIT_WITH_MSG = ACTION_EXIT_WITH_MSG,
 }
 
 
@@ -81,14 +77,7 @@ local PAHSE_HANDLERS = {
 ---@param msg? string message
 ---@return string log_string
 local function make_log_msg(self, phase, action, msg)
-    if action == ACTION_EXIT then
-        return string_format(
-            "[timer-ng] thread %s will exits after the %s phase was executed",
-            self.name,
-            phase
-        )
-
-    elseif action == ACTION_ERROR or action == ACTION_EXIT_WITH_MSG then
+    if action == ACTION_ERROR then
         return string_format(
             "[timer-ng] thread %s will exits after "
             .. "the %s phase was executed: %s",
@@ -125,11 +114,11 @@ local function phase_handler_wrapper(self, phase)
         if  self[phase].need_check_worker_exiting and
             ngx_worker_exiting()
         then
-            return ACTION_EXIT_WITH_MSG, "worker exiting"
+            return ACTION_EXIT
         end
 
         if self._kill then
-            return ACTION_EXIT_WITH_MSG, "killed"
+            return ACTION_EXIT
         end
 
         return action
@@ -137,12 +126,10 @@ local function phase_handler_wrapper(self, phase)
     elseif action == ACTION_EXIT then
         return action
 
-    elseif action == ACTION_EXIT_WITH_MSG then
-        assert(err ~= nil)
-        return action, err
     elseif action == ACTION_ERROR then
         assert(err ~= nil)
         return ACTION_ERROR, err
+
     else
         error("[timer-ng] unexpected error")
     end
@@ -164,11 +151,6 @@ local function do_phase_handler(self, phase)
         return true
 
     elseif action == ACTION_EXIT then
-        ngx_log(ngx_NOTICE, make_log_msg(self, phase, action))
-        return true
-
-    elseif action == ACTION_EXIT_WITH_MSG then
-        ngx_log(ngx_NOTICE, make_log_msg(self, phase, action, err))
         return true
 
     else
@@ -182,8 +164,6 @@ local function loop_wrapper(premature, self)
         return
     end
 
-    ngx_log(ngx_NOTICE, "[timer-ng] thread ", self.name, " has been started")
-
     if not do_phase_handler(self, "init") then
         while not ngx_worker_exiting() and not self._kill do
             if do_phase_handler(self, "before")
@@ -196,8 +176,6 @@ local function loop_wrapper(premature, self)
     end
 
     do_phase_handler(self, "finally")
-
-    ngx_log(ngx_NOTICE, "[timer-ng] thread ", self.name, " has been exited")
 end
 
 
@@ -212,7 +190,6 @@ function _M:spawn()
         return false, err
     end
 
-    ngx_log(ngx_NOTICE, "[timer-ng] thread ", self.name, " has been spawned")
     return true, nil
 end
 
