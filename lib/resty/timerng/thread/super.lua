@@ -18,6 +18,8 @@ local CONSTANTS_SCALING_RECORD_INTERVAL =
     require("resty.timerng.constants").SCALING_RECORD_INTERVAL
 local CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN =
     require("resty.timerng.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
+local CONSTANTS_SCALING_LOG_INTERVAL =
+    require("resty.timerng.constants").SACALING_INFO_LOG_INTERVAL
 
 local setmetatable = setmetatable
 
@@ -30,52 +32,80 @@ local meta_table = {
 
 local function scaling_init(context)
     context.scaling_info = {
-        last_record_time = 0,
-        loads = 0,
-        load_sum = 0,
+        context_for_scaling = {
+            last_record_time = 0,
+            records = 0,
+            load_sum = 0,
+            alive_threads_sum = 0,
+            runable_jobs_sum = 0,
+        },
+        context_for_log = {
+            last_record_time = 0,
+            last_log_time = 0,
+            records = 0,
+            load_sum = 0,
+            alive_threads_sum = 0,
+            runable_jobs_sum = 0,
+        },
     }
 end
 
 
 local function scaling_record(self, context)
     local scaling_info = context.scaling_info
+    local context_for_scaling = scaling_info.context_for_scaling
+    local context_for_log = scaling_info.context_for_log
 
     local now = ngx_now()
-    local delta = now - scaling_info.last_record_time
+    local delta_record_time = now - context_for_scaling.last_record_time
 
-    if delta < CONSTANTS_SCALING_RECORD_INTERVAL then
+    if delta_record_time < CONSTANTS_SCALING_RECORD_INTERVAL then
         return
     end
 
-    scaling_info.last_record_time = now
+    context_for_scaling.last_record_time = now
+    context_for_log.last_record_time = now
 
     local stats_sys = self.timer_sys:stats(false).sys
     local runable_jobs = stats_sys.running + stats_sys.pending
     local alive_threads = self.worker_thread:get_alive_thread_count()
     local load = runable_jobs / alive_threads
 
-    scaling_info.loads = scaling_info.loads + 1
-    scaling_info.load_sum = scaling_info.load_sum + load
+    context_for_scaling.records = context_for_scaling.records + 1
+    context_for_scaling.load_sum = context_for_scaling.load_sum + load
+    context_for_scaling.alive_threads_sum =
+        context_for_scaling.alive_threads_sum + alive_threads
+    context_for_scaling.runable_jobs_sum =
+        context_for_scaling.runable_jobs_sum + runable_jobs
 
-    ngx_log(ngx_INFO, "alive threads: ", alive_threads)
-    ngx_log(ngx_INFO, "runable jobs: ", runable_jobs)
-    ngx_log(ngx_INFO, "load: ", load)
+    context_for_log.records = context_for_log.records + 1
+    context_for_log.load_sum = context_for_log.load_sum + load
+    context_for_log.alive_threads_sum =
+        context_for_log.alive_threads_sum + alive_threads
+    context_for_log.runable_jobs_sum =
+        context_for_log.runable_jobs_sum + runable_jobs
 end
 
 
 local function scaling_execute(self, context)
     local scaling_info = context.scaling_info
+    local context_for_scaling = scaling_info.context_for_scaling
     local threshold = self.timer_sys.opt.auto_scaling_load_threshold
-    local interval = self.timer_sys.opt.auto_scaling_interval
+    local auto_scaling_interval = self.timer_sys.opt.auto_scaling_interval
+    local records = context_for_scaling.records
 
-    if scaling_info.loads < interval then
+    if records < auto_scaling_interval then
         return
     end
 
-    local load_avg = scaling_info.load_sum / scaling_info.loads
+    local load_avg = context_for_scaling.load_sum / records
+    local runable_jobs_avg = context_for_scaling.runable_jobs_sum / records
+    local alive_threads_avg = context_for_scaling.alive_threads_sum / records
 
-    scaling_info.loads = 0
-    scaling_info.load_sum = 0
+    context_for_scaling.records = 0
+    context_for_scaling.load_sum = 0
+    context_for_scaling.runable_jobs_sum = 0
+    context_for_scaling.alive_threads_sum = 0
 
     if load_avg > threshold then
         local ok, delta_thread_count_or_err =
@@ -86,7 +116,11 @@ local function scaling_execute(self, context)
         end
 
         if delta_thread_count_or_err <= 0 then
-            ngx.log(ngx_WARN, "[timer-ng] overload: ", load_avg)
+            ngx.log(ngx_WARN,
+                    "[timer-ng] overload: ",
+                    "load_avg: ", load_avg,
+                    ", runable_jobs_avg: ", runable_jobs_avg,
+                    ", alive_threads_avg: ", alive_threads_avg)
         end
 
         return true, nil
@@ -98,6 +132,36 @@ local function scaling_execute(self, context)
     end
 
     return true, nil
+end
+
+
+local function scaling_log(self, context)
+    local scaling_info = context.scaling_info
+    local context_for_log = scaling_info.context_for_log
+    local records = context_for_log.records
+    local now = ngx_now()
+
+    local delta = now - context_for_log.last_log_time
+
+    if delta < CONSTANTS_SCALING_LOG_INTERVAL then
+        return
+    end
+
+    local load_avg = context_for_log.load_sum / records
+    local runable_jobs_avg = context_for_log.runable_jobs_sum / records
+    local alive_threads_avg = context_for_log.alive_threads_sum / records
+
+    context_for_log.last_log_time = now
+    context_for_log.records = 0
+    context_for_log.load_sum = 0
+    context_for_log.alive_threads_sum = 0
+    context_for_log.runable_jobs_sum = 0
+
+    ngx.log(ngx_INFO,
+            "[timer-ng] ",
+            "load_avg: ", load_avg,
+            ", runable_jobs_avg: ", runable_jobs_avg,
+            ", alive_threads_avg: ", alive_threads_avg)
 end
 
 
@@ -140,6 +204,7 @@ local function thread_after(context, self)
     local wheels = timer_sys.wheels
 
     scaling_record(self, context)
+    scaling_log(self, context)
     scaling_execute(self, context)
 
     self.worker_thread:spawn()

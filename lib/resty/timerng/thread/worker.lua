@@ -2,7 +2,7 @@ local semaphore = require("ngx.semaphore")
 local loop = require("resty.timerng.thread.loop")
 
 local ngx_log = ngx.log
-local ngx_NOTICE = ngx.NOTICE
+local ngx_DEBUG = ngx.DEBUG
 local ngx_ERR = ngx.ERR
 
 local math_floor = math.floor
@@ -71,7 +71,7 @@ local function report_after_job_execute(self, job)
     local stat = debug_stats:get(callstack)
 
     if not stat then
-        ngx_log(ngx_NOTICE, "[timer-ng] lost stats key: ", callstack)
+        ngx_log(ngx_DEBUG, "[timer-ng] lost stats key: ", callstack)
         return
     end
 
@@ -84,12 +84,6 @@ local function report_alive(self, thread)
 
     self.alive_threads[thread.name] = thread
     self.alive_threads_count = self.alive_threads_count + 1
-
-    ngx_log(ngx_NOTICE, "[timer-ng] thread ", thread.name, " is alive")
-    ngx_log(ngx_NOTICE, "[timer-ng] spawned worker threads: ",
-            self.spawned_threads_count)
-    ngx_log(ngx_NOTICE, "[timer-ng] alive worker threads: ",
-            self.alive_threads_count)
 end
 
 
@@ -102,12 +96,6 @@ local function report_exit(self, thread)
 
     self.spawned_threads_count = self.spawned_threads_count - 1
     self.alive_threads_count = self.alive_threads_count - 1
-
-    ngx_log(ngx_NOTICE, "[timer-ng] thread ", thread.name, " exits")
-    ngx_log(ngx_NOTICE, "[timer-ng] spawned worker threads: ",
-            self.spawned_threads_count)
-    ngx_log(ngx_NOTICE, "[timer-ng] alive worker threads: ",
-            self.alive_threads_count)
 end
 
 

@@ -21,7 +21,7 @@ resty   -c 1024 \
         --http-conf "lua_max_pending_timers 1024;" \
         -I lib \
         -I spec \
-        --errlog-level notice \
+        --errlog-level debug \
         spec/runner.lua --coverage --verbose -o htest spec/
 # or
 resty   -c 1024 \
@@ -35,14 +35,14 @@ resty   -c 1024 \
 Run the following command to generate a coverage report.
 
 ```shell
-luacov lib/resty/timer
-luacov-console lib/resty/timer
+luacov lib/resty/timerng
+luacov-console lib/resty/timerng
 
 # summary
 luacov-console -s
 
 # details of lib/resty/timer/init.lua
-luacov-console -l lib/resty/timer/init.lua
+luacov-console -l lib/resty/timerng/init.lua
 ```
 
 ## Environment Variables
