@@ -7,7 +7,7 @@ source = {
 description = {
    summary = "A scalable timer library for OpenResty.",
    license = "Apache 2.0",
-   homepage = "https://github.com/kong/lua-resty-timer"
+   homepage = "https://github.com/kong/lua-resty-timer-ng"
 }
 dependencies = {
 
