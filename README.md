@@ -321,7 +321,8 @@ local flamegraph = info.flamegraph
 -- ref https://github.com/brendangregg/FlameGraph
 
 
-for timer_name, timer in pairs(info.jobs) do
+for timer_name, timer in pairs(info.jobs) 
+    local is_running = timer.is_running
     local meta = timer.meta
     local stats = timer.stats
     local runs = timer.runs                     -- total number of runs
