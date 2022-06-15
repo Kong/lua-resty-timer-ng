@@ -534,6 +534,7 @@ function _M:stats(options)
     for name, job in pairs(self.jobs) do
         jobs[name] = {
             name = name,
+            is_running = job:is_running(),
             meta = job:get_metadata(),
             stats = job:get_stats(),
         }
