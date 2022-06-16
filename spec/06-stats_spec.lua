@@ -160,7 +160,7 @@ insulate("stats |", function ()
         timer:set_debug(true)
         local timer_name = "TEST"
         local record = 1
-        local ok, _ = timer:named_every(timer_name, 1, function ()
+        assert(timer:named_every(timer_name, 1, function ()
             if record < 3 then
                 sleep(5)
                 record = record + 1
@@ -169,13 +169,9 @@ insulate("stats |", function ()
                 sleep(5)
                 error("expected error")
             end
-        end)
+        end))
 
-        assert.is_truthy(ok)
-
-        ok, _ = timer:named_every(nil, 99999, function () end)
-
-        assert.is_truthy(ok)
+        assert(timer:named_every(nil, 99999, function () end))
 
         for i = 1, 2 do
             sleep(1 + 5 + TOLERANCE)

@@ -23,8 +23,8 @@ insulate("system start -> freeze -> start | ", function ()
             min_threads = 16,
             max_threads = 32,
         })
-        local ok, _ = timer:start()
-        assert.is_true(ok)
+
+        assert(timer:start())
 
         tbl = {
             time = 0
@@ -54,8 +54,7 @@ insulate("system start -> freeze -> start | ", function ()
 
     it("once timer", function ()
         assert.has_no.errors(function ()
-            local ok, _ = timer:named_at(TIMER_NAME_ONCE, 1, callback, tbl)
-            assert.is_truthy(ok)
+            assert(timer:named_at(TIMER_NAME_ONCE, 1, callback, tbl))
         end)
 
         timer:freeze()
@@ -71,8 +70,7 @@ insulate("system start -> freeze -> start | ", function ()
 
     it("every create -> pause -> run -> cancel", function ()
         assert.has_no.errors(function ()
-            local ok, _ = timer:named_every(TIMER_NAME_EVERY, 1, callback, tbl)
-            assert.is_truthy(ok)
+            assert(timer:named_every(TIMER_NAME_EVERY, 1, callback, tbl))
         end)
 
         timer_module.freeze(timer)

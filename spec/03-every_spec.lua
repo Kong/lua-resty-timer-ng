@@ -40,8 +40,8 @@ insulate("create a every timer with invalid arguments | ", function ()
             min_threads = 16,
             max_threads = 32,
         })
-        local ok, _ = timer:start()
-        assert.is_true(ok)
+
+        assert(timer:start())
 
         empty_callback = function (_, ...) end
     end)
@@ -99,8 +99,8 @@ insulate("create a every timer #" .. strategy .. " | ", function ()
             min_threads = 16,
             max_threads = 32,
         })
-        local ok, _ = timer:start()
-        assert.is_true(ok)
+
+        assert(timer:start())
 
         tbl = { time = 0 }
     end)
@@ -139,10 +139,10 @@ insulate("create a every timer #" .. strategy .. " | ", function ()
             local sleep_second = interval / 2
 
             assert.has_no.errors(function ()
-                local ok, _ =
+                assert(
                     timer:named_every(helper.TIMER_NAME_EVERT,
-                                interval, callback, tbl, sleep_second)
-                assert.is_truthy(ok)
+                                      interval, callback, tbl, sleep_second)
+                )
             end)
 
             local expected = now() + interval

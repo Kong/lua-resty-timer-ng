@@ -88,8 +88,8 @@ insulate("create a once timer #" .. strategy .. " | ", function ()
             min_threads = 16,
             max_threads = 32,
         })
-        local ok, _ = timer:start()
-        assert.is_true(ok)
+
+        assert(timer:start())
 
         tbl = { time = 0 }
     end)
@@ -112,8 +112,7 @@ insulate("create a once timer #" .. strategy .. " | ", function ()
 
     after_each(function ()
         assert.has_no.errors(function ()
-            local ok, _ = timer:cancel(helper.TIMER_NAME_ONCE)
-            assert.is_false(ok)
+            timer:cancel(helper.TIMER_NAME_ONCE)
         end)
     end)
 
@@ -128,10 +127,10 @@ insulate("create a once timer #" .. strategy .. " | ", function ()
             local sleep_second = delay / 2
 
             assert.has_no.errors(function ()
-                local ok, _ =
+                assert(
                     timer:named_at(helper.TIMER_NAME_ONCE,
-                               delay, callback, tbl, sleep_second)
-                assert.is_truthy(ok)
+                                   delay, callback, tbl, sleep_second)
+                )
             end)
 
             local expected = now() + delay
