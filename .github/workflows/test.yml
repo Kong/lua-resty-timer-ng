@@ -1,13 +1,19 @@
 name: Test
 on: [push, pull_request]
 
-env:
-  OPENRESTY_VERSION: "1.19.9.1"
-
 jobs:
   build:
-    name: Build OpenResty
+    name: Build OpenResty ${{ matrix.openresty_version }}
     runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        openresty_version:
+        - "1.19.9.1"
+        - "1.21.4.1"
+    
+    env:
+      OPENRESTY_VERSION: ${{ matrix.openresty_version }}
 
     steps:
       - name: Set environment variables
@@ -25,6 +31,7 @@ jobs:
           key: ${{ env.OPENRESTY_VERSION }}
 
       - name: Download OpenResty
+        if: steps.cache-openresty.outputs.cache-hit != 'true'
         run: |
           wget https://openresty.org/download/openresty-${OPENRESTY_VERSION}.tar.gz -O openresty.tar.gz
           mkdir openresty
@@ -40,7 +47,7 @@ jobs:
 
 
   test:
-    name: Test
+    name: Test ${{ matrix.busted_args }} (OpenResty ${{ matrix.openresty_version }})
     runs-on: ubuntu-20.04
     needs: build
 
@@ -51,6 +58,12 @@ jobs:
         - "spec/02*.lua"
         - "spec/03*.lua"
 
+        openresty_version:
+        - "1.19.9.1"
+        - "1.21.4.1"
+
+    env:
+      OPENRESTY_VERSION: ${{ matrix.openresty_version }}
   
     steps:
       - name: Set environment variables
