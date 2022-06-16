@@ -4,12 +4,9 @@ on:
   pull_request:
   issue_comment:
 
-env:
-  OPENRESTY_VERSION: "1.19.9.1"
-
 jobs:
   build:
-    name: Build OpenResty
+    name: Build OpenResty ${{ matrix.openresty_version }}
     runs-on: ubuntu-20.04
     if: |
       (github.event_name == 'push' && contains(github.event.commits[0].message, '/coverage')) ||
@@ -18,6 +15,15 @@ jobs:
         contains('["OWNER", "COLLABORATOR", "MEMBER"]', github.event.comment.author_association) &&
         startsWith(github.event.comment.body, '/coverage')
       )
+
+    strategy:
+      matrix:
+        openresty_version:
+        - "1.19.9.1"
+        - "1.21.4.1"
+    
+    env:
+      OPENRESTY_VERSION: ${{ matrix.openresty_version }}
 
     steps:
       - name: Set environment variables
@@ -35,6 +41,7 @@ jobs:
           key: ${{ env.OPENRESTY_VERSION }}
 
       - name: Download OpenResty
+        if: steps.cache-openresty.outputs.cache-hit != 'true'
         run: |
           wget https://openresty.org/download/openresty-${OPENRESTY_VERSION}.tar.gz -O openresty.tar.gz
           mkdir openresty
@@ -50,7 +57,7 @@ jobs:
 
 
   coverage:
-    name: Test
+    name: Test ${{ matrix.openresty_version }}
     runs-on: ubuntu-20.04
     needs: build
     if: |
@@ -60,6 +67,15 @@ jobs:
         contains('["OWNER", "COLLABORATOR", "MEMBER"]', github.event.comment.author_association) &&
         startsWith(github.event.comment.body, '/coverage')
       )
+
+    strategy:
+      matrix:
+        openresty_version:
+        - "1.19.9.1"
+        - "1.21.4.1"
+    
+    env:
+      OPENRESTY_VERSION: ${{ matrix.openresty_version }}
   
     steps:
       - name: Set environment variables
