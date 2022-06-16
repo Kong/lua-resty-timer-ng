@@ -116,7 +116,7 @@ local function scaling_execute(self, context)
         end
 
         if delta_thread_count_or_err <= 0 then
-            ngx.log(ngx_WARN,
+            ngx_log(ngx_WARN,
                     "[timer-ng] overload: ",
                     "load_avg: ", load_avg,
                     ", runable_jobs_avg: ", runable_jobs_avg,
@@ -157,7 +157,7 @@ local function scaling_log(self, context)
     context_for_log.alive_threads_sum = 0
     context_for_log.runable_jobs_sum = 0
 
-    ngx.log(ngx_INFO,
+    ngx_log(ngx_INFO,
             "[timer-ng] ",
             "load_avg: ", load_avg,
             ", runable_jobs_avg: ", runable_jobs_avg,
