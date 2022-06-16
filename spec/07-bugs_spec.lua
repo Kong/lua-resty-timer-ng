@@ -55,8 +55,8 @@ insulate("bugs of every timer | ", function ()
             min_threads = 16,
             max_threads = 32,
         })
-        local ok, _ = timer:start()
-        assert.is_true(ok)
+
+        assert(timer:start())
     end)
 
     lazy_teardown(function ()
@@ -77,13 +77,13 @@ insulate("bugs of every timer | ", function ()
     it("No.1 overlap", function ()
         local flag = false
         local record = 0
-        timer:named_every(nil, 0.3, function (...)
+        assert(timer:named_every(nil, 0.3, function (...)
             if now() - record < 0.3 then
                 flag = true
             end
             record = now()
             sleep(1)
-        end)
+        end))
 
         ngx.sleep((0.3 + 1) * 10)
 
