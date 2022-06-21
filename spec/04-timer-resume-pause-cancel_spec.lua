@@ -53,16 +53,13 @@ insulate("timer | ", function ()
     end)
 
     it("once create -> pause -> resume", function ()
-        assert.has_no.errors(function ()
-            assert(timer:named_at(TIMER_NAME_ONCE, 1, callback, tbl))
-        end)
+        assert(timer:named_at(TIMER_NAME_ONCE, 1, callback, tbl))
 
         timer:pause(TIMER_NAME_ONCE)
         sleep(1 + TOLERANCE)
         assert.same(0, tbl.time)
 
-        local ok, _ = timer:resume(TIMER_NAME_ONCE)
-        assert.is_true(ok)
+        assert(timer:resume(TIMER_NAME_ONCE))
 
         update_time()
         local expected = now() + 1
@@ -71,9 +68,7 @@ insulate("timer | ", function ()
     end)
 
     it("once create -> cancel", function ()
-        assert.has_no.errors(function ()
-            assert(timer:named_at(TIMER_NAME_ONCE, 1, callback, tbl))
-        end)
+        assert(timer:named_at(TIMER_NAME_ONCE, 1, callback, tbl))
 
         timer:cancel(TIMER_NAME_ONCE)
         sleep(1 + TOLERANCE)
@@ -81,16 +76,13 @@ insulate("timer | ", function ()
     end)
 
     it("every create -> pause -> resume -> cancel", function ()
-        assert.has_no.errors(function ()
-            assert(timer:named_every(TIMER_NAME_EVERY, 1, callback, tbl))
-        end)
+        assert(timer:named_every(TIMER_NAME_EVERY, 1, callback, tbl))
 
         timer:pause(TIMER_NAME_EVERY)
         sleep(2 + TOLERANCE)
         assert.same(0, tbl.time)
 
-        local ok, _ = timer:resume(TIMER_NAME_EVERY)
-        assert.is_true(ok)
+        assert(timer:resume(TIMER_NAME_EVERY))
 
         update_time()
         local expected = now() + 1
@@ -101,8 +93,7 @@ insulate("timer | ", function ()
         sleep(1 + TOLERANCE)
         assert.near(expected, tbl.time, TOLERANCE)
 
-        ok, _ = timer:cancel(TIMER_NAME_EVERY)
-        assert.is_true(ok)
+        assert(timer:cancel(TIMER_NAME_EVERY))
 
         tbl.time = 0
         sleep(2 + TOLERANCE)

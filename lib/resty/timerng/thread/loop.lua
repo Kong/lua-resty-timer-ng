@@ -148,6 +148,7 @@ local function do_phase_handler(self, phase)
 
     elseif action == ACTION_ERROR then
         ngx_log(ngx_EMERG, make_log_msg(self, phase, action, err))
+        ngx_log(ngx_EMERG, make_log_msg(self, phase, action, err))
         return true
 
     elseif action == ACTION_EXIT then

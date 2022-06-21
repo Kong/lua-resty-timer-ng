@@ -19,36 +19,23 @@ insulate("auto-scaling | ", function ()
 
         assert(timer:start())
 
-        helper.wait_until(function ()
-            local expected = timer:_debug_expected_alive_worker_thread_count()
-            local alive = timer:_debug_alive_worker_thread_count()
-            assert(expected == alive)
-        end, 5)
-
-
         -- create too many timers
         for _ = 1, MAX_THREADS * 4 do
             assert(timer:at(0, function ()
-                ngx_sleep(AUTO_SCALING_INTERVAL * 5)
+                ngx_sleep(AUTO_SCALING_INTERVAL * 2)
             end))
         end
 
-        -- wait for auto-scaling
-        -- interval of auto-scaling is 10s
         helper.wait_until(function ()
-            local expected = timer:_debug_expected_alive_worker_thread_count()
             local alive = timer:_debug_alive_worker_thread_count()
-            assert.same(MAX_THREADS, expected)
-            assert.same(alive, expected)
+            assert.same(MAX_THREADS, alive)
         end, 5)
 
 
         helper.wait_until(function ()
-            local expected = timer:_debug_expected_alive_worker_thread_count()
             local alive = timer:_debug_alive_worker_thread_count()
-            assert.same(MIN_THREADS, expected)
-            assert.same(alive, expected)
-        end, 120)
+            assert.same(MIN_THREADS, alive)
+        end, 20)
 
     end)
 end)

@@ -42,6 +42,8 @@ local _M = {
 
     -- 60s
     SACALING_INFO_LOG_INTERVAL = 60,
+
+    DEFAULT_LRU_CACHE_SIZE = 1024,
 }
 
 -- We don't need a high accuracy.

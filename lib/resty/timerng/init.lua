@@ -1,17 +1,14 @@
-local lrucache = require("resty.lrucache")
 local job_module = require("resty.timerng.job")
 local utils = require("resty.timerng.utils")
-local wheel_group = require("resty.timerng.wheel.group")
 local constants = require("resty.timerng.constants")
 local thread_group = require("resty.timerng.thread.group")
+local stat_module = require("resty.timerng.stat")
 
 local ngx_log = ngx.log
 local ngx_NOTICE = ngx.NOTICE
 
 local utils_float_compare = utils.float_compare
-
-local table_insert = table.insert
-local table_concat = table.concat
+local utils_catch_fold_callstack = utils.catch_fold_callstack
 
 local math_floor = math.floor
 local math_modf = math.modf
@@ -36,59 +33,6 @@ local TIMER_REPEATED = false
 local _M = {}
 
 
-
-local function report_job_expire_callback_inernal(self, job)
-    if not job.debug then
-        return
-    end
-
-    local debug_stats = self.debug_stats
-    local callstack = job.meta.callstack
-
-    local stat = debug_stats:get(callstack)
-
-    if not stat then
-        stat = {
-            running = 0,
-            pending = 0,
-            elapsed_time = 0,
-        }
-
-        debug_stats:set(callstack, stat)
-    end
-
-    stat.pending = stat.pending + 1
-end
-
-
-
-local function report_job_cancel_callback_internal(self, job)
-    self.sys_stats.total = self.sys_stats.total - 1
-
-    if not job.debug then
-        return
-    end
-
-    local debug_stats = self.debug_stats
-    local callstack = job.meta.callstack
-
-    local stat = debug_stats:get(callstack)
-
-    if not stat then
-        stat = {
-            running = 0,
-            pending = 0,
-            elapsed_time = 0,
-        }
-
-        debug_stats:set(callstack, stat)
-    end
-
-    stat.elapsed_time =
-        stat.elapsed_time + job.stats.runs * job.stats.elapsed_time.avg
-end
-
-
 ---create a timed task and insert it into the wheel group
 ---@param self table self
 ---@param name any name of this timer
@@ -100,17 +44,26 @@ end
 ---@return boolean name_or_false the name of the timer if ok, otherwise false
 ---@return string err error message
 local function create(self, name, callback, delay, timer_type, argc, argv)
-    local wheels = self.wheels
+    local wheel_group = self.thread_group.wheel_group
     local jobs = self.jobs
 
-    wheels:sync_time()
+    wheel_group:sync_time()
 
-    local job = job_module.new(wheels,
+    local top_frame = nil
+    local fold_callstack = nil
+
+    if self.opt.debug then
+        top_frame, fold_callstack = utils_catch_fold_callstack()
+    end
+
+    local job = job_module.new(wheel_group,
                                name,
                                callback,
                                delay,
                                timer_type,
                                self.opt.debug,
+                               top_frame,
+                               fold_callstack,
                                argc,
                                argv)
 
@@ -121,19 +74,18 @@ local function create(self, name, callback, delay, timer_type, argc, argv)
     job:enable()
 
     jobs[job.name] = job
-    self.sys_stats.total = self.sys_stats.total + 1
+
+    self.stat:on_job_create(job)
 
     if job:is_immediate() then
-        wheels.pending_jobs:push_right(job)
-        self.thread_group:wake_up_super_thread()
-        report_job_expire_callback_inernal(self, job)
-
+        self.thread_group:submit(job)
+        self.stat:on_job_pending(job)
         return job.name, nil
     end
 
-    local ok, err = wheels:insert_job(job)
+    local ok, err = wheel_group:insert_job(job)
 
-    local _, need_wake_up = wheels:update_earliest_expiry_time()
+    local _, need_wake_up = wheel_group:update_earliest_expiry_time()
 
     if need_wake_up then
         self.thread_group:wake_up_super_thread()
@@ -323,26 +275,13 @@ function _M.new(options)
     -- enable/diable entire timing system
     timer_sys.enable = false
 
+    timer_sys.stat = stat_module.new()
+
     timer_sys.thread_group = thread_group.new(timer_sys)
 
     timer_sys.jobs = {}
 
     timer_sys.is_first_start = true
-
-    timer_sys.sys_stats = {
-        running = 0,
-        total = 0,
-        runs = 0,
-    }
-    timer_sys.debug_stats = assert(lrucache.new(1024))
-
-    local function report_job_expire_callback(job)
-        report_job_expire_callback_inernal(timer_sys, job)
-    end
-
-    timer_sys.wheels = wheel_group.new(opt.wheel_setting,
-                                       opt.resolution,
-                                       report_job_expire_callback)
 
     return setmetatable(timer_sys, { __index = _M })
 end
@@ -361,7 +300,7 @@ function _M:start()
 
     if not self.enable then
         ngx_update_time()
-        self.wheels.expected_time = ngx_now()
+        self.thread_group.wheel_group.expected_time = ngx_now()
     end
 
     self.enable = true
@@ -492,9 +431,9 @@ function _M:cancel(name)
         return false, "timer not found"
     end
 
-    report_job_cancel_callback_internal(self, job)
     job:cancel()
     jobs[name] = nil
+    self.stat:on_job_cancel(job)
 
     return true, nil
 end
@@ -510,22 +449,11 @@ function _M:stats(options)
         options = {}
     end
 
-    local pending_jobs = self.wheels.pending_jobs
-    local sys_stats = self.sys_stats
-
-    local sys = {
-        running = sys_stats.running,
-        pending = pending_jobs:length(),
-        waiting = nil,
-        total = sys_stats.total,
-        runs = sys_stats.runs,
-    }
-
-    sys.waiting = sys.total - sys.running - sys.pending
+    local sys_stats = self.stat:sys_stats()
 
     if not options.verbose then
         return {
-            sys = sys,
+            sys = sys_stats,
         }
     end
 
@@ -542,47 +470,15 @@ function _M:stats(options)
 
     if not options.flamegraph then
         return {
-            sys = sys,
+            sys = sys_stats,
             timers = jobs,
         }
     end
 
-    local flamegraph = {
-        running = {},
-        pending = {},
-        elapsed_time = {},
-    }
-    local debug_stats = self.debug_stats
-    local backtraces = debug_stats:get_keys()
-
-    for _, backtrace in ipairs(backtraces) do
-        local stat = debug_stats:get(backtrace)
-
-        table_insert(flamegraph.running, backtrace)
-        table_insert(flamegraph.running, " ")
-        table_insert(flamegraph.running, stat.running)
-        table_insert(flamegraph.running, "\n")
-
-        table_insert(flamegraph.pending, backtrace)
-        table_insert(flamegraph.pending, " ")
-        table_insert(flamegraph.pending, stat.pending)
-        table_insert(flamegraph.pending, "\n")
-
-        table_insert(flamegraph.elapsed_time, backtrace)
-        table_insert(flamegraph.elapsed_time, " ")
-        table_insert(flamegraph.elapsed_time,
-                     math_floor(stat.elapsed_time * 1000))
-        table_insert(flamegraph.elapsed_time, "\n")
-    end
-
-    flamegraph.running = table_concat(flamegraph.running)
-    flamegraph.pending = table_concat(flamegraph.pending)
-    flamegraph.elapsed_time = table_concat(flamegraph.elapsed_time)
-
     return {
-        sys = sys,
+        sys = sys_stats,
         timers = jobs,
-        flamegraph = flamegraph,
+        flamegraph = self.stat:raw_flamegraph(),
     }
 end
 
@@ -595,12 +491,7 @@ end
 
 
 function _M:_debug_alive_worker_thread_count()
-    return self.thread_group:get_alive_worker_thread_count()
-end
-
-
-function _M:_debug_expected_alive_worker_thread_count()
-    return self.thread_group:get_expected_alive_worker_thread_count()
+    return self.thread_group.thread_pool:stats().alive_threads_count
 end
 
 

@@ -1,6 +1,16 @@
 local math_pow = math.pow
 local math_floor = math.floor
 
+local debug_getinfo = debug.getinfo
+
+local table_insert = table.insert
+local table_concat = table.concat
+local table_remove = table.remove
+
+local string_sub = string.sub
+local string_len = string.len
+local string_format = string.format
+
 local type = type
 local pcall = pcall
 local pairs = pairs
@@ -90,6 +100,60 @@ end
 function _M.round(value, digits)
     local x = 10 ^ digits
     return math_floor(value * x + 0.1) / x
+end
+
+
+---catch the fold callstack for flamegraph
+---@param max_depth? number optional, max depth of callstack (default = 512)
+---@return string top_frame like "@/timer.lua:64:dns_timer()"
+---@return string fold_callstack
+---like "@/timer.lua:32:init();@/timer.lua:64:dns_timer()"
+---@warning bad performance
+function _M.catch_fold_callstack(max_depth)
+    if not max_depth then
+        max_depth = 512
+    end
+
+    local base_callstack_level = 1
+
+    local callstack = {}
+
+    for i = 1, max_depth do
+        local info = debug_getinfo(i + base_callstack_level, "nSl")
+
+        if not info or info.short_src == "[C]" then
+            break
+        end
+
+        local str = string_format("%s:%d:%s();",
+                                  info.source,
+                                  info.currentline,
+                                  info.name or info.what)
+
+        table_insert(callstack, str)
+    end
+
+    -- remove the last ';'
+    local top = callstack[1]
+    callstack[1] = string_sub(top, 1, string_len(top) -  1)
+
+    local top_frame
+
+    -- has at least one callstack
+    if #callstack > 0 then
+        -- like `init.lua:128:start_timer()`
+        top_frame = callstack[1]
+    end
+
+    local _callstack = callstack
+    callstack = {}
+
+    -- to adjust the order of raw data of flamegraph
+    for _ = 1, #_callstack do
+        table_insert(callstack, table_remove(_callstack))
+    end
+
+    return top_frame, table_concat(callstack, nil)
 end
 
 

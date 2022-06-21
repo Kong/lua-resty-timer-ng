@@ -3,24 +3,19 @@ local constants = require("resty.timerng.constants")
 local loop = require("resty.timerng.thread.loop")
 
 local ngx_log = ngx.log
-local ngx_INFO = ngx.INFO
-local ngx_WARN = ngx.WARN
 local ngx_ERR = ngx.ERR
 
 local ngx_now = ngx.now
 local ngx_sleep = ngx.sleep
 local ngx_update_time = ngx.update_time
+local ngx_worker_exiting = ngx.worker.exiting
 
 local math_abs = math.abs
 local math_max = math.max
 local math_min = math.min
 
-local CONSTANTS_SCALING_RECORD_INTERVAL =
-    constants.SCALING_RECORD_INTERVAL
 local CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN =
     constants.TOLERANCE_OF_GRACEFUL_SHUTDOWN
-local CONSTANTS_SCALING_LOG_INTERVAL =
-    constants.SACALING_INFO_LOG_INTERVAL
 
 local setmetatable = setmetatable
 
@@ -31,186 +26,39 @@ local meta_table = {
 }
 
 
-local function scaling_init(context)
-    context.scaling_info = {
-        context_for_scaling = {
-            last_record_time = 0,
-            records = 0,
-            load_sum = 0,
-            alive_threads_sum = 0,
-            runable_jobs_sum = 0,
-        },
-        context_for_log = {
-            last_record_time = 0,
-            last_log_time = 0,
-            records = 0,
-            load_sum = 0,
-            alive_threads_sum = 0,
-            runable_jobs_sum = 0,
-        },
-    }
-end
-
-
-local function scaling_record(self, context)
-    local scaling_info = context.scaling_info
-    local context_for_scaling = scaling_info.context_for_scaling
-    local context_for_log = scaling_info.context_for_log
-
-    local now = ngx_now()
-    local delta_record_time = now - context_for_scaling.last_record_time
-
-    if delta_record_time < CONSTANTS_SCALING_RECORD_INTERVAL then
-        return
-    end
-
-    context_for_scaling.last_record_time = now
-    context_for_log.last_record_time = now
-
-    local stats_sys = self.timer_sys:stats(false).sys
-    local runable_jobs = stats_sys.running + stats_sys.pending
-    local alive_threads = self.worker_thread:get_alive_thread_count()
-    local load = runable_jobs / alive_threads
-
-    context_for_scaling.records = context_for_scaling.records + 1
-    context_for_scaling.load_sum = context_for_scaling.load_sum + load
-    context_for_scaling.alive_threads_sum =
-        context_for_scaling.alive_threads_sum + alive_threads
-    context_for_scaling.runable_jobs_sum =
-        context_for_scaling.runable_jobs_sum + runable_jobs
-
-    context_for_log.records = context_for_log.records + 1
-    context_for_log.load_sum = context_for_log.load_sum + load
-    context_for_log.alive_threads_sum =
-        context_for_log.alive_threads_sum + alive_threads
-    context_for_log.runable_jobs_sum =
-        context_for_log.runable_jobs_sum + runable_jobs
-end
-
-
-local function scaling_execute(self, context)
-    local scaling_info = context.scaling_info
-    local context_for_scaling = scaling_info.context_for_scaling
-    local threshold = self.timer_sys.opt.auto_scaling_load_threshold
-    local auto_scaling_interval = self.timer_sys.opt.auto_scaling_interval
-    local records = context_for_scaling.records
-
-    if records < auto_scaling_interval then
-        return
-    end
-
-    local load_avg = context_for_scaling.load_sum / records
-    local runable_jobs_avg = context_for_scaling.runable_jobs_sum / records
-    local alive_threads_avg = context_for_scaling.alive_threads_sum / records
-
-    context_for_scaling.records = 0
-    context_for_scaling.load_sum = 0
-    context_for_scaling.runable_jobs_sum = 0
-    context_for_scaling.alive_threads_sum = 0
-
-    if load_avg > threshold then
-        local ok, delta_thread_count_or_err =
-            self.worker_thread:stretch(0.33)
-
-        if not ok then
-            return false, delta_thread_count_or_err
-        end
-
-        if delta_thread_count_or_err <= 0 then
-            ngx_log(ngx_WARN,
-                    "[timer-ng] overload: ",
-                    "load_avg: ", load_avg,
-                    ", runable_jobs_avg: ", runable_jobs_avg,
-                    ", alive_threads_avg: ", alive_threads_avg)
-        end
-
-        return true, nil
-    end
-
-    if load_avg < 0.6 then
-        local ok, err = self.worker_thread:stretch(-0.10)
-        return ok, err
-    end
-
-    return true, nil
-end
-
-
-local function scaling_log(self, context)
-    local scaling_info = context.scaling_info
-    local context_for_log = scaling_info.context_for_log
-    local records = context_for_log.records
-    local now = ngx_now()
-
-    local delta = now - context_for_log.last_log_time
-
-    if delta < CONSTANTS_SCALING_LOG_INTERVAL then
-        return
-    end
-
-    local load_avg = context_for_log.load_sum / records
-    local runable_jobs_avg = context_for_log.runable_jobs_sum / records
-    local alive_threads_avg = context_for_log.alive_threads_sum / records
-
-    context_for_log.last_log_time = now
-    context_for_log.records = 0
-    context_for_log.load_sum = 0
-    context_for_log.alive_threads_sum = 0
-    context_for_log.runable_jobs_sum = 0
-
-    ngx_log(ngx_INFO,
-            "[timer-ng] ",
-            "load_avg: ", load_avg,
-            ", runable_jobs_avg: ", runable_jobs_avg,
-            ", alive_threads_avg: ", alive_threads_avg)
-end
-
-
-local function thread_init(context, self)
+local function init_phase_handler(context, self)
     local timer_sys = self.timer_sys
-    local wheels = timer_sys.wheels
+    local wheel_group = timer_sys.thread_group.wheel_group
     local opt_resolution = timer_sys.opt.resolution
 
     ngx_sleep(opt_resolution)
 
     ngx_update_time()
-    wheels.real_time = ngx_now()
-    wheels.expected_time = wheels.real_time - opt_resolution
-
-    scaling_init(context)
+    wheel_group.real_time = ngx_now()
+    wheel_group.expected_time = wheel_group.real_time - opt_resolution
 
     return loop.ACTION_CONTINUE
 end
 
 
-local function thread_body(_, self)
+local function loop_body_phase_handler(_, self)
     local timer_sys = self.timer_sys
-    local wheels = timer_sys.wheels
+    local wheel_group = timer_sys.thread_group.wheel_group
 
     if timer_sys.enable then
         -- update the status of the wheel group
-        wheels:sync_time()
-
-        if not wheels.pending_jobs:is_empty() then
-            self.worker_thread:wake_up()
-        end
+        wheel_group:sync_time()
     end
 
     return loop.ACTION_CONTINUE
 end
 
 
-local function thread_after(context, self)
+local function after_phase_handler(context, self)
     local timer_sys = self.timer_sys
-    local wheels = timer_sys.wheels
+    local wheel_group = timer_sys.thread_group.wheel_group
 
-    scaling_record(self, context)
-    scaling_log(self, context)
-    scaling_execute(self, context)
-
-    self.worker_thread:spawn()
-
-    local delay, _ = wheels:update_earliest_expiry_time()
+    local delay, _ = wheel_group:update_earliest_expiry_time()
 
     delay = math_max(delay, timer_sys.opt.resolution)
     delay = math_min(delay,
@@ -226,13 +74,19 @@ local function thread_after(context, self)
 end
 
 
-local function thread_finally(_)
+local function finally_phase_handler(context, self)
+    if not ngx_worker_exiting() then
+        return loop.ACTION_CONTINUE
+    end
+
+    local timer_sys = self.timer_sys
+    local jobs = timer_sys.jobs
+
+    for _, job in pairs(jobs) do
+        job:execute()
+    end
+
     return loop.ACTION_CONTINUE
-end
-
-
-function _M:set_worker_thread_ref(worker_thread)
-    self.worker_thread = worker_thread
 end
 
 
@@ -260,7 +114,6 @@ function _M.new(timer_sys)
     local self = {
         timer_sys = timer_sys,
         wake_up_semaphore = semaphore.new(0),
-        worker_thread = nil,
     }
 
     self.thread = loop.new("super", {
@@ -269,7 +122,7 @@ function _M.new(timer_sys)
             argv = {
                 self,
             },
-            callback = thread_init,
+            callback = init_phase_handler,
         },
 
         loop_body = {
@@ -277,7 +130,7 @@ function _M.new(timer_sys)
             argv = {
                 self,
             },
-            callback = thread_body,
+            callback = loop_body_phase_handler,
         },
 
         after = {
@@ -285,13 +138,15 @@ function _M.new(timer_sys)
             argv = {
                 self,
             },
-            callback = thread_after,
+            callback = after_phase_handler,
         },
 
         finally = {
-            argc = 0,
-            argv = {},
-            callback = thread_finally,
+            argc = 1,
+            argv = {
+                self,
+            },
+            callback = finally_phase_handler,
         }
     })
 

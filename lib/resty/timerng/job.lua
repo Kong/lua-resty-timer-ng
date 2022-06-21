@@ -11,9 +11,6 @@ local utils_get_variance =  utils.get_variance
 local table_unpack = table.unpack
 local table_concat = table.concat
 local table_insert = table.insert
-local table_remove = table.remove
-
-local debug_getinfo = debug.getinfo
 
 local math_max = math.max
 local math_min = math.min
@@ -29,12 +26,9 @@ local setmetatable = setmetatable
 local tostring = tostring
 local pairs = pairs
 
-local string_sub = string.sub
 local string_format = string.format
-local string_len = string.len
 
 local NAME_COUNTER = 0
-local MAX_CALLSTACK_DEPTH = 128
 
 local _M = {}
 
@@ -75,52 +69,6 @@ local meta_table = {
     __index = _M,
     __tostring = job_tostring,
 }
-
-
-local function job_create_meta(job)
-    local meta = job.meta
-
-    -- job_create_meta + job.new + create + once | every = 4
-    -- function `create` in file `lib/resty/timer/init.lua`
-    local base_callstack_level = 4
-
-    local callstack = {}
-
-    for i = 1, MAX_CALLSTACK_DEPTH do
-        local info = debug_getinfo(i + base_callstack_level, "nSl")
-
-        if not info or info.short_src == "[C]" then
-            break
-        end
-
-        local str = string_format("%s:%d:%s();",
-                                  info.source,
-                                  info.currentline,
-                                  info.name or info.what)
-
-        table_insert(callstack, str)
-    end
-
-    -- remove the last ';'
-    local top = callstack[1]
-    callstack[1] = string_sub(top, 1, string_len(top) -  1)
-
-    -- has at least one callstack
-    if #callstack > 0 then
-        -- like `init.lua:128:start_timer()`
-        meta.name = callstack[1]
-    end
-
-    local _callstack = callstack
-    callstack = {}
-
-    -- to adjust the order of raw data of flamegraph
-    for _ = 1, #_callstack do
-        table_insert(callstack, table_remove(_callstack))
-    end
-
-    meta.callstack = table_concat(callstack, nil)
-end
 
 
 -- Calculate the position of each pointer when the job expires
@@ -169,9 +117,9 @@ end
 
 
 function _M:is_runnable()
-    return self:is_enabled()       and
-           not self:is_cancelled() and
-           not self:is_running()
+    return   self:is_enabled()
+        and  not self:is_cancelled()
+        and  not self:is_running()
 end
 
 
@@ -195,12 +143,13 @@ function _M:get_next_pointer(wheel_id)
 end
 
 
-function _M:re_cal_next_pointer(wheels)
-    job_re_cal_next_pointer(self, wheels)
+function _M:re_cal_next_pointer(wheel_group)
+    job_re_cal_next_pointer(self, wheel_group)
 end
 
 
-function _M.new(wheels, name, callback, delay, once, debug, argc, argv)
+function _M.new(wheel_group,name, callback, delay, once,
+                debug, top_frame, fold_callstack, argc, argv)
     local self = {
         _enable = true,
         _cancel = false,
@@ -210,7 +159,7 @@ function _M.new(wheels, name, callback, delay, once, debug, argc, argv)
         callback = callback,
         delay = delay,
         debug = debug,
-        steps = utils_convert_second_to_step(delay, wheels.resolution),
+        steps = utils_convert_second_to_step(delay, wheel_group.resolution),
 
         -- a table
         -- map from `wheel_id` to `next_pointer`
@@ -232,27 +181,27 @@ function _M.new(wheels, name, callback, delay, once, debug, argc, argv)
             finish = 0,
             last_err_msg = "",
         },
-        meta = {
-            name = "debug off",
-            callstack = "debug off",
-        },
     }
 
     if debug then
-        job_create_meta(self)
+        self.meta = {
+            name = top_frame,
+            callstack = fold_callstack,
+        }
     end
 
     if self.name == nil then
+        local meta_name = self.meta and self.meta.name or "non-debug-mode"
         self.name = string_format("unix_timestamp=%f;counter=%d:meta=%s",
                                   math_floor(ngx_now() * 1000),
                                   NAME_COUNTER,
-                                  self.meta.name)
+                                  meta_name)
 
         NAME_COUNTER = NAME_COUNTER + 1
     end
 
     if not self.immediate then
-        job_re_cal_next_pointer(self, wheels)
+        job_re_cal_next_pointer(self, wheel_group)
     end
 
     return setmetatable(self, meta_table)
@@ -260,14 +209,14 @@ end
 
 
 function _M:execute()
+    if not self:is_runnable() then
+        return
+    end
+
     local stats = self.stats
     local elapsed_time = stats.elapsed_time
     stats.runs = stats.runs + 1
     local start = ngx_now()
-
-    if not self:is_runnable() then
-        return
-    end
 
     self._running = true
 

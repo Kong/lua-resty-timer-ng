@@ -108,8 +108,7 @@ function _M:insert(job)
         return lower_wheel:insert(job)
     end
 
-    self.report_job_expire_callback(job)
-    self.expired_jobs:push_right(job)
+    self.on_expire(job)
 
     return true, nil
 end
@@ -128,7 +127,7 @@ function _M:spin_pointer(offset)
     local cycles
     local higher_wheel = self.higher_wheel
     local lower_wheel = self.lower_wheel
-    local expired_jobs = self.expired_jobs
+    local on_expire = self.on_expire
 
     for _ = 1, offset do
         final_pointer, cycles = self:cal_pointer(final_pointer, 1)
@@ -146,8 +145,7 @@ function _M:spin_pointer(offset)
             if lower_wheel then
                 lower_wheel:insert(job)
             else
-                self.report_job_expire_callback(job)
-                expired_jobs:push_right(job)
+                on_expire(job)
             end
         end
     end
@@ -166,26 +164,15 @@ function _M:get_jobs_by_pointer(pointer)
 end
 
 
----return all expired jobs, or return nil.
----@return table jobs_or_nil
-function _M:fetch_all_expired_jobs()
-    if self.expired_jobs:is_empty() then
-        return nil
-    end
-
-    local ret = self.expired_jobs
-
-    self.expired_jobs = array_new()
-
-    return ret
-end
-
 ---new a wheel
 ---@param id string id of this wheel
 ---@param nelts integer slots of this wheel
+---@param on_expire function on_expire callback
 ---@return table wheel a wheel
-function _M.new(id, nelts, report_job_expire_callback)
-    assert(id ~= nil)
+function _M.new(id, nelts, on_expire)
+    assert(type(id) == "string", "id must be a string")
+    assert(type(nelts) == "number", "nelts must be a number")
+    assert(type(on_expire) == "function", "on_expire must be a function")
 
     local self = {
         id = id,
@@ -197,9 +184,7 @@ function _M.new(id, nelts, report_job_expire_callback)
         higher_wheel = nil,
         lower_wheel = nil,
 
-        expired_jobs = array.new(),
-
-        report_job_expire_callback = report_job_expire_callback,
+        on_expire = on_expire,
     }
 
     local slots = self.slots

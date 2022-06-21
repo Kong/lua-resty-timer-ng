@@ -7,7 +7,7 @@ local timer_running_count = ngx.timer.running_count
 local TOLERANCE = 0.2
 
 
-insulate("stats |", function ()
+insulate("stats | ", function ()
     local timer = { }
 
     randomize()
@@ -32,7 +32,6 @@ insulate("stats |", function ()
 
     end)
 
-
     it("metadata", function ()
         -- If this test fails,
         -- perhaps you need to update
@@ -45,7 +44,7 @@ insulate("stats |", function ()
             verbose = true,
         })
         local timer_info = assert(stats.timers[timer_name])
-        assert.same("debug off", timer_info.meta.name)
+        assert(timer_info.meta == nil)
         assert(timer:cancel(timer_name))
 
 
@@ -58,7 +57,7 @@ insulate("stats |", function ()
         local callstack = timer_info.meta.callstack
         local meta_name = timer_info.meta.name
 
-        if not string.find(meta_name, "spec/06-stats_spec.lua", 1, true) then
+        if not string.find(meta_name, "create()", 1, true) then
             error("incorrect meta name: " .. meta_name)
         end
 
@@ -68,6 +67,33 @@ insulate("stats |", function ()
 
         assert(timer:cancel(timer_name))
         timer:set_debug(false)
+    end)
+end)
+
+
+insulate("stats | ", function ()
+    local timer = { }
+
+    randomize()
+
+    lazy_setup(function ()
+        timer = timer_module.new({
+            min_threads = 16,
+            max_threads = 32,
+        })
+        local ok, _ = timer:start()
+        assert.is_true(ok)
+    end)
+
+    lazy_teardown(function ()
+        timer:freeze()
+        timer:destroy()
+
+        helper.wait_until(function ()
+            assert.same(1, timer_running_count())
+            return true
+        end)
+
     end)
 
     it("no verbose", function ()
@@ -79,28 +105,55 @@ insulate("stats |", function ()
         })
         assert(stats.timers == nil)
     end)
+end)
 
+
+insulate("stats | ", function ()
+    local timer = { }
+
+    randomize()
+
+    lazy_setup(function ()
+        timer = timer_module.new({
+            min_threads = 16,
+            max_threads = 32,
+        })
+        local ok, _ = timer:start()
+        assert.is_true(ok)
+    end)
+
+    lazy_teardown(function ()
+        timer:freeze()
+        timer:destroy()
+
+        helper.wait_until(function ()
+            assert.same(1, timer_running_count())
+            return true
+        end)
+
+    end)
 
     it("flamegraph", function ()
         timer:set_debug(true)
-        assert(timer:named_at(nil, 0, function ()
-            ngx.sleep(1)
-        end))
 
         assert(timer:named_at(nil, 0, function ()
             ngx.sleep(1)
         end))
 
         assert(timer:named_at(nil, 0, function ()
-            ngx.sleep(1)
+            ngx.sleep(2)
         end))
 
         assert(timer:named_at(nil, 0, function ()
-            ngx.sleep(1)
+            ngx.sleep(3)
         end))
 
         assert(timer:named_at(nil, 0, function ()
-            ngx.sleep(1)
+            ngx.sleep(4)
+        end))
+
+        assert(timer:named_at(nil, 0, function ()
+            ngx.sleep(5)
         end))
 
         local stats = timer:stats({
@@ -114,9 +167,10 @@ insulate("stats |", function ()
         assert(stats.flamegraph.running)
         assert(stats.flamegraph.pending)
 
-        ngx.log(ngx.ERR, "flamegraph.running\n", stats.flamegraph.running)
-        ngx.log(ngx.ERR, "flamegraph.pending\n", stats.flamegraph.pending)
-        ngx.log(ngx.ERR, "flamegraph.elapsed_time\n", stats.flamegraph.elapsed_time)
+        print("flamegraph.running\n", stats.flamegraph.running)
+        print("flamegraph.pending\n", stats.flamegraph.pending)
+        print("flamegraph.elapsed_time\n", stats.flamegraph.elapsed_time)
+        print("============================")
 
         ngx.sleep(0.2)
 
@@ -131,11 +185,12 @@ insulate("stats |", function ()
         assert(stats.flamegraph.running)
         assert(stats.flamegraph.pending)
 
-        ngx.log(ngx.ERR, "flamegraph.running\n", stats.flamegraph.running)
-        ngx.log(ngx.ERR, "flamegraph.pending\n", stats.flamegraph.pending)
-        ngx.log(ngx.ERR, "flamegraph.elapsed_time\n", stats.flamegraph.elapsed_time)
+        print("flamegraph.running\n", stats.flamegraph.running)
+        print("flamegraph.pending\n", stats.flamegraph.pending)
+        print("flamegraph.elapsed_time\n", stats.flamegraph.elapsed_time)
+        print("============================")
 
-        ngx.sleep(1)
+        ngx.sleep(7)
 
         stats = timer:stats({
             verbose = true,
@@ -148,13 +203,40 @@ insulate("stats |", function ()
         assert(stats.flamegraph.running)
         assert(stats.flamegraph.pending)
 
-        ngx.log(ngx.ERR, "flamegraph.running\n", stats.flamegraph.running)
-        ngx.log(ngx.ERR, "flamegraph.pending\n", stats.flamegraph.pending)
-        ngx.log(ngx.ERR, "flamegraph.elapsed_time\n", stats.flamegraph.elapsed_time)
+        print("flamegraph.running\n", stats.flamegraph.running)
+        print("flamegraph.pending\n", stats.flamegraph.pending)
+        print("flamegraph.elapsed_time\n", stats.flamegraph.elapsed_time)
+        print("============================")
 
         timer:set_debug(false)
     end)
+end)
 
+
+insulate("stats | ", function ()
+    local timer = { }
+
+    randomize()
+
+    lazy_setup(function ()
+        timer = timer_module.new({
+            min_threads = 16,
+            max_threads = 32,
+        })
+        local ok, _ = timer:start()
+        assert.is_true(ok)
+    end)
+
+    lazy_teardown(function ()
+        timer:freeze()
+        timer:destroy()
+
+        helper.wait_until(function ()
+            assert.same(1, timer_running_count())
+            return true
+        end)
+
+    end)
 
     it("others", function()
         timer:set_debug(true)

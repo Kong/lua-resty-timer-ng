@@ -1,38 +1,13 @@
-local utils = require("resty.timerng.utils")
-
-local utils_table_new = utils.table_new
-local utils_table_clear = utils.table_clear
-
-local table_insert = table.insert
-local table_remove = table.remove
+local utils_table_new = require("resty.timerng.utils").table_new
 
 local error = error
 local setmetatable = setmetatable
-
-local array_pool = {}
 
 local _M = {}
 
 local meta_table = {
     __index = _M,
 }
-
-
-function _M.next(array, index)
-    if index == nil then
-        index = 0
-    end
-
-    if array.nelts < index then
-        return nil
-    end
-
-    if index + 1 > array.nelts then
-        return nil
-    end
-
-    return index + 1, array.elts[index]
-end
 
 
 function _M:length()
@@ -93,38 +68,13 @@ function _M.new(n)
         n = 8
     end
 
-    local self = table_remove(array_pool)
-
-    if self then
-        return self
-    end
-
-    self = {
+    local self = {
         elts = utils_table_new(n, 0),
         first = 0,
         last = -1,
     }
 
     return setmetatable(self, meta_table)
-end
-
-
-function _M:release()
-    utils_table_clear(self.elts)
-    self.first = 0
-    self.last = -1
-    table_insert(array_pool, self)
-end
-
-
-function _M.merge(dst, src)
-    if src == nil then
-        return
-    end
-
-    while not src:is_empty() do
-        dst:push_left(src:pop_left())
-    end
 end
 
 
