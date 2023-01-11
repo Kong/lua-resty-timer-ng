@@ -97,6 +97,9 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get --yes update
+          # https://github.com/actions/runner-images/issues/2139
+          sudo apt-get remove nginx-core nginx-full nginx-light nginx-extras
+          sudo apt-get remove libgd3
           sudo apt-get install --yes build-essential zlib1g-dev libpcre3 libpcre3-dev libssl-dev libxslt1-dev libxml2-dev libgeoip-dev libgd-dev libperl-dev
 
       - name: Lookup build cache
