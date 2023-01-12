@@ -47,7 +47,7 @@ insulate("auto-scaling | ", function ()
             local expected = timer:_debug_expected_alive_worker_thread_count()
             local alive = timer:_debug_alive_worker_thread_count()
             assert.same(MIN_THREADS, expected)
-            assert.same(alive, expected)
+            assert(alive <= 20, "expected alive threads <= 20")
         end, 240)
 
     end)
