@@ -1,5 +1,6 @@
 local timer_module = require("resty.timerng")
 local helper = require("helper")
+local get_sys_filter_level = require("ngx.errlog").get_sys_filter_level
 
 local sleep = ngx.sleep
 local update_time = ngx.update_time
@@ -88,5 +89,25 @@ insulate("bugs of every timer | ", function ()
         ngx.sleep((0.3 + 1) * 10)
 
         assert.is_false(flag)
+    end)
+
+    it("dynamically sets log level", function()
+        local sys_filter_level
+
+        _G.log_level = ngx.DEBUG -- Simulate a log level change from Kong
+        timer:named_at(nil, 0.3, function()
+            sys_filter_level = get_sys_filter_level()
+        end)
+
+        ngx.sleep((0.3 + 1) * 10)
+        assert.is_equal(sys_filter_level, ngx.DEBUG)
+
+        _G.log_level = ngx.CRIT -- Simulate a log level change from Kong
+        timer:named_every(nil, 0.3, function()
+            sys_filter_level = get_sys_filter_level()
+        end)
+
+        ngx.sleep((0.3 + 1) * 10)
+        assert.is_equal(sys_filter_level, ngx.CRIT)
     end)
 end)

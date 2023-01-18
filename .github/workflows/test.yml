@@ -11,7 +11,7 @@ jobs:
         openresty_version:
         - "1.19.9.1"
         - "1.21.4.1"
-    
+
     env:
       OPENRESTY_VERSION: ${{ matrix.openresty_version }}
 
@@ -37,13 +37,22 @@ jobs:
           mkdir openresty
           tar zxf openresty.tar.gz --directory openresty --strip-components=1
 
+      - name: Download Nginx module lua-kong-nginx-module
+        if: steps.cache-openresty.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/Kong/lua-kong-nginx-module/archive/refs/tags/0.5.0.tar.gz -O lua-kong-nginx-module.tar.gz
+          mkdir lua-kong-nginx-module
+          tar zxf lua-kong-nginx-module.tar.gz --directory lua-kong-nginx-module --strip-components=1
+
       - name: Install
         if: steps.cache-openresty.outputs.cache-hit != 'true'
         run: |
           cd openresty
-          sudo ./configure --prefix=${{ env.INSTALL_ROOT }}/openresty
+          sudo ./configure --prefix=${{ env.INSTALL_ROOT }}/openresty --add-module=../lua-kong-nginx-module
           sudo make -j$(nproc)
           sudo make install
+          cd ../lua-kong-nginx-module
+          sudo make install LUA_LIB_DIR=${{ env.INSTALL_ROOT }}/openresty/lualib
 
 
   test:
@@ -64,7 +73,7 @@ jobs:
 
     env:
       OPENRESTY_VERSION: ${{ matrix.openresty_version }}
-  
+
     steps:
       - name: Set environment variables
         run: |
