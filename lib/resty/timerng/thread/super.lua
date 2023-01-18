@@ -3,7 +3,7 @@ local constants = require("resty.timerng.constants")
 local loop = require("resty.timerng.thread.loop")
 
 local ngx_log = ngx.log
-local ngx_INFO = ngx.INFO
+local ngx_DEBUG = ngx.DEBUG
 local ngx_WARN = ngx.WARN
 local ngx_ERR = ngx.ERR
 
@@ -158,7 +158,7 @@ local function scaling_log(self, context)
     context_for_log.alive_threads_sum = 0
     context_for_log.runable_jobs_sum = 0
 
-    ngx_log(ngx_INFO,
+    ngx_log(ngx_DEBUG,
             "[timer-ng] ",
             "load_avg: ", load_avg,
             ", runable_jobs_avg: ", runable_jobs_avg,
