@@ -82,7 +82,6 @@ jobs:
     strategy:
       matrix:
         openresty_version:
-        - "1.19.9.1"
         - "1.21.4.1"
 
     env:
