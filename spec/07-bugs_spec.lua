@@ -94,6 +94,7 @@ end)
 
 insulate("dynamic log levels bugs | ", function ()
     local timer = { }
+    local old_ngx_config_subsystem
 
     randomize(false)
 
@@ -104,9 +105,13 @@ insulate("dynamic log levels bugs | ", function ()
         })
 
         assert(timer:start())
+
+        old_ngx_config_subsystem = _G.ngx.config.subsystem
     end)
 
     lazy_teardown(function ()
+        _G.ngx.config.subsystem = old_ngx_config_subsystem
+
         timer:freeze()
         timer:destroy()
 
@@ -114,7 +119,6 @@ insulate("dynamic log levels bugs | ", function ()
             assert.same(1, timer_running_count())
             return true
         end)
-
     end)
 
     before_each(function ()
