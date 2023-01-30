@@ -9,11 +9,13 @@ jobs:
     strategy:
       matrix:
         openresty_version:
-        - "1.19.9.1"
         - "1.21.4.1"
+        lua_kong_nginx_module_version:
+        - "0.5.1"
 
     env:
       OPENRESTY_VERSION: ${{ matrix.openresty_version }}
+      LUA_KONG_NGINX_MODULE_VERSION: ${{ matrix.lua_kong_nginx_module_version }}
 
     steps:
       - name: Set environment variables
@@ -40,7 +42,7 @@ jobs:
       - name: Download Nginx module lua-kong-nginx-module
         if: steps.cache-openresty.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/Kong/lua-kong-nginx-module/archive/refs/tags/0.5.0.tar.gz -O lua-kong-nginx-module.tar.gz
+          wget https://github.com/Kong/lua-kong-nginx-module/archive/refs/tags/${LUA_KONG_NGINX_MODULE_VERSION}.tar.gz -O lua-kong-nginx-module.tar.gz
           mkdir lua-kong-nginx-module
           tar zxf lua-kong-nginx-module.tar.gz --directory lua-kong-nginx-module --strip-components=1
 
@@ -68,7 +70,6 @@ jobs:
         - "spec/03*.lua"
 
         openresty_version:
-        - "1.19.9.1"
         - "1.21.4.1"
 
     env:
