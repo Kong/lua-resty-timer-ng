@@ -1,10 +1,5 @@
 local get_sys_filter_level = require("ngx.errlog").get_sys_filter_level
-
-local set_log_level
-
-if ngx.config.subsystem == "http" then
-    set_log_level = require("resty.kong.log").set_log_level
-end
+local set_log_level = require("resty.kong.log").set_log_level
 
 local ngx_log = ngx.log
 local ngx_EMERG = ngx.EMERG
@@ -176,7 +171,7 @@ local function loop_wrapper(premature, self)
         while not ngx_worker_exiting() and not self._kill do
             local global_level = _G.log_level
 
-            if global_level and ngx.config.subsystem == "http" then
+            if global_level then
                 local sys_filter_level = get_sys_filter_level()
 
                 if sys_filter_level ~= global_level then
