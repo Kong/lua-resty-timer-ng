@@ -1,6 +1,3 @@
-local get_sys_filter_level = require("ngx.errlog").get_sys_filter_level
-local set_log_level = require("resty.kong.log").set_log_level
-
 local ngx_log = ngx.log
 local ngx_EMERG = ngx.EMERG
 
@@ -64,7 +61,7 @@ local function nop_finally()
 end
 
 
-local PHASE_HANDLERS = {
+local PAHSE_HANDLERS = {
     init = nop_init,
     before = nop_before,
     loop_body = nop_loop_body,
@@ -169,22 +166,6 @@ local function loop_wrapper(premature, self)
 
     if not do_phase_handler(self, "init") then
         while not ngx_worker_exiting() and not self._kill do
-            local global_level = _G.log_level
-
-            if global_level then
-                local sys_filter_level = get_sys_filter_level()
-
-                if sys_filter_level ~= global_level then
-                    local ok, err = pcall(set_log_level, global_level)
-
-                    if not ok then
-                        ngx_log(ngx_EMERG,
-                                "[timer-ng] failed to set log level: ",
-                                err)
-                    end
-                end
-            end
-
             if do_phase_handler(self, "before")
             or do_phase_handler(self, "loop_body")
             or do_phase_handler(self, "after")
@@ -231,7 +212,7 @@ function _M.new(name, options)
 
     self.context.self = self
 
-    for phase, default_handler in pairs(PHASE_HANDLERS) do
+    for phase, default_handler in pairs(PAHSE_HANDLERS) do
         self[phase] = {}
 
         self[phase].need_check_worker_exiting
