@@ -90,45 +90,9 @@ insulate("bugs of every timer | ", function ()
 
         assert.is_false(flag)
     end)
-end)
-
-insulate("dynamic log levels bugs | ", function ()
-    local timer = { }
-    local old_ngx_config_subsystem
-
-    randomize(false)
-
-    lazy_setup(function ()
-        timer = timer_module.new({
-            min_threads = 16,
-            max_threads = 32,
-        })
-
-        assert(timer:start())
-
-        old_ngx_config_subsystem = _G.ngx.config.subsystem
-    end)
-
-    lazy_teardown(function ()
-        _G.ngx.config.subsystem = old_ngx_config_subsystem
-
-        timer:freeze()
-        timer:destroy()
-
-        helper.wait_until(function ()
-            assert.same(1, timer_running_count())
-            return true
-        end)
-    end)
-
-    before_each(function ()
-        update_time()
-    end)
 
     it("dynamically sets log level", function()
         local sys_filter_level
-
-        _G.ngx.config.subsystem = "http"
 
         _G.log_level = ngx.DEBUG -- Simulate a log level change from Kong
         timer:named_at(nil, 0.3, function()
@@ -138,34 +102,12 @@ insulate("dynamic log levels bugs | ", function ()
         ngx.sleep((0.3 + 1) * 10)
         assert.is_equal(sys_filter_level, ngx.DEBUG)
 
-        _G.log_level = ngx.WARN -- Simulate a log level change from Kong
+        _G.log_level = ngx.CRIT -- Simulate a log level change from Kong
         timer:named_every(nil, 0.3, function()
             sys_filter_level = get_sys_filter_level()
         end)
 
         ngx.sleep((0.3 + 1) * 10)
-        assert.is_equal(sys_filter_level, ngx.WARN)
-    end)
-
-    it("only use set_log_level API on http subsystem", function()
-        local sys_filter_level
-
-        _G.ngx.config.subsystem = "stream"
-
-        _G.log_level = ngx.DEBUG -- Simulate a log level change from Kong
-        timer:named_at(nil, 0.3, function()
-            sys_filter_level = get_sys_filter_level()
-        end)
-
-        ngx.sleep((0.3 + 1) * 10)
-        assert.is_equal(sys_filter_level, ngx.WARN) -- not changed
-
-        _G.log_level = ngx.DEBUG -- Simulate a log level change from Kong
-        timer:named_every(nil, 0.3, function()
-            sys_filter_level = get_sys_filter_level()
-        end)
-
-        ngx.sleep((0.3 + 1) * 10)
-        assert.is_equal(sys_filter_level, ngx.WARN) -- not changed
+        assert.is_equal(sys_filter_level, ngx.CRIT)
     end)
 end)
