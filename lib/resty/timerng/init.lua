@@ -6,7 +6,7 @@ local constants = require("resty.timerng.constants")
 local thread_group = require("resty.timerng.thread.group")
 
 local ngx_log = ngx.log
-local ngx_NOTICE = ngx.NOTICE
+local ngx_DEBUG = ngx.DEBUG
 
 local utils_float_compare = utils.float_compare
 
@@ -390,7 +390,7 @@ function _M:named_at(name, delay, callback, ...)
     if delay >= self.max_expire
         or (delay ~= 0 and delay < self.opt.resolution)
     then
-        ngx_log(ngx_NOTICE, "[timer-ng] fallback to ngx.timer.at [delay = ",
+        ngx_log(ngx_DEBUG, "[timer-ng] fallback to ngx.timer.at [delay = ",
                 delay, "]")
         return ngx_timer_at(delay, callback, ...)
     end
@@ -412,7 +412,7 @@ function _M:named_every(name, interval, callback, ...)
 
     if interval >= self.max_expire
         or interval < self.opt.resolution then
-        ngx_log(ngx_NOTICE,
+        ngx_log(ngx_DEBUG,
                 "[timer-ng] fallback to ngx.timer.every [interval = ",
                 interval,
                 "]")
