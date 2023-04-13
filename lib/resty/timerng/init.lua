@@ -384,7 +384,8 @@ function _M:named_at(name, delay, callback, ...)
     assert(type(delay) == "number", "expected `delay to be a number")
     assert(delay >= 0, "expected `delay` to be greater than or equal to 0")
 
-    if delay >= self.max_expire or (delay ~= 0 and delay < self.opt.resolution)
+    if delay >= self.max_expire or
+       (delay ~= 0 and delay < self.opt.resolution)
     then
         return ngx_timer_at(delay, callback, ...)
     end
