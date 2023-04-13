@@ -405,7 +405,7 @@ function _M:named_every(name, interval, callback, ...)
     assert(type(interval) == "number", "expected `interval to be a number")
     assert(interval > 0, "expected `interval` to be greater than or equal to 0")
 
-    if interval >= self.max_expire or 
+    if interval >= self.max_expire or
        interval < self.opt.resolution
     then
         return ngx_timer_every(interval, callback, ...)
