@@ -5,9 +5,6 @@ local wheel_group = require("resty.timerng.wheel.group")
 local constants = require("resty.timerng.constants")
 local thread_group = require("resty.timerng.thread.group")
 
-local ngx_log = ngx.log
-local ngx_DEBUG = ngx.DEBUG
-
 local utils_float_compare = utils.float_compare
 
 local table_insert = table.insert
