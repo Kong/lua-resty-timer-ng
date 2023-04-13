@@ -41,7 +41,7 @@ local _M = {
     SCALING_RECORD_INTERVAL = 1,
 
     -- 10m
-    SACALING_INFO_LOG_INTERVAL = 600,
+    SCALING_INFO_LOG_INTERVAL = 600,
 }
 
 -- We don't need a high accuracy.
