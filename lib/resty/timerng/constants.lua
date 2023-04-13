@@ -40,8 +40,8 @@ local _M = {
     -- 1s
     SCALING_RECORD_INTERVAL = 1,
 
-    -- 60s
-    SACALING_INFO_LOG_INTERVAL = 60,
+    -- 10m
+    SCALING_INFO_LOG_INTERVAL = 600,
 }
 
 -- We don't need a high accuracy.
