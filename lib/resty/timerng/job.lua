@@ -251,7 +251,7 @@ function _M.new(wheels, name, callback, delay, once, debug, argc, argv)
         NAME_COUNTER = NAME_COUNTER + 1
     end
 
-    if not self.immediate then
+    if not self._immediate then
         job_re_cal_next_pointer(self, wheels)
     end
 
