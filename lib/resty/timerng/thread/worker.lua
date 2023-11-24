@@ -1,5 +1,6 @@
 local semaphore = require("ngx.semaphore")
 local loop = require("resty.timerng.thread.loop")
+local utils = require("resty.timerng.utils")
 
 local ngx_log = ngx.log
 local ngx_DEBUG = ngx.DEBUG
@@ -17,6 +18,8 @@ local pairs = pairs
 local assert = assert
 local string_format = string.format
 local setmetatable = setmetatable
+
+local utils_table_clear = utils.table_clear
 
 local CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN =
     require("resty.timerng.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
@@ -164,6 +167,8 @@ local function thread_body(context, self,
         if not job:is_runnable() then
             goto continue
         end
+
+        utils_table_clear(ngx.ctx)
 
         report_before_job_execute_callback(self, job)
         job:execute()
