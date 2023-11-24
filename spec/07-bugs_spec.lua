@@ -90,3 +90,65 @@ insulate("bugs of every timer | ", function ()
         assert.is_false(flag)
     end)
 end)
+
+insulate("should not share ngx.ctx across different timers", function ()
+    local timer = { }
+
+    randomize()
+
+    lazy_setup(function ()
+        timer = timer_module.new({
+            min_threads = 1,
+            max_threads = 2,
+        })
+
+        assert(timer:start())
+    end)
+
+    lazy_teardown(function ()
+        timer:freeze()
+        timer:destroy()
+
+        helper.wait_until(function ()
+            assert.same(1, timer_running_count())
+            return true
+        end)
+
+    end)
+
+    before_each(function ()
+        update_time()
+    end)
+
+    it("", function ()
+        local flag = false
+        assert(timer:at(0, function ()
+            ngx.update_time()
+            ngx.sleep(0.5) -- wait for 0.5 seconds to exhaust the thread pool
+            ngx.ctx.a = 1
+            flag = true
+        end))
+
+        assert(timer:at(0, function ()
+            ngx.update_time()
+            ngx.sleep(0.5) -- wait for 0.5 seconds to exhaust the thread pool
+            ngx.ctx.a = 1
+            flag = true
+        end))
+
+        ngx.update_time()
+        ngx.sleep(1)
+
+        assert.is_true(flag)
+
+        assert(timer:at(0, function ()
+            ngx.sleep(0.5)
+            assert.is_nil(ngx.ctx.a)
+        end))
+
+        assert(timer:at(0, function ()
+            ngx.sleep(0.5)
+            assert.is_nil(ngx.ctx.a)
+        end))
+    end)
+end)
