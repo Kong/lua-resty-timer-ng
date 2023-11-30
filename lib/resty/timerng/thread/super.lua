@@ -192,7 +192,7 @@ local function thread_body(_, self)
         wheels:sync_time()
 
         if not wheels.pending_jobs:is_empty() then
-            self.worker_thread:wake_up()
+            self.worker_thread:wake_up(wheels.pending_jobs:length())
         end
     end
 

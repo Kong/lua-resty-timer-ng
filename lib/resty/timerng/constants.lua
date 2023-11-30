@@ -35,7 +35,7 @@ local _M = {
     MIN_RESOLUTION = 0.1,
 
     -- for Nginx's graceful shutdown
-    TOLERANCE_OF_GRACEFUL_SHUTDOWN = 1,
+    TOLERANCE_OF_GRACEFUL_SHUTDOWN = 5,
 
     -- 1s
     SCALING_RECORD_INTERVAL = 1,

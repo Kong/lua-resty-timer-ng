@@ -251,9 +251,8 @@ function _M:kill()
 end
 
 
-function _M:wake_up()
-    local wake_up_semaphore = self.wake_up_semaphore
-    wake_up_semaphore:post(self.alive_threads_count)
+function _M:wake_up(pending_jobs)
+    self.wake_up_semaphore:post(pending_jobs)
 end
 
 
