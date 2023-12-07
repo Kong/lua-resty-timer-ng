@@ -256,9 +256,10 @@ function _M:kill()
 end
 
 
-function _M:wake_up()
+function _M:wake_up(pending_jobs)
     local wake_up_semaphore = self.wake_up_semaphore
-    wake_up_semaphore:post(self.alive_threads_count)
+    local delta = pending_jobs - wake_up_semaphore:count()
+    wake_up_semaphore:post(math_max(delta, pending_jobs))
 end
 
 
