@@ -38,6 +38,11 @@ end
 local _M = {}
 
 
+_M.table_new = table_new
+_M.table_clear = table_clear
+_M.table_deepcopy = table_deepcopy
+
+
 -- get average
 function _M.get_avg(cur_value, cur_count, old_avg)
     -- recurrence formula
@@ -50,21 +55,6 @@ function _M.get_variance(cur_value, cur_count, old_variance, old_avg)
     return (((cur_count - 1)
         / math_pow(cur_count, 2)) * math_pow(cur_value - old_avg, 2))
         + (((cur_count - 1) / cur_count) * old_variance)
-end
-
-
-function _M.table_new(narray, nhash)
-    return table_new(narray, nhash)
-end
-
-
-function _M.table_clear(tbl)
-    table_clear(tbl)
-end
-
-
-function _M.table_deepcopy(tbl)
-    return table_deepcopy(tbl)
 end
 
 
