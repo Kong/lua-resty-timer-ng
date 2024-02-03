@@ -6,6 +6,7 @@ on:
 
 jobs:
   build:
+    timeout-minutes: ${{ fromJSON(vars.GHA_DEFAULT_TIMEOUT) }}
     name: Build OpenResty ${{ matrix.openresty_version }}
     runs-on: ubuntu-20.04
     if: |
@@ -57,6 +58,7 @@ jobs:
 
 
   coverage:
+    timeout-minutes: ${{ fromJSON(vars.GHA_DEFAULT_TIMEOUT) }}
     name: Test ${{ matrix.openresty_version }}
     runs-on: ubuntu-20.04
     needs: build
