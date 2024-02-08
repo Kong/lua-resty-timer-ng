@@ -19,6 +19,9 @@ local ACTION_CONTINUE = 1
 local ACTION_ERROR = 2
 local ACTION_EXIT = 3
 
+-- max number of arguments for a phase handler
+local MAX_ARGS = 4
+
 local NEED_CHECK_WORKER_EIXTING = {
     init = false,
     before = true,
@@ -97,10 +100,11 @@ end
 ---@return integer action
 ---@return string message
 local function phase_handler_wrapper(self, phase)
+    -- unpack arguments to avoid NYI: return to lower frame
+    -- as `pcall` with varargs might causes NYI when returning from `pcall`
+    local a0, a1, a2, a3 = table_unpack(self[phase].argv, 1, self[phase].argc)
     local ok, action_or_err, err_or_nil =
-        pcall(self[phase].callback,
-              self.context,
-              table_unpack(self[phase].argv, 1, self[phase].argc))
+        pcall(self[phase].callback, self.context, a0, a1, a2, a3)
 
     if not ok then
         return ACTION_ERROR, action_or_err
@@ -224,13 +228,17 @@ function _M.new(name, options)
             self[phase].callback = default_handler
 
         else
+            assert(options[phase].argc <= MAX_ARGS, "too many arguments")
             self[phase].argc = options[phase].argc
             self[phase].argv = options[phase].argv
             self[phase].callback = options[phase].callback
         end
     end
 
-    return setmetatable(self, meta_table)
+    -- return a local variable instead of tail call
+    -- to avoid NYI: return to lower frame
+    self = setmetatable(self, meta_table)
+    return self
 end
 
 

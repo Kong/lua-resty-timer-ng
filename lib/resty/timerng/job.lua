@@ -67,7 +67,10 @@ local function job_tostring(job)
         table_insert(tbl, str)
     end
 
-    return table_concat(tbl)
+    -- return a local variable instead of tail call
+    -- to avoid NYI: return to lower frame
+    local str = table_concat(tbl)
+    return str
 end
 
 
@@ -255,7 +258,10 @@ function _M.new(wheels, name, callback, delay, once, debug, argc, argv)
         job_re_cal_next_pointer(self, wheels)
     end
 
-    return setmetatable(self, meta_table)
+    -- return a local variable instead of tail call
+    -- to avoid NYI: return to lower frame
+    self = setmetatable(self, meta_table)
+    return self
 end
 
 
