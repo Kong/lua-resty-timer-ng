@@ -213,8 +213,10 @@ function _M.new(options)
             assert(type(options.resolution) == "number",
                 "expected `resolution` to be a number")
 
-            assert(utils_float_compare(options.resolution, 0.1) >= 0,
-            "expected `resolution` to be greater than or equal to 0.1")
+            assert(utils_float_compare(options.resolution,
+                    constants.MIN_RESOLUTION) >= 0,
+                "expected `resolution` to be greater than or equal to "
+             .. constants.MIN_RESOLUTION)
         end
 
         if options.wheel_setting then
