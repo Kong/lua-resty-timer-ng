@@ -29,7 +29,8 @@ A scalable timer library for OpenResty.
 
 ## Status
 
-This library is currently considered experimental.
+This library is currently considered experimental. Note that timer-ng can only manage timer tasks with `delay` settings greater than or equal to `resolution` currently, otherwise those timers will fallback to OpenResty's native timer to be executed, which is out of timer-ng's timer pool limitation. And the current minimum value for `resolution` is `100ms`.
+
 
 ## Synopsis
 
@@ -69,7 +70,7 @@ http {
 ## Description
 
 This system is based on the timer wheel algorithm.
-which uses the small number of timers 
+which uses the small number of timers
 created by OpenResty API `ngx.timer.at` to manage a large number of timed tasks.
 
 In other words, it can reduce the number of fake requests.
@@ -97,7 +98,7 @@ The following information will be recorded in debug mode.
 * The timers that are running
 * Timers that are queued
 
-In debug mode, 
+In debug mode,
 you can call [stats()](#stats) to get the raw data needed to generate the flamegraph.
 
 
@@ -290,7 +291,7 @@ Get the statistics of the system.
 
 * `options`:
     * `verbose`: If `true`, the statistics for each timer will be returned, defualt `false`.
-    * `flamegraph`: If `true` and `verbose == true`, the raw data of flamegraph will be returned, 
+    * `flamegraph`: If `true` and `verbose == true`, the raw data of flamegraph will be returned,
         you can run `flamegraph.pl <output> > a.svg` to generate flamegraph, default `false`.
 
 For example:
@@ -321,13 +322,13 @@ local flamegraph = info.flamegraph
 -- ref https://github.com/brendangregg/FlameGraph
 
 
-for timer_name, timer in pairs(info.jobs) 
+for timer_name, timer in pairs(info.jobs)
     local is_running = timer.is_running
     local meta = timer.meta
     local stats = timer.stats
     local runs = timer.runs                     -- total number of runs
 
-    -- meta.name is an automatically generated string 
+    -- meta.name is an automatically generated string
     -- that stores the location where the creation timer was created.
     -- Such as 'task.lua:56:start_background_task()'
 
@@ -335,8 +336,8 @@ for timer_name, timer in pairs(info.jobs)
 
 
     stats = {
-        -- elapsed_time is a table that stores the 
-        -- maximum, minimum, average and variance 
+        -- elapsed_time is a table that stores the
+        -- maximum, minimum, average and variance
         -- of the time spent on each run of the timer (second).
         elapsed_time = {
             max = 100
