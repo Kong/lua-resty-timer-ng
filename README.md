@@ -29,7 +29,11 @@ A scalable timer library for OpenResty.
 
 ## Status
 
-This library is currently considered experimental. Note that timer-ng can only manage timer tasks with `delay` settings greater than or equal to `resolution` currently, otherwise those timers will fallback to OpenResty's native timer to be executed, which is out of timer-ng's timer pool limitation. And the current minimum value for `resolution` is `100ms`.
+This library is currently considered experimental.
+
+## Warning
+
+The timer-ng can only manage timer tasks with `delay` settings greater than or equal to `resolution` currently, otherwise, those timers will fallback to OpenResty's native timer to be executed, which is out of the concurrency control of the timer-ng. And the current minimum value for `resolution` is `100ms`.
 
 
 ## Synopsis
