@@ -263,6 +263,14 @@ function _M.new(options)
             end
 
         end
+
+        if options.max_pending_jobs then
+          assert(type(options.max_pending_jobs) == "number",
+            "expected `max_pending_jobs` to be a number")
+
+          assert(options.max_pending_jobs > 0,
+            "expected `max_pending_jobs` to be greater than 0")
+        end
     end
 
     local opt = {
@@ -304,6 +312,10 @@ function _M.new(options)
         force_update_time = options
             and options.force_update_time
             or constants.DEFAULT_FORCE_UPDATE_TIME,
+
+        max_pending_jobs = options
+            and options.max_pending_jobs
+            or constants.DEFAULT_MAX_ARRAY_LENGTH,
     }
 
     timer_sys.opt = opt
@@ -339,7 +351,8 @@ function _M.new(options)
 
     timer_sys.wheels = wheel_group.new(opt.wheel_setting,
                                        opt.resolution,
-                                       report_job_expire_callback)
+                                       report_job_expire_callback,
+                                       opt.max_pending_jobs)
 
     return setmetatable(timer_sys, { __index = _M })
 end

@@ -34,6 +34,9 @@ local _M = {
 
     MIN_RESOLUTION = 0.1,
 
+    DEFAULT_INIT_ARRAY_LENGTH = 8,
+    DEFAULT_MAX_ARRAY_LENGTH = 100000,
+
     -- for Nginx's graceful shutdown
     TOLERANCE_OF_GRACEFUL_SHUTDOWN = 1,
 
