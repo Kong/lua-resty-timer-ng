@@ -245,9 +245,12 @@ function _M.new(wheels, name, callback, delay, once, debug, argc, argv)
         job_create_meta(self)
     end
 
+    local create_time = ngx_now()
+    self.create_time = create_time
+
     if self.name == nil then
         self.name = string_format("unix_timestamp=%f;counter=%d:meta=%s",
-                                  math_floor(ngx_now() * 1000),
+                                  math_floor(create_time * 1000),
                                   NAME_COUNTER,
                                   self.meta.name)
 
