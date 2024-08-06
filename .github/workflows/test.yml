@@ -117,7 +117,7 @@ jobs:
       - name: Tests
         run: |
           eval $(luarocks path)
-          if ${{ matrix.busted_args }} == "spec/09*.lua"
+          if ${{ matrix.busted_args }} == "spec/09*.lua" then
             resty --shdict 'timer_jump_the_gun 1m' -I lib -I spec spec/runner.lua --coverage --verbose -o htest --shuffle-tests ${{ matrix.busted_args }}
           else
             resty -I lib -I spec spec/runner.lua --coverage --verbose -o htest --shuffle-tests ${{ matrix.busted_args }}
