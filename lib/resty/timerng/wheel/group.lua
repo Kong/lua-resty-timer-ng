@@ -105,7 +105,6 @@ function _M:sync_time()
         return
     end
 
-    self.real_time = math_floor(self.real_time / resolution) * resolution
     local delta = self.real_time - self.expected_time
     local steps = utils_convert_second_to_step(delta, resolution)
 

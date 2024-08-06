@@ -241,6 +241,10 @@ function _M.new(wheels, name, callback, delay, once, debug, argc, argv)
         },
     }
 
+    if once then
+        self.steps = self.steps + 1
+    end
+
     if debug then
         job_create_meta(self)
     end
