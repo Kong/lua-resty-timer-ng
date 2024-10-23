@@ -403,7 +403,7 @@ function _M:named_every(name, interval, callback, ...)
     assert(type(callback) == "function", "expected `callback` to be a function")
 
     assert(type(interval) == "number", "expected `interval to be a number")
-    assert(interval > 0, "expected `interval` to be greater than or equal to 0")
+    assert(interval >= 0, "expected `interval` to be greater than or equal to 0")
 
     if interval >= self.max_expire or
        interval < self.opt.resolution
