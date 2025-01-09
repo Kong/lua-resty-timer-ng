@@ -1,3 +1,5 @@
+local math_floor = math.floor
+
 local utils = require("resty.timerng.utils")
 local wheel = require("resty.timerng.wheel")
 local array = require("resty.timerng.array")
