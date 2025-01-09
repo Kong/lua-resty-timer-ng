@@ -70,11 +70,7 @@ insulate("create a every timer with invalid arguments | ", function ()
     end)
 
 
-    it("interval <= 0", function ()
-        assert.has.errors(function ()
-            timer:named_every(helper.TIMER_NAME_EVERT, 0, empty_callback)
-        end)
-
+    it("interval < 0", function ()
         assert.has.errors(function ()
             timer:named_every(helper.TIMER_NAME_EVERT, -1, empty_callback)
         end)
