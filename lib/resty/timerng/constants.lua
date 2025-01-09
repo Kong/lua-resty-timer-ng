@@ -32,7 +32,7 @@ local _M = {
         slots_for_each_level = {10, 60, 60, 24},
     },
 
-    MIN_RESOLUTION = 0.1,
+    MIN_RESOLUTION = 0.01,
 
     -- for Nginx's graceful shutdown
     TOLERANCE_OF_GRACEFUL_SHUTDOWN = 1,
