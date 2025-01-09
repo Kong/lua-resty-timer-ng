@@ -1,4 +1,5 @@
 local utils = require("resty.timerng.utils")
+local constants = require("resty.timerng.constants")
 
 local utils_table_new = utils.table_new
 local utils_table_clear = utils.table_clear
@@ -8,6 +9,12 @@ local table_remove = table.remove
 
 local error = error
 local setmetatable = setmetatable
+
+local CONSTANTS_DEFAULT_MAX_ARRAY_LENGTH =
+    constants.DEFAULT_MAX_ARRAY_LENGTH
+
+local CONSTANTS_DEFAULT_INIT_ARRAY_LENGTH =
+    constants.DEFAULT_INIT_ARRAY_LENGTH
 
 local array_pool = {}
 
@@ -47,6 +54,9 @@ end
 
 
 function _M:push_left (value)
+    if self:length() >= self.max_length then
+        error("list is full")
+    end
     local first = self.first - 1
     self.first = first
     self.elts[first] = value
@@ -54,6 +64,9 @@ end
 
 
 function _M:push_right(value)
+    if self:length() >= self.max_length then
+      error("list is full")
+    end
     local last = self.last + 1
     self.last = last
     self.elts[last] = value
@@ -88,9 +101,13 @@ function _M:pop_right()
 end
 
 
-function _M.new(n)
+function _M.new(n, max_length)
     if n == nil then
-        n = 8
+        n = CONSTANTS_DEFAULT_INIT_ARRAY_LENGTH
+    end
+
+    if max_length == nil then
+        max_length = CONSTANTS_DEFAULT_MAX_ARRAY_LENGTH
     end
 
     local self = table_remove(array_pool)
@@ -100,6 +117,7 @@ function _M.new(n)
     end
 
     self = {
+        max_length = max_length,
         elts = utils_table_new(n, 0),
         first = 0,
         last = -1,

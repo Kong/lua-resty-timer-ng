@@ -2,6 +2,7 @@ local utils = require("resty.timerng.utils")
 local wheel = require("resty.timerng.wheel")
 local array = require("resty.timerng.array")
 
+local array_new   = array.new
 local array_merge = array.merge
 
 local utils_float_compare = utils.float_compare
@@ -17,6 +18,9 @@ local setmetatable = setmetatable
 
 local CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN =
     require("resty.timerng.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
+
+local CONSTANTS_DEFAULT_INIT_ARRAY_LENGTH =
+    require("resty.timerng.constants").DEFAULT_INIT_ARRAY_LENGTH
 
 local _M = {}
 
@@ -126,7 +130,7 @@ function _M:insert_job(job)
 end
 
 
-function _M.new(wheel_setting, resolution, report_job_expire_callback)
+function _M.new(wheel_setting, resolution, report_job_expire_callback, max_pending_jobs)
     local self = {
         -- see `constants.DEFAULT_WHEEL_SETTING`
         setting = wheel_setting,
@@ -142,7 +146,7 @@ function _M.new(wheel_setting, resolution, report_job_expire_callback)
 
         earliest_expiry_time = 0,
 
-        pending_jobs = array.new(),
+        pending_jobs = array_new(CONSTANTS_DEFAULT_INIT_ARRAY_LENGTH, max_pending_jobs),
 
         -- store wheels for each level
         -- map from wheel_level to wheel
