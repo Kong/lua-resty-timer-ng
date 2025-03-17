@@ -57,6 +57,7 @@ jobs:
         - "spec/01*.lua spec/04*.lua spec/05*.lua spec/06*.lua spec/07*.lua spec/08*.lua"
         - "spec/02*.lua"
         - "spec/03*.lua"
+        - "spec/09*.lua"
 
         openresty_version:
         - "1.19.9.1"
@@ -116,7 +117,11 @@ jobs:
       - name: Tests
         run: |
           eval $(luarocks path)
-          resty -I lib -I spec spec/runner.lua --coverage --verbose -o htest --shuffle-tests ${{ matrix.busted_args }}
+          if [[ "${{ matrix.busted_args }}" == "spec/09*.lua" ]]; then
+            resty --shdict 'timer_jump_the_gun 1m' -I lib -I spec spec/runner.lua --coverage --verbose -o htest --shuffle-tests ${{ matrix.busted_args }}
+          else
+            resty -I lib -I spec spec/runner.lua --coverage --verbose -o htest --shuffle-tests ${{ matrix.busted_args }}
+          fi
 
       - name: Show coverage
         run: |
