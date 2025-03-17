@@ -3,6 +3,7 @@ on: [push, pull_request]
 
 jobs:
   build:
+    timeout-minutes: ${{ fromJSON(vars.GHA_DEFAULT_TIMEOUT) }}
     name: Build OpenResty ${{ matrix.openresty_version }}
     runs-on: ubuntu-20.04
 
@@ -47,6 +48,7 @@ jobs:
 
 
   test:
+    timeout-minutes: ${{ fromJSON(vars.GHA_DEFAULT_TIMEOUT) }}
     name: Test ${{ matrix.busted_args }} (OpenResty ${{ matrix.openresty_version }})
     runs-on: ubuntu-20.04
     needs: build
