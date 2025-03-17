@@ -37,7 +37,7 @@ jobs:
 
     - name: Lua Check
       if: steps.changed-files.outputs.any_changed == 'true'
-      uses: Kong/public-shared-actions/code-check-actions/lua-lint@c03e30a36e8a2dde5cbd463229a96aaad7ccad24
+      uses: Kong/public-shared-actions/code-check-actions/lua-lint@ac8939f0382827fbb43ce4e0028066a5ea4db01d # 4.1.2
       with:
         additional_args: '--no-default-config --config .luacheckrc'
         files: ${{ steps.changed-files.outputs.all_changed_files }}
