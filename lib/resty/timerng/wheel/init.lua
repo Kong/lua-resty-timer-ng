@@ -197,7 +197,7 @@ function _M.new(id, nelts, report_job_expire_callback)
         higher_wheel = nil,
         lower_wheel = nil,
 
-        expired_jobs = array.new(),
+        expired_jobs = array_new(),
 
         report_job_expire_callback = report_job_expire_callback,
     }
