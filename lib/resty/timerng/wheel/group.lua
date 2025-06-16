@@ -142,7 +142,8 @@ function _M:insert_job(job)
 end
 
 
-function _M.new(wheel_setting, resolution, report_job_expire_callback, max_pending_jobs)
+function _M.new(wheel_setting, resolution, report_job_expire_callback,
+                max_pending_jobs)
     local self = {
         -- see `constants.DEFAULT_WHEEL_SETTING`
         setting = wheel_setting,
@@ -158,7 +159,8 @@ function _M.new(wheel_setting, resolution, report_job_expire_callback, max_pendi
 
         earliest_expiry_time = 0,
 
-        pending_jobs = array_new(CONSTANTS_DEFAULT_INIT_ARRAY_LENGTH, max_pending_jobs),
+        pending_jobs = array_new(CONSTANTS_DEFAULT_INIT_ARRAY_LENGTH,
+                        max_pending_jobs),
 
         -- store wheels for each level
         -- map from wheel_level to wheel

@@ -134,7 +134,8 @@ local function create(self, name, callback, delay, timer_type, argc, argv)
         return job.name, nil
     end
 
-    local ok, err = wheels:insert_job(job)
+    local ok
+    ok, err = wheels:insert_job(job)
 
     local _, need_wake_up = wheels:update_earliest_expiry_time()
 

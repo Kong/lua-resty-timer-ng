@@ -100,7 +100,8 @@ function _M:insert(job)
     if next_pointer then
         local err = self.slots[next_pointer]:push_right(job)
         if err then
-            return false, "failed to insert job into wheel " .. self.id .. ": " .. err
+            return false,
+                "failed to insert job into wheel " .. self.id .. ": " .. err
         end
         return true, nil
     end
