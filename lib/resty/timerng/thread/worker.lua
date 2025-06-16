@@ -184,15 +184,15 @@ local function thread_body(context, self,
         end
 
         if job:is_runnable() then
-            local err = wheels:sync_time()
+            local err2 = wheels:sync_time()
             if err then
-                ngx_log(ngx_ERR, "[timer-ng] failed to sync time: ", err)
+                ngx_log(ngx_ERR, "[timer-ng] failed to sync time: ", err2)
                 return loop.ACTION_ERROR
             end
             job:re_cal_next_pointer(wheels)
-            local res, err = wheels:insert_job(job)
+            local res, err3 = wheels:insert_job(job)
             if not res then
-                ngx_log(ngx_ERR, "[timer-ng] failed to insert job: ", err)
+                ngx_log(ngx_ERR, "[timer-ng] failed to insert job: ", err3)
                 return loop.ACTION_ERROR
             end
 

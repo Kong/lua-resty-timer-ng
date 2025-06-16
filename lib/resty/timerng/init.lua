@@ -124,7 +124,7 @@ local function create(self, name, callback, delay, timer_type, argc, argv)
     self.sys_stats.total = self.sys_stats.total + 1
 
     if job:is_immediate() then
-        local err = wheels.pending_jobs:push_right(job)
+        err = wheels.pending_jobs:push_right(job)
         if err then
             return false, "failed to push job to pending jobs: " .. err
         end

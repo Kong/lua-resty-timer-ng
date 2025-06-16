@@ -32,7 +32,7 @@ describe("max_pending_jobs limit", function()
         }))
         assert(timer:start())
 
-        for i = 1, max_pending do
+        for _ = 1, max_pending do
             assert.has_no.errors(function()
                 assert(timer:at(0, function() end))
             end)
@@ -51,7 +51,7 @@ describe("max_pending_jobs limit", function()
         }))
         assert(timer:start())
 
-        for i = 1, max_pending do
+        for _ = 1, max_pending do
             assert.has_no.errors(function()
                 assert(timer:at(0, function() end))
             end)

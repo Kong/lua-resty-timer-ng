@@ -116,12 +116,12 @@ function _M:sync_time()
     local delta = self.real_time - self.expected_time
     local steps = utils_convert_second_to_step(delta, resolution)
 
-    local err = lowest_wheel:spin_pointer(steps)
+    err = lowest_wheel:spin_pointer(steps)
     if err then
         return "failed to spin lowest wheel: " .. err
     end
 
-    local err = self:fetch_all_expired_jobs()
+    err = self:fetch_all_expired_jobs()
     if err then
         return "failed to fetch all expired jobs: " .. err
     end
