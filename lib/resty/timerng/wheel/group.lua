@@ -82,7 +82,10 @@ end
 function _M:fetch_all_expired_jobs()
     for _, _wheel in ipairs(self.wheels) do
         local expired_jobs = _wheel:fetch_all_expired_jobs()
-        array_merge(self.pending_jobs, expired_jobs)
+        local err = array_merge(self.pending_jobs, expired_jobs)
+        if err then
+            return "failed to merge expired jobs: " .. err
+        end
 
         if expired_jobs then
             expired_jobs:release()
@@ -96,7 +99,10 @@ function _M:sync_time()
     local resolution = self.resolution
 
     -- perhaps some jobs have expired but not been fetched
-    self:fetch_all_expired_jobs()
+    local err = self:fetch_all_expired_jobs()
+    if err then
+        return "failed to fetch all expired jobs: " .. err
+    end
 
     ngx_update_time()
     self.real_time = ngx_now()
@@ -110,9 +116,15 @@ function _M:sync_time()
     local delta = self.real_time - self.expected_time
     local steps = utils_convert_second_to_step(delta, resolution)
 
-    lowest_wheel:spin_pointer(steps)
+    local err = lowest_wheel:spin_pointer(steps)
+    if err then
+        return "failed to spin lowest wheel: " .. err
+    end
 
-    self:fetch_all_expired_jobs()
+    local err = self:fetch_all_expired_jobs()
+    if err then
+        return "failed to fetch all expired jobs: " .. err
+    end
 
     -- The floating-point error may cause
     -- `expected_time` to be larger than `real_time`

@@ -54,8 +54,8 @@ end
 
 
 function _M:push_left (value)
-    if self:length() >= self.max_length then
-        error("list is full")
+    if self.max_length and self:length() >= self.max_length then
+        return "list is full"
     end
     local first = self.first - 1
     self.first = first
@@ -64,8 +64,8 @@ end
 
 
 function _M:push_right(value)
-    if self:length() >= self.max_length then
-      error("list is full")
+    if self.max_length and self:length() >= self.max_length then
+      return "list is full"
     end
     local last = self.last + 1
     self.last = last
@@ -73,7 +73,7 @@ function _M:push_right(value)
 end
 
 
-function _M:pop_left ()
+function _M:pop_left()
     local first = self.first
 
     if first > self.last then
@@ -141,7 +141,10 @@ function _M.merge(dst, src)
     end
 
     while not src:is_empty() do
-        dst:push_left(src:pop_left())
+        local err = dst:push_left(src:pop_left())
+        if err then
+            return "failed to merge array: " .. err
+        end
     end
 end
 
