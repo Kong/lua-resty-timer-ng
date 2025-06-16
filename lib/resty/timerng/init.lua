@@ -95,12 +95,15 @@ end
 ---@param argc integer the number of arguments to the callback function
 ---@param argv table arguments to the callback function
 ---@return boolean name_or_false the name of the timer if ok, otherwise false
----@return string err error message
+---@return string|nil err error message
 local function create(self, name, callback, delay, timer_type, argc, argv)
     local wheels = self.wheels
     local jobs = self.jobs
 
-    wheels:sync_time()
+    local err = wheels:sync_time()
+    if err then
+        return false, "failed to sync time: " .. err
+    end
 
     local job = job_module.new(wheels,
                                name,
@@ -121,14 +124,18 @@ local function create(self, name, callback, delay, timer_type, argc, argv)
     self.sys_stats.total = self.sys_stats.total + 1
 
     if job:is_immediate() then
-        wheels.pending_jobs:push_right(job)
+        err = wheels.pending_jobs:push_right(job)
+        if err then
+            return false, "failed to push job to pending jobs: " .. err
+        end
         self.thread_group:wake_up_super_thread()
         report_job_expire_callback_inernal(self, job)
 
         return job.name, nil
     end
 
-    local ok, err = wheels:insert_job(job)
+    local ok
+    ok, err = wheels:insert_job(job)
 
     local _, need_wake_up = wheels:update_earliest_expiry_time()
 
@@ -263,6 +270,17 @@ function _M.new(options)
             end
 
         end
+
+        if options.max_pending_jobs then
+          assert(type(options.max_pending_jobs) == "number",
+            "expected `max_pending_jobs` to be a number")
+
+          assert(options.max_pending_jobs > 0,
+            "expected `max_pending_jobs` to be greater than 0")
+
+          local _, tmp = math_modf(options.max_pending_jobs)
+          assert(tmp == 0, "expected `max_pending_jobs` to be an integer")
+        end
     end
 
     local opt = {
@@ -304,6 +322,10 @@ function _M.new(options)
         force_update_time = options
             and options.force_update_time
             or constants.DEFAULT_FORCE_UPDATE_TIME,
+
+        max_pending_jobs = options
+            and options.max_pending_jobs
+            or constants.DEFAULT_MAX_ARRAY_LENGTH,
     }
 
     timer_sys.opt = opt
@@ -339,7 +361,8 @@ function _M.new(options)
 
     timer_sys.wheels = wheel_group.new(opt.wheel_setting,
                                        opt.resolution,
-                                       report_job_expire_callback)
+                                       report_job_expire_callback,
+                                       opt.max_pending_jobs)
 
     return setmetatable(timer_sys, { __index = _M })
 end

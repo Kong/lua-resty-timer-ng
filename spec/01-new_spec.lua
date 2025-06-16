@@ -312,6 +312,44 @@ describe("new with | ", function ()
 
         end) -- end it
 
+        it("invalid `max_pending_jobs`", function ()
+            assert.has.errors(function ()
+                timer_module.new({
+                    max_pending_jobs = {},
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.new({
+                    max_pending_jobs = true,
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.new({
+                    max_pending_jobs = "",
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.new({
+                    max_pending_jobs = -1,
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.new({
+                    max_pending_jobs = 0,
+                })
+            end)
+
+            assert.has.errors(function ()
+                timer_module.new({
+                    max_pending_jobs = 1.5,
+                })
+            end)
+        end) -- end it
+
     end) -- end the second describe
 
 end) -- end the top describe

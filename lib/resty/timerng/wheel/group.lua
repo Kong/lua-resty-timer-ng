@@ -2,6 +2,7 @@ local utils = require("resty.timerng.utils")
 local wheel = require("resty.timerng.wheel")
 local array = require("resty.timerng.array")
 
+local array_new   = array.new
 local array_merge = array.merge
 
 local utils_float_compare = utils.float_compare
@@ -17,6 +18,9 @@ local setmetatable = setmetatable
 
 local CONSTANTS_TOLERANCE_OF_GRACEFUL_SHUTDOWN =
     require("resty.timerng.constants").TOLERANCE_OF_GRACEFUL_SHUTDOWN
+
+local CONSTANTS_DEFAULT_INIT_ARRAY_LENGTH =
+    require("resty.timerng.constants").DEFAULT_INIT_ARRAY_LENGTH
 
 local _M = {}
 
@@ -78,7 +82,10 @@ end
 function _M:fetch_all_expired_jobs()
     for _, _wheel in ipairs(self.wheels) do
         local expired_jobs = _wheel:fetch_all_expired_jobs()
-        array_merge(self.pending_jobs, expired_jobs)
+        local err = array_merge(self.pending_jobs, expired_jobs)
+        if err then
+            return "failed to merge expired jobs: " .. err
+        end
 
         if expired_jobs then
             expired_jobs:release()
@@ -92,7 +99,10 @@ function _M:sync_time()
     local resolution = self.resolution
 
     -- perhaps some jobs have expired but not been fetched
-    self:fetch_all_expired_jobs()
+    local err = self:fetch_all_expired_jobs()
+    if err then
+        return "failed to fetch all expired jobs: " .. err
+    end
 
     ngx_update_time()
     self.real_time = ngx_now()
@@ -106,9 +116,15 @@ function _M:sync_time()
     local delta = self.real_time - self.expected_time
     local steps = utils_convert_second_to_step(delta, resolution)
 
-    lowest_wheel:spin_pointer(steps)
+    err = lowest_wheel:spin_pointer(steps)
+    if err then
+        return "failed to spin lowest wheel: " .. err
+    end
 
-    self:fetch_all_expired_jobs()
+    err = self:fetch_all_expired_jobs()
+    if err then
+        return "failed to fetch all expired jobs: " .. err
+    end
 
     -- The floating-point error may cause
     -- `expected_time` to be larger than `real_time`
@@ -126,7 +142,8 @@ function _M:insert_job(job)
 end
 
 
-function _M.new(wheel_setting, resolution, report_job_expire_callback)
+function _M.new(wheel_setting, resolution, report_job_expire_callback,
+                max_pending_jobs)
     local self = {
         -- see `constants.DEFAULT_WHEEL_SETTING`
         setting = wheel_setting,
@@ -142,7 +159,8 @@ function _M.new(wheel_setting, resolution, report_job_expire_callback)
 
         earliest_expiry_time = 0,
 
-        pending_jobs = array.new(),
+        pending_jobs = array_new(CONSTANTS_DEFAULT_INIT_ARRAY_LENGTH,
+                        max_pending_jobs),
 
         -- store wheels for each level
         -- map from wheel_level to wheel

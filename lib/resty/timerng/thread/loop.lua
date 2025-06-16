@@ -22,7 +22,7 @@ local ACTION_EXIT = 3
 -- max number of arguments for a phase handler
 local MAX_ARGS = 4
 
-local NEED_CHECK_WORKER_EIXTING = {
+local NEED_CHECK_WORKER_EXITING = {
     init = false,
     before = true,
     loop_body = true,
@@ -64,7 +64,7 @@ local function nop_finally()
 end
 
 
-local PAHSE_HANDLERS = {
+local PHASE_HANDLERS = {
     init = nop_init,
     before = nop_before,
     loop_body = nop_loop_body,
@@ -98,7 +98,7 @@ end
 ---@param self table self
 ---@param phase string init | before | loop_body | after | finally
 ---@return integer action
----@return string message
+---@return string|nil message
 local function phase_handler_wrapper(self, phase)
     -- unpack arguments to avoid NYI: return to lower frame
     -- as `pcall` with varargs might causes NYI when returning from `pcall`
@@ -216,11 +216,11 @@ function _M.new(name, options)
 
     self.context.self = self
 
-    for phase, default_handler in pairs(PAHSE_HANDLERS) do
+    for phase, default_handler in pairs(PHASE_HANDLERS) do
         self[phase] = {}
 
         self[phase].need_check_worker_exiting
-                = NEED_CHECK_WORKER_EIXTING[phase]
+                = NEED_CHECK_WORKER_EXITING[phase]
 
         if not options[phase] then
             self[phase].argc = 0

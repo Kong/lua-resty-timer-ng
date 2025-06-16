@@ -32,7 +32,7 @@ end
 
 ---spawn super_thread, and all worker threads
 ---@return boolean ok ok?
----@return string err_msg
+---@return string|nil err_msg
 function _M:spawn()
     local ok, err
     ok, err = self.super_thread:spawn()

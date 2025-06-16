@@ -91,14 +91,18 @@ end
 ---inserting a job into this wheel or lower wheel
 ---@param job table a table that was returned by `job.new()`
 ---@return boolean ok ok?
----@return string err error message
+---@return string|nil err error message
 function _M:insert(job)
     assert(self.slots)
 
     local next_pointer = job:get_next_pointer(self.id)
 
     if next_pointer then
-        self.slots[next_pointer]:push_right(job)
+        local err = self.slots[next_pointer]:push_right(job)
+        if err then
+            return false,
+                "failed to insert job into wheel " .. self.id .. ": " .. err
+        end
         return true, nil
     end
 
@@ -109,7 +113,10 @@ function _M:insert(job)
     end
 
     self.report_job_expire_callback(job)
-    self.expired_jobs:push_right(job)
+    local err = self.expired_jobs:push_right(job)
+    if err then
+        return false, "failed to insert job into expired jobs: " .. err
+    end
 
     return true, nil
 end
@@ -135,7 +142,10 @@ function _M:spin_pointer(offset)
 
         if higher_wheel then
             -- spin the higher wheel to move some jobs to this wheel
-            higher_wheel:spin_pointer(cycles)
+            local err = higher_wheel:spin_pointer(cycles)
+            if err then
+                return "failed to spin higher wheel: " .. err
+            end
         end
 
         local jobs = self:get_jobs_by_pointer(final_pointer)
@@ -144,10 +154,16 @@ function _M:spin_pointer(offset)
             local job = jobs:pop_right()
 
             if lower_wheel then
-                lower_wheel:insert(job)
+                local _, err = lower_wheel:insert(job)
+                if err then
+                    return "failed to insert job into lower wheel: " .. err
+                end
             else
                 self.report_job_expire_callback(job)
-                expired_jobs:push_right(job)
+                local err = expired_jobs:push_right(job)
+                if err then
+                    return "failed to insert job into expired jobs: " .. err
+                end
             end
         end
     end
@@ -167,7 +183,7 @@ end
 
 
 ---return all expired jobs, or return nil.
----@return table jobs_or_nil
+---@return table|nil jobs_or_nil
 function _M:fetch_all_expired_jobs()
     if self.expired_jobs:is_empty() then
         return nil
@@ -197,7 +213,7 @@ function _M.new(id, nelts, report_job_expire_callback)
         higher_wheel = nil,
         lower_wheel = nil,
 
-        expired_jobs = array.new(),
+        expired_jobs = array_new(),
 
         report_job_expire_callback = report_job_expire_callback,
     }

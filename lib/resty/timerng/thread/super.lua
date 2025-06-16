@@ -189,7 +189,11 @@ local function thread_body(_, self)
 
     if timer_sys.enable then
         -- update the status of the wheel group
-        wheels:sync_time()
+        local err = wheels:sync_time()
+        if err then
+            ngx_log(ngx_ERR, "[timer-ng] failed to sync time: ", err)
+            return loop.ACTION_ERROR
+        end
 
         if not wheels.pending_jobs:is_empty() then
             self.worker_thread:wake_up(wheels.pending_jobs:length())

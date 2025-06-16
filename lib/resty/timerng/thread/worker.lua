@@ -162,7 +162,11 @@ local function thread_body(context, self,
     while not wheels.pending_jobs:is_empty() and
           not ngx_worker_exiting()
     do
-        local job = wheels.pending_jobs:pop_left()
+        local job, err = wheels.pending_jobs:pop_left()
+        if not job then
+            ngx_log(ngx_ERR, "[timer-ng] failed to pop job: ", err)
+            return loop.ACTION_EXIT
+        end
 
         if not job:is_runnable() then
             goto continue
@@ -180,9 +184,17 @@ local function thread_body(context, self,
         end
 
         if job:is_runnable() then
-            wheels:sync_time()
+            local err2 = wheels:sync_time()
+            if err then
+                ngx_log(ngx_ERR, "[timer-ng] failed to sync time: ", err2)
+                return loop.ACTION_ERROR
+            end
             job:re_cal_next_pointer(wheels)
-            wheels:insert_job(job)
+            local res, err3 = wheels:insert_job(job)
+            if not res then
+                ngx_log(ngx_ERR, "[timer-ng] failed to insert job: ", err3)
+                return loop.ACTION_ERROR
+            end
 
             local _, need_wake_up = wheels:update_earliest_expiry_time()
 
