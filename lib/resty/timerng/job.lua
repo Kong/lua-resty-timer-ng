@@ -2,6 +2,7 @@ local utils = require("resty.timerng.utils")
 
 local ngx_log = ngx.log
 local ngx_ERR = ngx.ERR
+local ngx_DEBUG = ngx.DEBUG
 
 local utils_table_deepcopy = utils.table_deepcopy
 local utils_convert_second_to_step = utils.convert_second_to_step
@@ -110,6 +111,11 @@ local function job_create_meta(job)
         -- like `init.lua:128:start_timer()`
         meta.name = callstack[1]
     end
+
+    meta.fullcallstack = table_concat(callstack, "\n")
+    ngx_log(ngx_DEBUG,
+            "[timer-ng] create job stack:\n",
+            meta.fullcallstack)
 
     local _callstack = callstack
     callstack = {}
@@ -263,7 +269,11 @@ function _M:execute()
     local stats = self.stats
     local elapsed_time = stats.elapsed_time
     stats.runs = stats.runs + 1
-    local start = ngx_now()
+    local start
+    if self.debug then
+        ngx_update_time()
+        start = ngx_now()
+    end
 
     if not self:is_runnable() then
         return
@@ -271,6 +281,9 @@ function _M:execute()
 
     self._running = true
 
+    ngx_log(ngx_DEBUG,
+            "[timer-ng] execute job ",
+            self.name)
     local ok, err = pcall(self.callback, ngx_worker_exiting(),
                           table_unpack(self.argv, 1, self.argc))
 
@@ -304,6 +317,12 @@ function _M:execute()
         local old_variance = elapsed_time.variance
         elapsed_time.variance =
             utils_get_variance(spend, finish, old_variance, old_avg)
+        ngx_log(ngx_DEBUG,
+                "[timer-ng] job ",
+                self.name,
+                " executed in ",
+                tostring(spend),
+                " seconds")
     end
 
 end
