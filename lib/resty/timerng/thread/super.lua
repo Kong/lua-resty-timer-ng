@@ -192,7 +192,7 @@ local function thread_body(_, self)
         wheels:sync_time()
 
         if not wheels.pending_jobs:is_empty() then
-            self.worker_thread:wake_up()
+            self.worker_thread:wake_up(wheels.pending_jobs:length())
         end
     end
 
@@ -220,6 +220,10 @@ local function thread_after(context, self)
 
     if not ok and err ~= "timeout" then
         ngx_log(ngx_ERR, "[timer-ng] failed to wait semaphore: ", err)
+    end
+
+    if timer_sys.opt.super_yield then
+        ngx_sleep(0)
     end
 
     return loop.ACTION_CONTINUE

@@ -304,6 +304,15 @@ function _M.new(options)
         force_update_time = options
             and options.force_update_time
             or constants.DEFAULT_FORCE_UPDATE_TIME,
+
+        super_yield = options
+            and options.super_yield,
+
+        worker_yield = options
+            and options.worker_yield,
+
+        worker_less_wake_up = options
+            and options.worker_less_wake_up,
     }
 
     timer_sys.opt = opt
@@ -583,6 +592,13 @@ end
 ---@param status boolean true -> enable | false -> disable
 function _M:set_debug(status)
     self.opt.debug = status
+end
+
+
+function _M:set_additional_options(options)
+    for k, v in pairs(options) do
+        self.opt[k] = v
+    end
 end
 
 

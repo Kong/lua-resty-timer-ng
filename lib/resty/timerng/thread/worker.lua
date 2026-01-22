@@ -169,6 +169,10 @@ local function thread_body(context, self,
         job:execute()
         report_after_job_execute_callback(self, job)
 
+        if timer_sys.opt.worker_yield then
+          ngx.sleep(0)
+        end
+
         if job:is_oneshot() then
             timer_sys:cancel(job.name)
             goto continue
@@ -251,9 +255,15 @@ function _M:kill()
 end
 
 
-function _M:wake_up()
+function _M:wake_up(pending_jobs)
     local wake_up_semaphore = self.wake_up_semaphore
-    wake_up_semaphore:post(self.alive_threads_count)
+    if self.timer_sys.opt.worker_less_wake_up then
+      local delta = pending_jobs - wake_up_semaphore:count()
+      wake_up_semaphore:post(math_max(delta, pending_jobs))
+
+    else
+      wake_up_semaphore:post(self.alive_threads_count)
+    end
 end
 
 
